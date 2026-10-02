@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ranking Embracon Anália Franco</title>
+<meta name="description" content="Ranking de vendas da franquia Embracon Anália Franco: placar da meta e posição dos consultores.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" id="cor-tema" content="#F5F3F3">
+<link rel="icon" type="image/png" href="assets/logo-embracon.png">
+<link rel="preload" as="image" href="assets/logo-embracon.png">
+<link rel="preload" as="image" href="assets/logo-embracon-branco.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400..800&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script>try{if(localStorage.getItem("ranking-tema")==="vermelho")document.documentElement.dataset.tema="vermelho"}catch(e){}</script>
+</head>
+<body>
+<div class="load" id="load" role="status" aria-label="Carregando o ranking">
+  <div class="load-in">
+    <div class="load-marca">
+      <img class="logo logo-cor" src="assets/logo-embracon.png" alt="" width="320" height="320">
+      <img class="logo-branco" src="assets/logo-embracon-branco.png" alt="" width="1024" height="548">
+    </div>
+    <div class="load-barra"><i></i></div>
+    <span class="load-txt">Carregando o ranking</span>
+  </div>
+</div>
+
+<div class="app" id="app" data-modo="carregando">
+  <header class="topo">
+    <div class="marca">
+      <img class="logo logo-cor" src="assets/logo-embracon.png" alt="Consórcio Embracon" width="320" height="320">
+      <img class="logo-branco" src="assets/logo-embracon-branco.png" alt="Consórcio Embracon" width="1024" height="548">
+      <div class="unidade"><span class="rotulo">Ranking da franquia</span><strong id="unidade">Anália Franco</strong></div>
+    </div>
+    <div class="acoes">
+      <span class="status" aria-live="polite"><i></i><span id="status">Carregando</span></span>
+      <button class="btn btn-tema" id="btn-tema" type="button" aria-pressed="false"><i aria-hidden="true"></i><span id="btn-tema-txt">Tema vermelho</span></button>
+      <button class="btn" id="btn-tv" type="button">Modo telão</button>
+      <button class="btn so-edicao" id="btn-ajustes" type="button" hidden>Ajustes</button>
+      <button class="btn so-edicao" id="btn-equipe" type="button" hidden>Consultores</button>
+      <button class="btn principal so-edicao" id="btn-venda" type="button" hidden>Lançar venda</button>
+    </div>
+  </header>
+
+  <div class="aviso" id="aviso" hidden></div>
+  <div class="aviso" id="aviso-rascunho" hidden></div>
+
+  <section class="placar" aria-labelledby="placar-rotulo">
+    <div class="placar-cab">
+      <div class="placar-num">
+        <span class="rotulo" id="placar-rotulo">Crédito vendido</span>
+        <p class="total"><small>R$</small><span id="total">0</span></p>
+        <p class="de">de <b id="meta">R$ 21.000.000</b> de meta da franquia<span id="ciclo"></span></p>
+      </div>
+      <div class="pct"><strong id="pct">0%</strong><span>da meta</span></div>
+    </div>
+    <div class="regua sem-ritmo" id="regua">
+      <div class="regua-area" id="regua-area">
+        <span class="ritmo-txt" id="ritmo-txt" hidden></span>
+        <div class="ritmo" id="ritmo" hidden></div>
+        <div class="regua-trilho"><div class="regua-cheio" id="regua-cheio"></div></div>
+      </div>
+      <div class="regua-marcas" id="regua-marcas"></div>
+    </div>
+    <dl class="fatos">
+      <div class="fato"><dt>Falta vender</dt><dd><strong id="f-falta">R$ 0</strong><span id="f-falta-n">&nbsp;</span></dd></div>
+      <div class="fato"><dt>Ritmo necessário</dt><dd><strong id="f-ritmo">R$ 0</strong><span id="f-ritmo-n">&nbsp;</span></dd></div>
+      <div class="fato"><dt>Na meta individual</dt><dd><strong id="f-meta">0 de 0</strong><span id="f-meta-n">&nbsp;</span></dd></div>
+      <div class="fato"><dt>Cotas vendidas</dt><dd><strong id="f-cotas">0</strong><span id="f-cotas-n">&nbsp;</span></dd></div>
+    </dl>
+  </section>
+
+  <div class="colunas">
+    <section aria-labelledby="h-ranking">
+      <div class="sec-cab">
+        <h2 id="h-ranking">Ranking de consultores</h2>
+        <div class="filtro" role="group" aria-label="Período do ranking">
+          <button type="button" data-filtro="ciclo" aria-pressed="true">Ciclo</button>
+          <button type="button" data-filtro="7d" aria-pressed="false">7 dias</button>
+          <button type="button" data-filtro="hoje" aria-pressed="false">Hoje</button>
+        </div>
+      </div>
+      <p class="legenda" id="legenda"><i></i><span id="legenda-txt">meta individual</span></p>
+      <ol class="lista" id="lista"></ol>
+    </section>
+
+    <aside class="lado">
+      <section aria-labelledby="h-feed">
+        <div class="sec-cab"><h2 id="h-feed">Últimas vendas</h2><button class="btn texto" id="btn-todas" type="button" hidden>Ver todas</button></div>
+        <ul class="feed" id="feed"></ul>
+      </section>
+      <section aria-labelledby="h-mix">
+        <div class="sec-cab"><h2 id="h-mix">Crédito por categoria</h2></div>
+        <div class="mix-barra" id="mix-barra"></div>
+        <ul class="mix" id="mix"></ul>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<dialog id="dlg-venda" aria-labelledby="dv-t">
+  <form class="dlg" id="form-venda" novalidate>
+    <h3 id="dv-t">Lançar venda</h3>
+    <div class="campo"><label for="v-consultor">Consultor</label><select id="v-consultor"></select></div>
+    <div class="campo">
+      <label for="v-valor">Crédito vendido</label>
+      <div class="com-prefixo"><b>R$</b><input class="grande" id="v-valor" type="text" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+      <div class="atalhos" id="v-atalhos">
+        <button type="button" data-v="50000">50 mil</button><button type="button" data-v="100000">100 mil</button><button type="button" data-v="200000">200 mil</button><button type="button" data-v="300000">300 mil</button><button type="button" data-v="500000">500 mil</button><button type="button" data-v="1000000">1 mi</button>
+      </div>
+    </div>
+    <div class="campo"><span>Categoria</span>
+      <div class="cats">
+        <label><input type="radio" name="v-cat" id="v-cat-imovel" value="imovel" checked><span>Imóvel</span></label>
+        <label><input type="radio" name="v-cat" id="v-cat-auto" value="auto"><span>Automóvel</span></label>
+        <label><input type="radio" name="v-cat" id="v-cat-pesados" value="pesados"><span>Pesados</span></label>
+        <label><input type="radio" name="v-cat" id="v-cat-servicos" value="servicos"><span>Serviços</span></label>
+      </div>
+    </div>
+    <div class="campo"><label for="v-data">Data da venda</label><input id="v-data" type="date"></div>
+    <p class="erro" id="v-erro" role="alert"></p>
+    <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn principal" type="submit">Lançar venda</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-equipe" aria-labelledby="de-t">
+  <div class="dlg">
+    <h3 id="de-t">Consultores</h3>
+    <form class="novo" id="form-novo" novalidate>
+      <div class="campo"><label for="n-nome">Novo consultor</label><input id="n-nome" type="text" autocomplete="off" placeholder="Nome e sobrenome" maxlength="60"></div>
+      <button class="btn principal" type="submit">Adicionar</button>
+    </form>
+    <ul class="equipe" id="equipe"></ul>
+    <div class="dlg-pe"><button class="btn" type="button" data-fechar>Fechar</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-ajustes" aria-labelledby="da-t">
+  <form class="dlg" id="form-ajustes" novalidate>
+    <h3 id="da-t">Ajustes do painel</h3>
+    <div class="dupla">
+      <div class="campo"><label for="a-meta">Meta da franquia</label><div class="com-prefixo"><b>R$</b><input id="a-meta" type="text" inputmode="numeric" autocomplete="off"></div></div>
+      <div class="campo"><label for="a-metac">Meta por consultor</label><div class="com-prefixo"><b>R$</b><input id="a-metac" type="text" inputmode="numeric" autocomplete="off"></div></div>
+    </div>
+    <div class="dupla">
+      <div class="campo"><label for="a-unidade">Franquia</label><input id="a-unidade" type="text" maxlength="40"></div>
+      <div class="campo"><label for="a-ciclo">Nome do ciclo</label><input id="a-ciclo" type="text" maxlength="40" placeholder="Ex.: Outubro 2026"></div>
+    </div>
+    <div class="dupla">
+      <div class="campo"><label for="a-inicio">Início do ciclo</label><input id="a-inicio" type="date"></div>
+      <div class="campo"><label for="a-prazo">Fim do ciclo</label><input id="a-prazo" type="date"></div>
+    </div>
+    <p>Só as vendas com data dentro do ciclo entram no placar. Com início e fim preenchidos, a régua mostra o ritmo esperado para hoje.</p>
+    <p class="erro" id="a-erro" role="alert"></p>
+    <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn principal" type="submit">Salvar ajustes</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="assets/app.js" defer></script>
+</body>
+</html>

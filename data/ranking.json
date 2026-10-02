@@ -1,0 +1,23 @@
+{
+  "atualizadoEm": "2026-10-02T13:15:00-03:00",
+  "config": {
+    "unidade": "Anália Franco",
+    "meta": 21000000,
+    "metaConsultor": 2000000,
+    "ciclo": "",
+    "inicio": "",
+    "prazo": "",
+    "exemplo": false
+  },
+  "consultores": [
+    {"id":"pedro","nome":"Pedro"},
+    {"id":"enzo","nome":"Enzo"},
+    {"id":"caselli","nome":"Caselli"},
+    {"id":"sales","nome":"Sales"},
+    {"id":"detilio","nome":"Detilio"},
+    {"id":"letycia","nome":"Letycia"},
+    {"id":"tamy","nome":"Tamy"},
+    {"id":"juliana","nome":"Juliana"}
+  ],
+  "vendas": []
+}
