@@ -20,11 +20,22 @@
   --cat-1:#ED1C24; --cat-2:#151112; --cat-3:#6D6E70; --cat-4:#F0A3A6;
   --shade:rgba(21,17,18,.48);
   --load-bg:#FFFFFF;
+  /* movimento: listras e brilho sobre o preenchimento vermelho; *-inv sobre o preenchimento branco do líder */
+  --listra:rgba(255,255,255,.17); --brilho:rgba(255,255,255,.6);
+  --listra-inv:rgba(237,28,36,.11); --brilho-inv:rgba(237,28,36,.28);
+  --varre:rgba(237,28,36,.16);    /* luz que corre no trilho vazio */
+  --reluz:#ED1C24; --reluz-pct:#FFB3B6;
+  --mao-fundo:.075;
+  --selo-faixa:#151112;
 }
 :root{
+  --faixa-h:2.75rem;
   --display:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
   --body:"Figtree","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
   --r:6px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --ease-io:cubic-bezier(.7,0,.2,1);
+  --ease-volta:cubic-bezier(.34,1.5,.6,1);
   color-scheme:light;
 }
 /* Tema vermelho: a página assume o vermelho do logo e o destaque passa a ser o branco. */
@@ -45,41 +56,82 @@
   --seg-bg:#FFFFFF; --seg-fg:#ED1C24;
   --cat-1:#FFFFFF; --cat-2:#2B0204; --cat-3:#FFAEB1; --cat-4:#8A070D;
   --load-bg:#ED1C24;
+  --listra:rgba(237,28,36,.12); --brilho:rgba(237,28,36,.3);
+  --listra-inv:rgba(255,255,255,.17); --brilho-inv:rgba(255,255,255,.55);
+  --varre:rgba(255,255,255,.22);
+  --reluz:#FFB3B6; --reluz-pct:#FFB3B6;
+  --mao-fundo:.13;
+  --selo-faixa:#8A070D;
 }
 html.tv{font-size:118%}
 img{max-width:100%}
 [hidden]{display:none!important}
-body{margin:0;background:var(--ground);color:var(--ink);font:400 1rem/1.5 var(--body);-webkit-font-smoothing:antialiased}
+body{margin:0;padding-bottom:calc(var(--faixa-h) + env(safe-area-inset-bottom,0px));background:var(--ground);color:var(--ink);font:400 1rem/1.5 var(--body);-webkit-font-smoothing:antialiased}
 body,.placar,.linha,.aviso,.avatar{transition:background-color .35s ease,color .35s ease,border-color .35s ease}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 
 .app{max-width:82rem;margin-inline:auto;padding-inline:clamp(1rem,3vw,2.5rem);padding-block:max(1rem,env(safe-area-inset-top,0px)) max(3.5rem,env(safe-area-inset-bottom,0px));display:grid;gap:1.5rem}
 
+/* ---------- marca em camadas ----------
+   A mão e as palavras do logo são máscaras: a cor vem do tema
+   (mão vermelha e palavras pretas no claro, tudo branco no vermelho). */
+.mao{position:relative;display:block;aspect-ratio:369/315}
+.mao i{position:absolute;inset:0;background:var(--mao-cor,var(--red));transition:background-color .35s ease;
+  -webkit-mask:url(marca/mao-1.png) 0 0/100% 100% no-repeat;mask:url(marca/mao-1.png) 0 0/100% 100% no-repeat}
+.mao .m2{-webkit-mask-image:url(marca/mao-2.png);mask-image:url(marca/mao-2.png)}
+.mao .m3{-webkit-mask-image:url(marca/mao-3.png);mask-image:url(marca/mao-3.png)}
+.mao .m4{-webkit-mask-image:url(marca/mao-4.png);mask-image:url(marca/mao-4.png)}
+.lg{position:relative;width:var(--lg-w,20rem);aspect-ratio:1200/525}
+.lg-palavra{position:absolute;inset:0;background:var(--ink);
+  -webkit-mask:url(marca/consorcio.png) 0 0/100% 100% no-repeat;mask:url(marca/consorcio.png) 0 0/100% 100% no-repeat}
+.lg-embracon{-webkit-mask-image:url(marca/embracon.png);mask-image:url(marca/embracon.png)}
+.lg-mao{position:absolute;left:66.75%;top:.762%;width:30.75%}
+
+/* a mão se monta: palma abre em círculo, os três dedos entram na diagonal deles */
+@keyframes mao-palma{from{clip-path:circle(0% at 38% 57%);transform:rotate(-40deg) scale(.6)}to{clip-path:circle(80% at 38% 57%);transform:none}}
+@keyframes mao-dedo{from{opacity:0;transform:translate(-36%,25%)}50%{opacity:1}to{opacity:1;transform:none}}
+.mao.vai .m1{transform-origin:38% 57%;animation:mao-palma .8s var(--ease) both}
+.mao.vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s both}
+.mao.vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s both}
+.mao.vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s both}
+
 /* ---------- tela de abertura ----------
-   Logo entra, a barra enche como a régua da meta e a cortina sobe revelando o painel. */
-.load{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:1.5rem;background:var(--load-bg);
-  transition:transform .85s cubic-bezier(.76,0,.24,1),visibility 0s linear .85s;animation:load-some .4s 12s forwards}
-.load.sai{transform:translateY(-100%);visibility:hidden}
-.load-in{--logo-w:min(18rem,64vw);--logo-caixa:calc(var(--logo-w)*1.1111);display:grid;justify-items:center;gap:1.6rem;
-  transition:opacity .4s ease,transform .85s cubic-bezier(.76,0,.24,1)}
-.load.sai .load-in{opacity:0;transform:translateY(3rem)}
-.load-marca{animation:load-logo .9s cubic-bezier(.2,.8,.2,1) both}
-.load-marca .logo,.load-marca .logo-branco{margin-inline:0}
-.load-barra{width:var(--logo-w);height:3px;border-radius:2px;background:var(--track);overflow:hidden;animation:load-fade .5s .25s both}
-.load-barra i{display:block;height:100%;background:var(--red);transform-origin:0 50%;transform:scaleX(0);animation:load-enche 1.2s .35s cubic-bezier(.65,0,.35,1) forwards}
+   1. a mão se monta grande no centro  2. desliza para o lugar dela no logo
+   3. "Consórcio" e "Embracon" entram  4. a barra enche com a porcentagem
+   5. uma lâmina na cor de destaque cruza a tela e abre o painel na diagonal */
+.load{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:1.5rem;background:var(--load-bg);overflow:hidden;
+  animation:load-some .4s 12s forwards}
+.load-in{--lg-w:min(26rem,76vw);display:grid;justify-items:center;gap:1.4rem;max-width:100%}
+.load .lg-mao{transform-origin:50% 50%;animation:mao-centro 2s var(--ease-io) both}
+.load .lg-mao .m1{transform-origin:38% 57%;animation:mao-palma .95s var(--ease) .1s both}
+.load .lg-mao .m2{animation:mao-dedo .7s var(--ease-volta) .5s both}
+.load .lg-mao .m3{animation:mao-dedo .7s var(--ease-volta) .62s both}
+.load .lg-mao .m4{animation:mao-dedo .7s var(--ease-volta) .74s both}
+.load .lg-consorcio{animation:palavra .8s var(--ease) 1.2s both}
+.load .lg-embracon{animation:palavra .9s var(--ease) 1.34s both}
+.load-anel{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;margin:-23% 0 0 -23%;border:2px solid var(--red);border-radius:50%;opacity:0;
+  animation:anel 1.15s var(--ease) .85s forwards}
+.load-tag{max-width:var(--lg-w);margin:0;font-size:.75rem;font-weight:700;text-transform:uppercase;text-align:center;text-wrap:balance;color:var(--ink-2);animation:tag 1s var(--ease) 1.55s both}
+.load-progresso{position:relative;display:flex;align-items:center;gap:.75rem;animation:load-fade .5s .3s both}
+.load-barra{display:block;width:calc(var(--lg-w)*.62);height:3px;border-radius:2px;background:var(--track);overflow:hidden}
+.load-barra i{display:block;height:100%;background:var(--red);transform-origin:0 50%;transform:scaleX(0);animation:load-enche 2.1s var(--ease-io) .35s forwards}
 .load.espera .load-barra i{width:38%;transform:none;animation:load-vai 1.15s ease-in-out infinite}
-.load-txt{font-size:.6875rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);animation:load-fade .5s .45s both}
-@keyframes load-logo{from{opacity:0;transform:translateY(.9rem) scale(.965)}to{opacity:1;transform:none}}
+.load-pct{min-width:3ch;font:800 1rem/1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;color:var(--ink)}
+.load-lamina{position:absolute;inset:0;z-index:2;background:var(--red);clip-path:polygon(-60% 0,-60% 0,-85% 100%,-85% 100%);pointer-events:none}
+@keyframes mao-centro{0%,44%{transform:translate(-104%,33%) scale(1.6)}100%{transform:none}}
+@keyframes palavra{from{clip-path:inset(-5% 100% -5% 0);transform:translateX(-3%)}to{clip-path:inset(-5% 0 -5% 0);transform:none}}
+@keyframes anel{from{opacity:.8;transform:scale(.25)}to{opacity:0;transform:scale(2.6)}}
+@keyframes tag{from{opacity:0;letter-spacing:.42em}to{opacity:1;letter-spacing:.2em}}
 @keyframes load-enche{to{transform:scaleX(1)}}
 @keyframes load-vai{from{transform:translateX(-110%)}to{transform:translateX(290%)}}
 @keyframes load-fade{from{opacity:0}to{opacity:1}}
 @keyframes load-some{to{opacity:0;visibility:hidden}}
-.app.entra>*{animation:app-entra .75s cubic-bezier(.2,.8,.2,1) .28s both}
-.app.entra>*:nth-child(n+2){animation-delay:.36s}
-.app.entra>*:nth-child(n+4){animation-delay:.44s}
-.app.entra>*:nth-child(n+5){animation-delay:.52s}
-@keyframes app-entra{from{opacity:0;transform:translateY(1.25rem)}to{opacity:1;transform:none}}
+.app.entra>*{animation:app-entra .8s var(--ease) .15s both}
+.app.entra>*:nth-child(n+2){animation-delay:.24s}
+.app.entra>*:nth-child(n+4){animation-delay:.33s}
+.app.entra>*:nth-child(n+5){animation-delay:.42s}
+@keyframes app-entra{from{opacity:0;transform:translateY(1.5rem)}to{opacity:1;transform:none}}
 
 /* ---------- topo ---------- */
 .topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.25rem 2rem;padding-block:.5rem .25rem}
@@ -94,8 +146,11 @@ button,input,select{font:inherit;color:inherit}
 .unidade strong{font:800 clamp(1.5rem,2.9vw,2.5rem)/1.05 var(--display);font-stretch:84%;text-wrap:balance}
 .acoes{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
 .status{display:inline-flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--ink-2);margin-inline-end:.4rem}
-.status i{width:.5rem;height:.5rem;border-radius:50%;background:var(--ink-2)}
-[data-modo="vivo"] .status i{background:var(--ok)}
+.status i{flex:none;width:.5rem;height:.5rem;border-radius:50%;background:var(--ink-2)}
+.status b{color:var(--ink);font-weight:700}
+.status .troca{min-width:10.5em}
+[data-modo="vivo"] .status i{background:var(--ok);animation:ao-vivo 2s ease-out infinite}
+@keyframes ao-vivo{0%{box-shadow:0 0 0 0 var(--ok)}70%,100%{box-shadow:0 0 0 .5rem transparent}}
 [data-modo="rascunho"] .status i{background:var(--red)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:2.5rem;padding:0 .95rem;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);font-weight:600;font-size:.875rem;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
@@ -113,7 +168,7 @@ html.tv .so-edicao{display:none}
 .aviso .btn{min-height:2.1rem;font-size:.8125rem}
 
 /* ---------- placar ---------- */
-.placar{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:clamp(1.25rem,3vw,2.25rem);display:grid;gap:clamp(1.25rem,2.5vw,2rem)}
+.placar{position:relative;isolation:isolate;overflow:hidden;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:clamp(1.25rem,3vw,2.25rem);display:grid;gap:clamp(1.25rem,2.5vw,2rem)}
 .placar-cab{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem 2rem}
 .placar-num{min-width:0}
 .total{display:flex;align-items:baseline;gap:.5rem;margin:.15rem 0 .3rem;font:800 clamp(2.7rem,8.2vw,6.75rem)/.92 var(--display);font-stretch:72%;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
@@ -126,8 +181,8 @@ html.tv .so-edicao{display:none}
 
 .regua-area{position:relative;padding-top:1.7rem}
 .regua.sem-ritmo .regua-area{padding-top:0}
-.regua-trilho{height:1.6rem;background:var(--track);border-radius:3px;overflow:hidden}
-.regua-cheio{height:100%;width:0;background:var(--red);border-radius:3px 0 0 3px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.regua-trilho{position:relative;height:1.6rem;background:var(--track);border-radius:3px;overflow:hidden}
+.regua-cheio{position:relative;height:100%;width:0;background:var(--red);border-radius:3px 0 0 3px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
 .ritmo{position:absolute;top:1.05rem;bottom:-.3rem;border-inline-start:2px solid var(--ink)}
 .ritmo-txt{position:absolute;top:0;left:0;white-space:nowrap;font-size:.75rem;font-weight:600;line-height:1}
 .regua-marcas{position:relative;height:1.9rem;margin-top:.3rem}
@@ -158,11 +213,12 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .legenda i{width:2px;height:.9rem;background:var(--ink)}
 
 .lista{list-style:none;margin:0;padding:0;display:grid;gap:.5rem}
-.linha{--l-fg:var(--ink);--l-sub:var(--ink-2);--l-trilho:var(--track);--l-cheio:var(--red);--l-meta:var(--ink);--l-av:var(--track);--l-selo-bg:var(--selo-bg);--l-selo-fg:var(--selo-fg);
+.linha{--l-fg:var(--ink);--l-sub:var(--ink-2);--l-trilho:var(--track);--l-cheio:var(--red);--l-meta:var(--ink);--l-av:var(--track);--l-selo-bg:var(--selo-bg);--l-selo-fg:var(--selo-fg);--l-listra:var(--listra);--l-brilho:var(--brilho);
+  position:relative;
   display:grid;grid-template-columns:2.25rem 2.75rem minmax(0,1.05fr) minmax(0,1.5fr) minmax(9.5rem,auto);grid-template-areas:"pos av quem barra valor";align-items:center;column-gap:1rem;
   padding:.65rem 1rem;color:var(--l-fg);border-bottom:1px solid var(--line);border-radius:0}
 .linha.top{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding-block:.95rem}
-.linha.lider{--l-fg:var(--on-red);--l-sub:var(--on-red-2);--l-trilho:var(--red-deep);--l-cheio:var(--on-red);--l-meta:var(--on-red);--l-av:var(--red-deep);--l-selo-bg:var(--selo-bg-lider);--l-selo-fg:var(--selo-fg-lider);background:var(--red);border-color:var(--red);padding-block:1.3rem}
+.linha.lider{--l-fg:var(--on-red);--l-sub:var(--on-red-2);--l-trilho:var(--red-deep);--l-cheio:var(--on-red);--l-meta:var(--on-red);--l-av:var(--red-deep);--l-selo-bg:var(--selo-bg-lider);--l-selo-fg:var(--selo-fg-lider);--l-listra:var(--listra-inv);--l-brilho:var(--brilho-inv);background:var(--red);border-color:var(--red);padding-block:1.3rem;overflow:hidden}
 .linha.pulsa{animation:pulsa 1.4s ease-out}
 @keyframes pulsa{0%{box-shadow:0 0 0 0 var(--red)}100%{box-shadow:0 0 0 .9rem transparent}}
 .pos{grid-area:pos;font:800 1.125rem/1 var(--display);font-stretch:80%;color:var(--l-sub);font-variant-numeric:tabular-nums;text-align:center}
@@ -175,7 +231,7 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .sub{font-size:.8125rem;color:var(--l-sub)}
 .sub .eq{font-weight:700;color:var(--l-fg)}
 .barra{grid-area:barra;position:relative;height:.6rem;background:var(--l-trilho);border-radius:2px}
-.barra-cheio{height:100%;width:0;background:var(--l-cheio);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.barra-cheio{position:relative;overflow:hidden;height:100%;width:0;background:var(--l-cheio);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .barra-meta{position:absolute;top:-.3rem;bottom:-.3rem;width:2px;margin-left:-1px;background:var(--l-meta)}
 .valor{grid-area:valor;text-align:right;display:grid;line-height:1.2}
 .valor strong{font:800 1.25rem/1.1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -200,7 +256,7 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .eq-valor{grid-area:valor;display:grid;text-align:right;line-height:1.2}
 .eq-valor strong{font:800 1.0625rem/1.1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;white-space:nowrap}
 .eq-barra{grid-area:barra;height:.4rem;background:var(--track);border-radius:2px;overflow:hidden}
-.eq-barra i{display:block;height:100%;width:0;background:var(--red);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.eq-barra i{position:relative;overflow:hidden;display:block;height:100%;width:0;background:var(--red);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .feed{list-style:none;margin:0;padding:0}
 .feed li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.15rem .75rem;padding:.65rem 0;border-top:1px solid var(--line)}
 .feed .f-nome{font-weight:600;font-size:.9375rem;overflow-wrap:anywhere}
@@ -210,7 +266,7 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .feed .btn.texto{display:inline;min-height:0;padding:0;font-size:.8125rem;color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
 .feed .btn.texto.perigo{color:var(--red-deep)}
 .nada{margin:0;padding:.75rem 0;border-top:1px solid var(--line);color:var(--ink-2);font-size:.875rem}
-.mix-barra{display:flex;height:.9rem;border-radius:2px;overflow:hidden;background:var(--track);margin-bottom:.6rem}
+.mix-barra{position:relative;display:flex;height:.9rem;border-radius:2px;overflow:hidden;background:var(--track);margin-bottom:.6rem}
 .mix-barra i{display:block;height:100%}
 .mix{list-style:none;margin:0;padding:0}
 .mix li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:.6rem;padding:.45rem 0;border-top:1px solid var(--line);font-size:.875rem}
@@ -252,7 +308,100 @@ dialog::backdrop{background:var(--shade)}
 .equipe .conf{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;font-size:.8125rem;color:var(--ink-2)}
 .novo{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:.5rem;align-items:end}
 
-.toast{position:fixed;left:50%;bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 2rem);padding:.7rem 1.1rem;border-radius:var(--r);background:var(--ink);color:var(--paper);font-size:.875rem;font-weight:600;z-index:10}
+.toast{position:fixed;left:50%;bottom:calc(4rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 2rem);padding:.7rem 1.1rem;border-radius:var(--r);background:var(--ink);color:var(--paper);font-size:.875rem;font-weight:600;z-index:10}
+
+
+/* ==========================================================================
+   Movimento contínuo (pensado para o telão)
+   As listras correm na mesma inclinação dos dedos da mão (34,5°) e um brilho
+   cruza cada barra de tempos em tempos. Tudo em transform/opacity.
+   ========================================================================== */
+:root{--listra-p:14px}
+/* listras que correm: a faixa é mais larga que a barra e anda exatamente um período */
+.regua-cheio::before,.barra-cheio::before,.eq-barra i::before{content:"";position:absolute;top:0;bottom:0;left:-40px;right:-40px;
+  background:repeating-linear-gradient(145.5deg,var(--l-listra,var(--listra)) 0 calc(var(--listra-p)/2),transparent calc(var(--listra-p)/2) var(--listra-p));
+  animation:listras 1.1s linear infinite}
+@keyframes listras{from{transform:translateX(0)}to{transform:translateX(calc(var(--listra-p) / .56641))}}
+/* brilho que atravessa a barra e descansa */
+.regua-cheio::after,.barra-cheio::after,.eq-barra i::after,.mix-barra::after{content:"";position:absolute;top:0;bottom:0;left:0;width:38%;
+  background:linear-gradient(100deg,transparent,var(--l-brilho,var(--brilho)) 50%,transparent);transform:translateX(-120%) skewX(-34deg);
+  animation:brilho 4.6s var(--ease-io) infinite;animation-delay:calc(var(--i,0) * .16s)}
+@keyframes brilho{0%{transform:translateX(-120%) skewX(-34deg)}38%,100%{transform:translateX(320%) skewX(-34deg)}}
+.mix-barra::after{--l-brilho:rgba(255,255,255,.45);animation-duration:6s;animation-delay:2s}
+/* régua da meta: ponta acesa e uma luz varrendo o trilho, visível até com o placar zerado */
+.regua-cheio{animation:ponta 2.6s ease-in-out infinite}
+@keyframes ponta{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 1.1rem .1rem var(--red)}}
+.regua-trilho::after{content:"";position:absolute;inset:0 auto 0 0;width:22%;background:linear-gradient(90deg,transparent,var(--varre),transparent);
+  transform:translateX(-110%);animation:varre 5.5s var(--ease-io) 1.2s infinite;pointer-events:none}
+@keyframes varre{0%{transform:translateX(-110%)}55%,100%{transform:translateX(560%)}}
+.ritmo::before{content:"";position:absolute;left:-5px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--ink);animation:ao-vivo-ritmo 2.2s ease-out infinite}
+@keyframes ao-vivo-ritmo{0%{box-shadow:0 0 0 0 var(--ink)}70%,100%{box-shadow:0 0 0 .55rem transparent}}
+
+/* números grandes: um reflexo passa por cima dos dígitos */
+.reluz{--r-base:var(--ink);--r-luz:var(--reluz);
+  background:linear-gradient(110deg,var(--r-base) 0 43%,var(--r-luz) 50%,var(--r-base) 57% 100%);background-size:280% 100%;background-position:100% 0;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:reluz 8s ease-in-out 2.5s infinite}
+.pct .reluz{--r-base:var(--red);--r-luz:var(--reluz-pct);color:transparent;animation-delay:3.1s}
+@keyframes reluz{0%,64%{background-position:100% 0}86%,100%{background-position:0 0}}
+
+/* mão grande no placar: os dedos fazem uma onda, a mão flutua */
+.placar>*{position:relative;z-index:1}
+.placar>.placar-mao{position:absolute;z-index:0;right:-3%;top:50%;width:min(36rem,50%);margin-top:calc(min(36rem,50%) * -.427);--mao-cor:var(--red);opacity:var(--mao-fundo);
+  pointer-events:none;animation:flutua 9s ease-in-out infinite alternate}
+.placar-mao .m2,.placar-mao .m3,.placar-mao .m4{animation:onda-dedo 6.5s var(--ease) infinite}
+.placar-mao .m3{animation-delay:.22s}.placar-mao .m4{animation-delay:.44s}
+@keyframes onda-dedo{0%,16%,100%{transform:none}7%{transform:translate(9%,-6.2%)}}
+@keyframes flutua{from{transform:rotate(-3deg) translateY(-2%)}to{transform:rotate(2deg) translateY(2%)}}
+
+/* destaques do placar: frases que trocam de tempos em tempos */
+.destaque{display:flex;align-items:center;gap:.65rem;margin:.95rem 0 0;max-width:46rem;font-size:clamp(.9375rem,1.25vw,1.0625rem);font-weight:600;color:var(--ink);line-height:1.35}
+.destaque-mao{flex:none;width:1.75rem}
+.destaque .troca{flex:1;min-width:0}
+/* texto que sai por cima e entra por baixo, palavra por palavra, atrás de uma máscara */
+.troca{display:grid}
+.troca>.tr{grid-area:1/1;min-width:0}
+.tr .w{display:inline-block;overflow:hidden;vertical-align:top;padding-top:.14em;margin-top:-.14em;padding-bottom:.08em;margin-bottom:-.08em}
+.tr .w>span{display:inline-block;animation:w-entra .62s var(--ease) both;animation-delay:calc(var(--w,0) * 38ms + .16s)}
+.tr.sai .w>span{animation:w-sai .42s cubic-bezier(.6,0,.8,.4) both;animation-delay:calc(var(--w,0) * 24ms)}
+@keyframes w-entra{from{transform:translateY(108%)}to{transform:none}}
+@keyframes w-sai{from{transform:none}to{transform:translateY(-108%)}}
+
+/* líder: um brilho cruza a linha e o avatar pulsa */
+.linha.lider::after{content:"";position:absolute;inset:0 auto 0 0;width:45%;background:linear-gradient(100deg,transparent,var(--brilho-inv) 50%,transparent);opacity:.55;
+  transform:translateX(-120%) skewX(-34deg);animation:brilho-linha 6s var(--ease-io) 1s infinite;pointer-events:none}
+@keyframes brilho-linha{0%{transform:translateX(-120%) skewX(-34deg)}40%,100%{transform:translateX(330%) skewX(-34deg)}}
+.linha.lider .avatar{position:relative}
+.linha.lider .avatar::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--on-red);animation:anel-lider 2.4s ease-out infinite}
+@keyframes anel-lider{from{opacity:.7;transform:scale(1)}to{opacity:0;transform:scale(1.55)}}
+/* venda nova entrando na lista de últimas vendas */
+.feed li.novo{animation:feed-novo 1.6s var(--ease) both}
+@keyframes feed-novo{0%{opacity:0;transform:translateX(-1.5rem);background:var(--red-wash)}35%{opacity:1;transform:none;background:var(--red-wash)}100%{background:transparent}}
+
+/* ---------- faixa ao vivo no rodapé ---------- */
+.faixa{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;align-items:stretch;height:calc(var(--faixa-h) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--red);color:var(--on-red);font-size:.9375rem;white-space:nowrap;box-shadow:0 -1px 0 var(--line)}
+.faixa-selo{position:relative;z-index:1;flex:none;display:flex;align-items:center;gap:.55rem;padding:0 1.1rem 0 1rem;background:var(--selo-faixa);color:#FFFFFF;
+  font:800 .8125rem/1 var(--display);font-stretch:90%;letter-spacing:.08em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,calc(100% - .9rem) 100%,0 100%);padding-inline-end:1.8rem}
+.faixa-selo i{width:.5rem;height:.5rem;border-radius:50%;background:var(--red);animation:ao-vivo-faixa 1.6s ease-out infinite}
+@keyframes ao-vivo-faixa{0%{box-shadow:0 0 0 0 var(--red)}70%,100%{box-shadow:0 0 0 .45rem transparent}}
+.faixa-janela{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent);mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent)}
+.faixa-trilho{display:flex;flex:none;animation:faixa var(--dur,40s) linear infinite}
+.faixa-grupo{display:flex;flex:none;align-items:center}
+.fx{display:inline-flex;align-items:center;gap:.6rem;padding-inline:1.25rem 1.5rem}
+.fx b{font:800 1rem/1 var(--display);font-stretch:86%}
+.fx .fx-mao{width:1.3rem;--mao-cor:var(--on-red);opacity:.9}
+@keyframes faixa{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- aviso de venda nova (telão) ---------- */
+.flash{position:fixed;top:1rem;left:50%;z-index:30;display:flex;align-items:center;gap:1.1rem;width:max-content;max-width:calc(100% - 2rem);
+  padding:1rem 1.5rem 1rem 1.15rem;background:var(--red);color:var(--on-red);border-radius:8px;box-shadow:0 1.25rem 3rem rgba(21,17,18,.32);transform:translateX(-50%)}
+.flash-mao{flex:none;width:3.4rem;--mao-cor:var(--on-red)}
+.flash-txt{display:grid;line-height:1.2;min-width:0}
+.flash-rotulo{font-size:.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--on-red-2)}
+.flash-txt strong{font:800 1.5rem/1.1 var(--display);font-stretch:86%;overflow-wrap:anywhere}
+.flash-txt span:last-child{font-size:.875rem;color:var(--on-red-2)}
+.flash-valor{margin-inline-start:.75rem;font:800 2rem/1 var(--display);font-stretch:76%;font-variant-numeric:tabular-nums;white-space:nowrap}
 
 @media (max-width:62rem){
   .colunas{grid-template-columns:minmax(0,1fr)}
@@ -273,6 +422,13 @@ dialog::backdrop{background:var(--shade)}
   .linha.lider .nome{font-size:1.125rem}
   .valor strong{font-size:1.0625rem}
   .dupla{grid-template-columns:minmax(0,1fr)}
+  .placar>.placar-mao{width:78%;right:-22%;top:2rem;margin-top:0}
+  .faixa{font-size:.875rem}
+  .faixa-selo{padding-inline:.8rem 1.4rem}
+  .flash{top:.75rem;gap:.8rem;padding:.8rem 1rem}
+  .flash-mao{width:2.6rem}
+  .flash-txt strong{font-size:1.125rem}
+  .flash-valor{font-size:1.25rem;margin-inline-start:.25rem}
   .novo,.equipe li{grid-template-columns:minmax(0,1fr) auto}
   .novo .c-nome,.equipe .c-nome{grid-column:1/-1}
   .equipe{gap:.5rem}
@@ -281,4 +437,7 @@ dialog::backdrop{background:var(--shade)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   .load-barra i{transform:none}
+  .reluz{color:var(--r-base);background:none}
+  .regua-cheio::after,.barra-cheio::after,.eq-barra i::after,.mix-barra::after,.regua-trilho::after,.linha.lider::after{display:none}
+  .faixa-janela{overflow-x:auto}
 }

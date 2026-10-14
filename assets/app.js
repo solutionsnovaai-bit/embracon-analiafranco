@@ -85,6 +85,7 @@ const state = {
   consultores: new Map(),       // id -> {id, nome, equipe}
   vendas: [],                   // {id, ordem, consultor, valor, categoria, data}
   atualizadoEm: '',
+  conferidoEm: null,            // última vez que o painel leu o arquivo
   filtro: 'ciclo',
   verTodas: false,
   confirmar: null,
@@ -209,7 +210,9 @@ function calcular() {
     ideal = c.meta * passados / totalDias;
   }
   const feed = [...ciclo].sort((a, b) => b.data.localeCompare(a.data) || b.ordem - a.ordem);
-  return { total, porCat, linhas, equipes, naMeta, ideal, restantes, feed, cotas: ciclo.length, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  const lideres = [...state.consultores.values()].map(p => ({ nome: p.nome, equipe: p.equipe, valor: cicloPor.get(p.id) || 0 }))
+    .filter(l => l.valor > 0).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'));
+  return { total, porCat, linhas, equipes, lideres, naMeta, ideal, restantes, feed, cotas: ciclo.length, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -243,13 +246,70 @@ function posicionarRitmo() {
 }
 addEventListener('resize', posicionarRitmo);
 
-function textoStatus() {
-  if (state.modo === 'carregando') return 'Carregando';
-  if (state.rascunho) return 'Alterações não publicadas';
-  if (state.modo === 'demo') return 'Dados de exemplo';
-  const d = new Date(state.atualizadoEm);
-  if (isNaN(d)) return 'Dados do repositório';
-  return 'Atualizado em ' + doisDig(d.getDate()) + '/' + doisDig(d.getMonth() + 1) + ' às ' + doisDig(d.getHours()) + ':' + doisDig(d.getMinutes());
+/* ---------- textos que trocam ----------
+   A frase atual sobe e sai por cima; a nova entra por baixo, palavra por palavra. */
+function trocar(alvo, texto) {
+  if (alvo._texto === texto) return false;
+  const primeira = alvo._texto == null;
+  alvo._texto = texto;
+  for (const v of alvo.querySelectorAll('.tr')) {
+    if (semMovimento || primeira) v.remove();
+    else if (!v.classList.contains('sai')) { v.classList.add('sai'); v.setAttribute('aria-hidden', 'true'); setTimeout(() => v.remove(), 750); }
+  }
+  const nova = el('span', { class: 'tr' });
+  texto.split(' ').forEach((w, i) => { if (i) nova.append(' '); nova.append(el('span', { class: 'w', style: '--w:' + i }, el('span', { text: w }))); });
+  alvo.append(nova);
+  return true;
+}
+/* replay da montagem da mão (palma abre, dedos entram) */
+function maoVai(m) { if (!m || semMovimento) return; m.classList.remove('vai'); void m.offsetWidth; m.classList.add('vai'); }
+const hora = d => doisDig(d.getHours()) + ':' + doisDig(d.getMinutes());
+
+let giroStatus = 0;
+function textosStatus() {
+  if (state.modo === 'carregando') return ['Carregando'];
+  if (state.rascunho) return ['Alterações não publicadas'];
+  if (state.modo === 'demo') return ['Dados de exemplo'];
+  const t = [], d = new Date(state.atualizadoEm);
+  if (!isNaN(d)) t.push(iso(d) === hojeISO() ? 'atualizado às ' + hora(d) : 'atualizado em ' + doisDig(d.getDate()) + '/' + doisDig(d.getMonth() + 1) + ' às ' + hora(d));
+  if (state.conferidoEm) t.push('conferido às ' + hora(state.conferidoEm));
+  return t.length ? t : ['Dados do repositório'];
+}
+function pintarStatus() {
+  const t = textosStatus();
+  $('status-vivo').hidden = !(state.modo === 'arquivo' && !state.rascunho);
+  trocar($('status'), t[giroStatus % t.length]);
+}
+
+/* destaques do placar: frases montadas com os números do momento */
+const listaNatural = l => l.length > 1 ? l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1] : l.join('');
+function mensagens(r) {
+  if (state.modo === 'carregando') return [];
+  const c = state.config, n = state.consultores.size, m = [];
+  if (r.total > 0) {
+    const l = r.lideres[0];
+    if (l) m.push(l.nome + ' lidera o ranking com ' + curto(l.valor));
+    if (r.equipes.length && r.equipes[0].valor > 0) m.push(r.equipes[0].nome + ' está na frente entre as equipes com ' + curto(r.equipes[0].valor));
+    const u = r.feed[0];
+    if (u) m.push('Última venda: ' + state.consultores.get(u.consultor).nome + ', ' + curto(u.valor) + ' em ' + CATS[u.categoria].toLowerCase() + ', ' + quando(u.data));
+    m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
+    m.push(r.naMeta ? r.naMeta + ' de ' + n + (n === 1 ? ' consultor já passou de ' : ' consultores já passaram de ') + curto(c.metaConsultor)
+      : 'Meta individual de ' + curto(c.metaConsultor) + ' por consultor');
+    if (r.restantes > 0 && r.falta > 0) m.push('Para fechar a meta: ' + curto(r.falta / r.restantes) + ' por dia até ' + dataCurta(c.prazo));
+  } else if (n) {
+    m.push('Placar zerado: a primeira venda do ciclo abre o ranking');
+    m.push('Meta da franquia de ' + curto(c.meta) + ' e ' + curto(c.metaConsultor) + ' por consultor');
+    const eqs = r.equipes.filter(e => e.nome !== SEM_EQUIPE).map(e => e.nome);
+    if (eqs.length > 1) m.push(n + ' consultores em ' + eqs.length + ' equipes: ' + listaNatural(eqs));
+  }
+  return m;
+}
+let giroDestaque = 0;
+function pintarDestaque(r) {
+  const m = mensagens(r), alvo = $('destaque');
+  alvo.closest('.destaque').hidden = !m.length;
+  if (!m.length) return;
+  if (trocar(alvo, m[giroDestaque % m.length])) maoVai($('destaque-mao'));
 }
 
 function pintar() {
@@ -257,7 +317,7 @@ function pintar() {
   app.dataset.modo = carregando ? 'carregando' : state.rascunho ? 'rascunho' : state.modo === 'demo' ? 'demo' : 'vivo';
   const editar = state.podeEditar && !carregando;
 
-  $('status').textContent = textoStatus();
+  pintarStatus();
   for (const id of ['btn-ajustes', 'btn-equipe', 'btn-venda']) $(id).hidden = !editar;
   $('unidade').textContent = c.unidade;
 
@@ -313,6 +373,8 @@ function pintar() {
   pintarEquipes(r, carregando);
   pintarFeed(r, editar, carregando);
   pintarMix(r);
+  pintarDestaque(r);
+  if (!carregando) pintarFaixa(r);
   if ($('dlg-equipe').open) pintarEquipe();
 }
 
@@ -381,6 +443,7 @@ function pintarLista(r, editar, carregando) {
     let n = linhasDom.get(l.id);
     if (!n) { n = criarLinha(); linhasDom.set(l.id, n); }
     const p = n._p, lider = i === 0 && l.valor > 0;
+    n.style.setProperty('--i', i);
     n.className = 'linha' + (i < 3 && l.valor > 0 ? ' top' : '') + (lider ? ' lider' : '');
     p.pos.textContent = l.valor > 0 ? i + 1 : '–';
     p.av.textContent = iniciais(l.nome);
@@ -432,6 +495,7 @@ function pintarEquipes(r, carregando) {
       equipesDom.set(e.nome, n);
     }
     const p = n._p, lider = i === 0 && e.valor > 0;
+    n.style.setProperty('--i', i + 2);
     n.classList.toggle('lider', lider);
     p.pos.textContent = e.valor > 0 ? i + 1 : '–';
     p.nome.textContent = e.nome;
@@ -452,9 +516,17 @@ function pintarEquipes(r, carregando) {
   }
 }
 
+/* chave estável de cada venda (mesma venda repetida ganha um número de ocorrência) */
+function chaves(vendas) {
+  const vistos = new Map();
+  return vendas.map(v => { const k = v.consultor + '|' + v.valor + '|' + v.categoria + '|' + v.data; const n = (vistos.get(k) || 0) + 1; vistos.set(k, n); return k + '#' + n; });
+}
+let feedVisto = null;
 function pintarFeed(r, editar, carregando) {
   const feed = $('feed'); feed.textContent = '';
   const itens = state.verTodas ? r.feed : r.feed.slice(0, 7);
+  const ks = chaves([...r.feed].reverse()).reverse(), primeira = feedVisto === null;
+  if (!carregando && primeira) feedVisto = new Set(ks);
   if (!r.feed.length) feed.append(el('li', {}, el('span', { class: 'f-sub', text: carregando ? 'Carregando' : 'Nenhuma venda lançada no ciclo ainda.' })));
   for (const v of itens) {
     const p = state.consultores.get(v.consultor);
@@ -465,6 +537,8 @@ function pintarFeed(r, editar, carregando) {
     if (confirmando) li.append(el('div', { class: 'f-acao' }, 'Remover esta venda?',
       el('button', { class: 'btn texto perigo', type: 'button', text: 'Remover', onclick: () => removerVenda(v) }),
       el('button', { class: 'btn texto', type: 'button', text: 'Manter', onclick: () => { state.confirmar = null; render(); } })));
+    const k = ks[r.feed.indexOf(v)];
+    if (feedVisto && !feedVisto.has(k)) { feedVisto.add(k); if (!primeira) li.classList.add('novo'); }
     feed.append(li);
   }
   const b = $('btn-todas');
@@ -488,6 +562,72 @@ function toast(msg) {
 }
 
 /* ---------- carga dos dados ---------- */
+/* ---------- faixa ao vivo ---------- */
+const pecasMao = () => [1, 2, 3, 4].map(n => el('i', { class: 'm' + n }));
+let faixaAss = '';
+function itensFaixa(r) {
+  const c = state.config, itens = [];
+  if (r.total > 0) {
+    itens.push(['Crédito vendido', curto(r.total) + ' de ' + curto(c.meta) + ' (' + pctTxt(Math.floor(r.total / c.meta * 1000) / 10) + ')']);
+    r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor)]));
+    r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor)]));
+    r.feed.slice(0, 4).forEach(v => itens.push(['Venda', state.consultores.get(v.consultor).nome + ', ' + curto(v.valor) + ' em ' + CATS[v.categoria].toLowerCase() + ', ' + quando(v.data)]));
+    if (r.falta > 0) itens.push(['Faltam', curto(r.falta) + ' para a meta da franquia']);
+  } else {
+    itens.push(['Meta da franquia', curto(c.meta)]);
+    itens.push(['Meta individual', curto(c.metaConsultor) + ' por consultor']);
+    r.equipes.filter(e => e.nome !== SEM_EQUIPE).forEach(e => itens.push([e.nome, e.membros + (e.membros === 1 ? ' consultor' : ' consultores')]));
+    itens.push(['Placar zerado', 'a primeira venda do ciclo abre o ranking']);
+  }
+  return itens;
+}
+function pintarFaixa(r, forcar) {
+  const itens = itensFaixa(r), ass = JSON.stringify(itens);
+  if (!forcar && ass === faixaAss) return;
+  faixaAss = ass;
+  const trilho = $('faixa-trilho'), janela = trilho.parentNode;
+  const item = ([forte, resto]) => el('span', { class: 'fx' }, el('span', { class: 'mao fx-mao' }, ...pecasMao()), el('b', { text: forte }), ' ' + resto);
+  const grupo = el('div', { class: 'faixa-grupo' }, ...itens.map(item));
+  trilho.textContent = ''; trilho.append(grupo);
+  /* o grupo precisa ser mais largo que a janela para o laço não deixar buraco */
+  const base = grupo.offsetWidth || 1;
+  for (let w = base; w < janela.clientWidth + 40 && w < 20000; w += base) itens.forEach(i => grupo.append(item(i)));
+  trilho.append(grupo.cloneNode(true));
+  trilho.style.setProperty('--dur', Math.max(grupo.offsetWidth / 70, 12).toFixed(1) + 's');   // ~70 px por segundo
+}
+let faixaT = 0;
+addEventListener('resize', () => { clearTimeout(faixaT); faixaT = setTimeout(() => { if (state.modo !== 'carregando') pintarFaixa(calcular(), true); }, 300); });
+
+/* ---------- aviso de venda nova (chega pela conferência automática) ---------- */
+const filaAviso = [];
+let avisando = false;
+function anunciar(v) { filaAviso.push(v); if (!avisando) proximoAviso(); }
+function proximoAviso() {
+  const v = filaAviso.shift();
+  if (!v) { avisando = false; return; }
+  const p = state.consultores.get(v.consultor);
+  if (!p) { proximoAviso(); return; }
+  avisando = true;
+  const f = $('flash');
+  $('flash-nome').textContent = p.nome;
+  $('flash-info').textContent = CATS[v.categoria] + (p.equipe ? ' · ' + p.equipe : '');
+  $('flash-valor').textContent = brl(v.valor);
+  f.getAnimations().forEach(a => a.cancel());
+  f.hidden = false;
+  maoVai($('flash-mao'));
+  const fora = { transform: 'translate(-50%,-170%)', opacity: 0 }, dentro = { transform: 'translate(-50%,0)', opacity: 1 };
+  if (!semMovimento && f.animate) f.animate([fora, dentro], { duration: 650, easing: 'cubic-bezier(.34,1.4,.6,1)', fill: 'both' });
+  setTimeout(() => {
+    const fim = () => { f.hidden = true; f.getAnimations().forEach(a => a.cancel()); proximoAviso(); };
+    if (semMovimento || !f.animate) { fim(); return; }
+    f.animate([dentro, fora], { duration: 450, easing: 'cubic-bezier(.6,0,.8,.4)', fill: 'both' }).onfinish = fim;
+  }, 5600);
+}
+function vendasNovas(antes, depois) {
+  const ja = new Set(chaves(antes)), ks = chaves(depois);
+  return depois.filter((v, i) => !ja.has(ks[i]));
+}
+
 async function lerArquivo() {
   const r = await fetch(ARQUIVO + '?t=' + Date.now(), { cache: 'no-store' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -501,37 +641,77 @@ async function conferir() {
   if (document.hidden || state.rascunho || state.modo !== 'arquivo') return;
   try {
     const t = await lerArquivo();
-    if (t === textoArquivo) return;
-    const d = JSON.parse(t);
+    state.conferidoEm = new Date();
+    if (t === textoArquivo) { render(); return; }
+    const d = JSON.parse(t), antes = state.vendas;
     textoArquivo = t; aplicar(d); render();
+    vendasNovas(antes, state.vendas).slice(-3).forEach(anunciar);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
 }
 /* tela de abertura: fica o tempo de a animação se completar e sai quando os dados chegam */
 const telaLoad = $('load');
+const ABERTURA = { barraDe: 350, barraPor: 2100, minimo: 2650 };
+const io = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+(function contarCarga() {
+  const pct = $('load-pct');
+  if (!pct || !telaLoad.isConnected) return;
+  const t = Math.min(Math.max((performance.now() - ABERTURA.barraDe) / ABERTURA.barraPor, 0), 1);
+  pct.textContent = Math.round((semMovimento ? 1 : io(t)) * 100) + '%';
+  if (t < 1) requestAnimationFrame(contarCarga);
+})();
+/* barras crescem do zero quando o painel aparece */
+function reencher() {
+  if (semMovimento) return;
+  const barras = [$('regua-cheio'), ...document.querySelectorAll('#lista .barra-cheio, #equipes .eq-barra i')];
+  barras.forEach(b => { b._alvo = b.style.width; b.style.transition = 'none'; b.style.width = '0%'; });
+  void document.body.offsetWidth;
+  barras.forEach((b, i) => { b.style.transition = 'width 1.5s cubic-bezier(.2,.8,.2,1) ' + (.45 + Math.min(i, 22) * .045) + 's'; b.style.width = b._alvo; });
+  setTimeout(() => barras.forEach(b => { b.style.transition = ''; }), 3200);
+}
+/* linhas entram em cascata */
+function cascata() {
+  if (semMovimento) return;
+  const ease = 'cubic-bezier(.2,.8,.2,1)';
+  document.querySelectorAll('#lista .linha').forEach((li, i) => li.animate([{ opacity: 0, transform: 'translateX(-2.5rem)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 380 + Math.min(i, 16) * 48, easing: ease, fill: 'backwards' }));
+  document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.animate([{ opacity: 0, transform: 'translateY(1.25rem)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 560 + i * 110, easing: ease, fill: 'backwards' }));
+}
+function depoisDeAbrir() { app.classList.add('entra'); reencher(); cascata(); }
 function abrirPainel() {
-  if (!telaLoad) return;
-  telaLoad.classList.add('sai');
-  app.classList.add('entra');
-  setTimeout(() => telaLoad.remove(), 1300);
+  if (!telaLoad || !telaLoad.isConnected) return;
+  $('load-pct').textContent = '100%';
+  if (semMovimento || !telaLoad.animate) { telaLoad.remove(); depoisDeAbrir(); return; }
+  const lam = $('load-lamina'), sai = 'cubic-bezier(.6,0,.8,.4)', corte = 'cubic-bezier(.7,0,.2,1)';
+  $('load-in').animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-1.25rem) scale(.97)' }], { duration: 380, easing: sai, fill: 'forwards' });
+  /* 1. a lâmina na cor de destaque cruza a tela na diagonal */
+  lam.animate([{ clipPath: 'polygon(-60% 0,-60% 0,-85% 100%,-85% 100%)' }, { clipPath: 'polygon(-60% 0,160% 0,135% 100%,-85% 100%)' }], { duration: 640, delay: 160, easing: corte, fill: 'forwards' })
+    .onfinish = () => {
+      /* 2. a tela inteira se abre da esquerda para a direita, revelando o painel */
+      telaLoad.style.background = 'transparent';
+      depoisDeAbrir();
+      telaLoad.animate([{ clipPath: 'polygon(-25% 0,200% 0,200% 100%,-50% 100%)' }, { clipPath: 'polygon(200% 0,200% 0,200% 100%,175% 100%)' }], { duration: 900, easing: corte, fill: 'forwards' })
+        .onfinish = () => telaLoad.remove();
+    };
 }
 async function iniciar() {
   render();
-  const minimo = semMovimento ? 300 : 1750;
+  const minimo = semMovimento ? 300 : ABERTURA.minimo;
   const espera = new Promise(r => setTimeout(r, Math.max(minimo - performance.now(), 0)));
-  const demora = setTimeout(() => { if (telaLoad) telaLoad.classList.add('espera'); }, 2000);
+  const demora = setTimeout(() => { if (telaLoad) { telaLoad.classList.add('espera'); $('load-pct').hidden = true; } }, 3400);
   let texto = '', dados = null;
   try { texto = await lerArquivo(); dados = JSON.parse(texto); } catch (e) { dados = null; }
   await espera;
   clearTimeout(demora);
-  if (!dados) { carregarDemo(); abrirPainel(); render(); return; }
+  if (!dados) { carregarDemo(); render(); requestAnimationFrame(abrirPainel); iniciarGiros(); return; }
   textoArquivo = texto;
   let rasc = null;
   try { rasc = JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch (e) { rasc = null; }
   if (rasc && rasc.base === marca(texto) && rasc.dados) { aplicar(rasc.dados); state.rascunho = true; }
   else { if (rasc) apagarRascunho(); aplicar(dados); }
   state.modo = 'arquivo';
-  abrirPainel();
+  state.conferidoEm = new Date();
   render();
+  requestAnimationFrame(abrirPainel);   // pinta primeiro, depois revela (as barras crescem do zero)
+  iniciarGiros();
   setInterval(conferir, INTERVALO);
   document.addEventListener('visibilitychange', conferir);
 }
@@ -545,7 +725,7 @@ const lerValor = input => Number(input.value.replace(/\D/g, '')) || 0;
 
 document.querySelectorAll('[data-fechar]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
-addEventListener('hashchange', () => { state.podeEditar = location.hash === '#editar'; render(); });
+addEventListener('hashchange', () => { state.podeEditar = location.hash === '#editar'; if (location.hash === '#telao') marcarTelao(true); render(); });
 
 function abrirVenda() {
   if (!state.consultores.size) { abrirEquipe(); toast('Cadastre um consultor antes de lançar a venda.'); return; }
@@ -684,11 +864,52 @@ function aplicarTema(tema, guardar) {
 aplicarTema(raiz.dataset.tema === 'vermelho' ? 'vermelho' : 'claro', false);
 $('btn-tema').addEventListener('click', () => aplicarTema(raiz.dataset.tema === 'vermelho' ? 'claro' : 'vermelho', true));
 
+/* ---------- giros contínuos ---------- */
+function iniciarGiros() {
+  setInterval(() => { giroStatus++; pintarStatus(); }, 5000);
+  setInterval(() => { giroDestaque++; if (state.modo !== 'carregando') pintarDestaque(calcular()); }, 6500);
+  setInterval(onda, 45000);
+}
+/* a cada 45 s os nomes e valores do ranking somem e voltam, de cima para baixo */
+function onda() {
+  if (semMovimento || document.hidden || document.querySelector('dialog[open]')) return;
+  const quadros = [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-45%)', offset: .42 }, { opacity: 0, transform: 'translateY(45%)', offset: .58 }, { opacity: 1, transform: 'none' }];
+  document.querySelectorAll('#lista .linha').forEach((li, i) => li.querySelectorAll('.quem, .valor').forEach(x => x.animate(quadros, { duration: 1050, delay: i * 55, easing: 'ease-in-out' })));
+  document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.querySelectorAll('.eq-quem, .eq-valor').forEach(x => x.animate(quadros, { duration: 1050, delay: 300 + i * 120, easing: 'ease-in-out' })));
+}
+
+/* ---------- telão: a página rola sozinha para mostrar todo o ranking ----------
+   Para no topo, desce devagar até o fim, espera e volta. Qualquer toque, rolagem
+   ou tecla pausa por 20 s. */
+const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0 };
+function passoRolagem(t) {
+  requestAnimationFrame(passoRolagem);
+  if (!raiz.classList.contains('tv') || state.modo === 'carregando' || document.querySelector('dialog[open]') || t < rolagem.pausaAte) { rolagem.fase = 'parado'; return; }
+  const max = document.documentElement.scrollHeight - innerHeight;
+  if (max < 40) return;
+  if (rolagem.fase === 'parado') { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
+  else if (rolagem.fase === 'espera' && t >= rolagem.ate) { rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; }
+  else if (rolagem.fase === 'desce') {
+    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045, max); rolagem.ult = t;   // ~45 px por segundo
+    scrollTo(0, rolagem.y);
+    if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + 7000; }
+  } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) { rolagem.fase = 'sobe'; rolagem.ate = t + 2600; scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' }); }
+  else if (rolagem.fase === 'sobe' && (t >= rolagem.ate || scrollY < 2)) { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
+}
+['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { rolagem.pausaAte = performance.now() + 20000; }, { passive: true }));
+requestAnimationFrame(passoRolagem);
+
 let trava = null;
-$('btn-tv').addEventListener('click', async () => {
-  const ligar = !raiz.classList.contains('tv');
+function marcarTelao(ligar) {
   raiz.classList.toggle('tv', ligar);
   $('btn-tv').textContent = ligar ? 'Sair do telão' : 'Modo telão';
+  rolagem.fase = 'parado';
+}
+/* endereço com #telao abre direto no modo telão (sem tela cheia, que exige um clique) */
+if (location.hash === '#telao') marcarTelao(true);
+$('btn-tv').addEventListener('click', async () => {
+  const ligar = !raiz.classList.contains('tv');
+  marcarTelao(ligar);
   try {
     if (ligar) { if (raiz.requestFullscreen) await raiz.requestFullscreen(); if (navigator.wakeLock) trava = await navigator.wakeLock.request('screen'); }
     else { if (document.fullscreenElement) await document.exitFullscreen(); if (trava) { await trava.release(); trava = null; } }

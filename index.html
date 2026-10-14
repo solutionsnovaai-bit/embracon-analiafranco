@@ -10,6 +10,9 @@
 <link rel="icon" type="image/png" href="assets/logo-embracon.png">
 <link rel="preload" as="image" href="assets/logo-embracon.png">
 <link rel="preload" as="image" href="assets/logo-embracon-branco.png">
+<link rel="preload" as="image" href="assets/marca/mao-1.png" crossorigin>
+<link rel="preload" as="image" href="assets/marca/consorcio.png" crossorigin>
+<link rel="preload" as="image" href="assets/marca/embracon.png" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400..800&display=swap">
@@ -18,14 +21,17 @@
 </head>
 <body>
 <div class="load" id="load" role="status" aria-label="Carregando o ranking">
-  <div class="load-in">
-    <div class="load-marca">
-      <img class="logo logo-cor" src="assets/logo-embracon.png" alt="" width="320" height="320">
-      <img class="logo-branco" src="assets/logo-embracon-branco.png" alt="" width="1024" height="548">
+  <div class="load-in" id="load-in">
+    <div class="lg load-lg" aria-hidden="true">
+      <span class="lg-palavra lg-consorcio"></span>
+      <span class="lg-palavra lg-embracon"></span>
+      <span class="mao lg-mao"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+      <b class="load-anel"></b>
     </div>
-    <div class="load-barra"><i></i></div>
-    <span class="load-txt">Carregando o ranking</span>
+    <p class="load-tag">Ranking da franquia Anália Franco</p>
+    <div class="load-progresso"><span class="load-barra"><i></i></span><b class="load-pct" id="load-pct">0%</b></div>
   </div>
+  <i class="load-lamina" id="load-lamina"></i>
 </div>
 
 <div class="app" id="app" data-modo="carregando">
@@ -36,7 +42,7 @@
       <div class="unidade"><span class="rotulo">Ranking da franquia</span><strong id="unidade">Anália Franco</strong></div>
     </div>
     <div class="acoes">
-      <span class="status" aria-live="polite"><i></i><span id="status">Carregando</span></span>
+      <span class="status"><i></i><b id="status-vivo" hidden>Ao vivo</b><span class="troca" id="status"></span></span>
       <button class="btn btn-tema" id="btn-tema" type="button" aria-pressed="false"><i aria-hidden="true"></i><span id="btn-tema-txt">Tema vermelho</span></button>
       <button class="btn" id="btn-tv" type="button">Modo telão</button>
       <button class="btn so-edicao" id="btn-ajustes" type="button" hidden>Ajustes</button>
@@ -49,13 +55,15 @@
   <div class="aviso" id="aviso-rascunho" hidden></div>
 
   <section class="placar" aria-labelledby="placar-rotulo">
+    <div class="mao placar-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></div>
     <div class="placar-cab">
       <div class="placar-num">
         <span class="rotulo" id="placar-rotulo">Crédito vendido</span>
-        <p class="total"><small>R$</small><span id="total">0</span></p>
+        <p class="total"><small>R$</small><span class="reluz" id="total">0</span></p>
         <p class="de">de <b id="meta">R$ 21.000.000</b> de meta da franquia<span id="ciclo"></span></p>
+        <p class="destaque"><span class="mao destaque-mao" id="destaque-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="troca" id="destaque"></span></p>
       </div>
-      <div class="pct"><strong id="pct">0%</strong><span>da meta</span></div>
+      <div class="pct"><strong class="reluz" id="pct">0%</strong><span>da meta</span></div>
     </div>
     <div class="regua sem-ritmo" id="regua">
       <div class="regua-area" id="regua-area">
@@ -164,6 +172,17 @@
     <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn principal" type="submit">Salvar ajustes</button></div>
   </form>
 </dialog>
+
+<div class="faixa" id="faixa" aria-hidden="true">
+  <span class="faixa-selo"><i></i>Ao vivo</span>
+  <div class="faixa-janela"><div class="faixa-trilho" id="faixa-trilho"></div></div>
+</div>
+
+<div class="flash" id="flash" role="status" hidden>
+  <span class="mao flash-mao" id="flash-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+  <div class="flash-txt"><span class="flash-rotulo">Venda nova</span><strong id="flash-nome"></strong><span id="flash-info"></span></div>
+  <strong class="flash-valor" id="flash-valor"></strong>
+</div>
 
 <div class="toast" id="toast" role="status" hidden></div>
 

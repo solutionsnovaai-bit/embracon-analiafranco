@@ -12,6 +12,7 @@ assets/styles.css          estilos
 assets/app.js              lógica do painel
 assets/logo-embracon.png          logo original, usado no tema claro
 assets/logo-embracon-branco.png   logo branco, usado no tema vermelho
+assets/marca/              logo em camadas (mão em 4 traços, "Consórcio", "Embracon") para as animações
 data/ranking.json          dados: metas, consultores (com equipe) e vendas
 ```
 
@@ -97,11 +98,29 @@ O botão **Tema vermelho** inverte as cores: a página assume o vermelho da marc
 
 ## Tela de abertura
 
-Ao abrir, o painel mostra o logo com uma barra de carregamento e sobe como uma cortina assim que os dados chegam. A tela acompanha o tema escolhido: logo colorido no claro, logo branco no vermelho.
+A mão da Embracon se monta traço por traço no centro da tela, desliza para o lugar dela no logo, "Consórcio" e "Embracon" entram e a barra enche com a porcentagem. Quando os dados chegam, uma lâmina na cor de destaque cruza a tela na diagonal e abre o painel, com as barras crescendo do zero. A abertura acompanha o tema: mão vermelha e letras pretas no claro, tudo branco no vermelho.
+
+## Movimento
+
+O painel foi feito para ficar passando no telão, então nunca fica parado:
+
+- **Barras:** listras correm na inclinação dos dedos da mão e um brilho atravessa cada barra de tempos em tempos. No tema claro o preenchimento é vermelho; no vermelho, branco.
+- **Destaques:** embaixo do total, uma frase troca a cada 6,5 segundos (quem lidera, equipe na frente, última venda, quanto falta). As palavras saem por cima e entram por baixo.
+- **Ao vivo:** o topo alterna entre a hora da última atualização dos números e a hora em que o painel conferiu o arquivo pela última vez.
+- **Faixa ao vivo:** no rodapé, um letreiro corre com o placar, as equipes, os primeiros colocados e as últimas vendas.
+- **Venda nova:** quando a conferência automática encontra vendas novas, um aviso desce no topo da tela com o nome, a equipe e o valor.
+- **Onda:** a cada 45 segundos, os nomes e valores do ranking somem e voltam, de cima para baixo.
+- **Mão de fundo:** no placar, uma mão grande faz uma onda com os dedos.
+
+Quem usa o sistema com a opção de reduzir movimento ativada vê o painel parado.
 
 ## Usar no telão
 
 O botão **Modo telão** coloca o painel em tela cheia, aumenta a escala e mantém a tela ligada. Sem o `#editar` no endereço, o painel fica somente leitura, que é a versão indicada para a TV e para compartilhar com a equipe.
+
+No modo telão a página rola sozinha para mostrar o ranking inteiro: fica 9 segundos no topo, desce devagar até o fim, espera e volta. Um toque, uma rolagem ou uma tecla pausa a rolagem por 20 segundos.
+
+Para a TV já abrir no modo telão, use o endereço com `#telao` no fim (por exemplo `https://seu-endereco/#telao`). A tela cheia continua pedindo um clique no botão ou a tecla F11.
 
 ## Observações
 
