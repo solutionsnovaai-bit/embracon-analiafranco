@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-10-14T15:21:24-03:00",
+  "atualizadoEm": "2026-10-14T15:40:49-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
@@ -12,7 +12,6 @@
   "consultores": [
     {"id":"camily-dias","nome":"Camily Dias","equipe":"Esquadrão Alpha"},
     {"id":"claudia-lino","nome":"Claudia Lino","equipe":"Esquadrão Alpha"},
-    {"id":"vanderson-santos","nome":"Vanderson Santos","equipe":"Esquadrão Alpha"},
     {"id":"giovana-rodrigues","nome":"Giovana Rodrigues","equipe":"Esquadrão Alpha"},
     {"id":"sueli-teixeira","nome":"Sueli Teixeira","equipe":"Esquadrão Alpha"},
     {"id":"alex-sandro","nome":"Alex Sandro","equipe":"Artilheiros"},
@@ -29,7 +28,6 @@
     {"id":"mateus-sales","nome":"Mateus Sales","equipe":"Lekos"},
     {"id":"gabriel-caseri","nome":"Gabriel Caseri","equipe":"Lekos"},
     {"id":"juliana-delgado","nome":"Juliana Delgado","equipe":"Lekos"},
-    {"id":"israel-felix","nome":"Israel Felix","equipe":"Lekos"},
     {"id":"fernando","nome":"Fernando","equipe":"Lekos"}
   ],
   "vendas": []

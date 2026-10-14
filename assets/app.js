@@ -14,7 +14,7 @@ const DEMO = {
   config: { meta: 21000000, metaConsultor: 2000000, unidade: 'Anália Franco' },
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
-    ['vanderson-santos', 'Vanderson Santos', 'Esquadrão Alpha'], ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
+    ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
     ['sueli-teixeira', 'Sueli Teixeira', 'Esquadrão Alpha'],
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
     ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['letycia-reis', 'Letycia Reis', 'Artilheiros'],
@@ -23,7 +23,7 @@ const DEMO = {
     ['bruno-marques', 'Bruno Marques', 'Lekos'], ['matheus-detilio', 'Matheus Detilio', 'Lekos'],
     ['lais-berloni', 'Lais Berloni', 'Lekos'], ['mateus-sales', 'Mateus Sales', 'Lekos'],
     ['gabriel-caseri', 'Gabriel Caseri', 'Lekos'], ['juliana-delgado', 'Juliana Delgado', 'Lekos'],
-    ['israel-felix', 'Israel Felix', 'Lekos'], ['fernando', 'Fernando', 'Lekos']
+    ['fernando', 'Fernando', 'Lekos']
   ]
 };
 const SEM_EQUIPE = 'Sem equipe';
