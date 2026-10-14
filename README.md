@@ -1,6 +1,6 @@
 # Ranking Embracon Anália Franco
 
-Painel de ranking de vendas da franquia: placar da meta, posição dos consultores, últimas vendas e crédito por categoria.
+Painel de ranking de vendas da franquia: placar da meta, posição dos consultores, ranking das equipes, últimas vendas e crédito por categoria.
 
 Site estático, sem build e sem dependências. Os números ficam em um único arquivo, `data/ranking.json`.
 
@@ -12,7 +12,7 @@ assets/styles.css          estilos
 assets/app.js              lógica do painel
 assets/logo-embracon.png          logo original, usado no tema claro
 assets/logo-embracon-branco.png   logo branco, usado no tema vermelho
-data/ranking.json          dados: metas, consultores e vendas
+data/ranking.json          dados: metas, consultores (com equipe) e vendas
 ```
 
 ## Publicar
@@ -47,7 +47,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
     "exemplo": false
   },
   "consultores": [
-    { "id": "nome-do-consultor", "nome": "Nome do Consultor" }
+    { "id": "nome-do-consultor", "nome": "Nome do Consultor", "equipe": "Artilheiros" }
   ],
   "vendas": [
     { "consultor": "nome-do-consultor", "valor": 300000, "categoria": "imovel", "data": "2026-10-02" }
@@ -63,6 +63,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `config.inicio` e `config.prazo` | Datas do ciclo em `AAAA-MM-DD`. Só as vendas dentro desse intervalo entram no placar. Com as duas preenchidas, a régua mostra o ritmo esperado para hoje. |
 | `config.exemplo` | `true` exibe a faixa avisando que os dados são de exemplo. Use `false` com os dados reais. |
 | `consultores[].id` | Identificador curto, sem espaços nem acentos. É o que liga a venda ao consultor. |
+| `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
 | `vendas[].categoria` | `imovel`, `auto`, `pesados` ou `servicos`. |
@@ -73,7 +74,7 @@ O ranking, os totais, os percentuais e o ritmo são calculados a partir das vend
 
 ### Três formas de atualizar
 
-**1. Pela própria tela.** Abra o painel com `#editar` no fim do endereço (por exemplo `https://seu-endereco/#editar`). Aparecem os botões Lançar venda, Consultores e Ajustes. As alterações ficam salvas só naquele navegador; clique em **Baixar ranking.json** e substitua o arquivo da pasta `data` no repositório para publicar.
+**1. Pela própria tela.** Abra o painel com `#editar` no fim do endereço (por exemplo `https://seu-endereco/#editar`). Aparecem os botões Lançar venda, Consultores e Ajustes. Em Consultores dá para cadastrar gente nova e trocar alguém de equipe. As alterações ficam salvas só naquele navegador; clique em **Baixar ranking.json** e substitua o arquivo da pasta `data` no repositório para publicar.
 
 **2. Por IA.** Peça ao assistente para acrescentar a venda em `data/ranking.json` seguindo o formato acima e atualizar o `atualizadoEm`. Um commit com o arquivo novo publica a mudança.
 
@@ -85,6 +86,10 @@ PUT  /repos/{dono}/{repositorio}/contents/data/ranking.json
 ```
 
 O `PUT` recebe o conteúdo novo em Base64, a mensagem do commit e o `sha` devolvido pelo `GET`.
+
+## Equipes
+
+Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e de quem já bateu a meta individual.
 
 ## Temas
 
@@ -101,4 +106,4 @@ O botão **Modo telão** coloca o painel em tela cheia, aumenta a escala e mant�
 ## Observações
 
 - A página pede aos buscadores que não a indexem (`noindex`), mas o endereço publicado é público para quem tiver o link. Para restringir o acesso, use a proteção por senha da hospedagem.
-- O repositório vem com os consultores cadastrados e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.
+- O repositório vem com os 21 consultores cadastrados nas três equipes e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.

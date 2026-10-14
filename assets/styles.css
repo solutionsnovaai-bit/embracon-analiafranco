@@ -173,6 +173,7 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .nome{font-weight:700;font-size:1rem;overflow-wrap:anywhere}
 .linha.lider .nome{font:800 1.375rem/1.15 var(--display);font-stretch:86%}
 .sub{font-size:.8125rem;color:var(--l-sub)}
+.sub .eq{font-weight:700;color:var(--l-fg)}
 .barra{grid-area:barra;position:relative;height:.6rem;background:var(--l-trilho);border-radius:2px}
 .barra-cheio{height:100%;width:0;background:var(--l-cheio);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .barra-meta{position:absolute;top:-.3rem;bottom:-.3rem;width:2px;margin-left:-1px;background:var(--l-meta)}
@@ -186,6 +187,20 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 
 /* ---------- lado ---------- */
 .lado{display:grid;gap:2rem;min-width:0}
+/* ranking de equipes: um cartão por equipe, barra relativa à equipe que mais vendeu */
+.equipes{list-style:none;margin:0;padding:0;display:grid;gap:.5rem}
+.eq-linha{display:grid;grid-template-columns:1.5rem minmax(0,1fr) auto;grid-template-areas:"pos quem valor" "pos barra barra";align-items:center;column-gap:.75rem;row-gap:.6rem;
+  padding:.85rem .95rem;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);transition:background-color .35s ease,border-color .35s ease,box-shadow .35s ease}
+.eq-linha.lider{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+.eq-pos{grid-area:pos;align-self:start;padding-top:.1rem;font:800 1.375rem/1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:center}
+.eq-linha.lider .eq-pos{color:var(--red)}
+.eq-quem{grid-area:quem;display:grid;min-width:0;line-height:1.25}
+.eq-quem strong{font:800 1.0625rem/1.15 var(--display);font-stretch:86%;overflow-wrap:anywhere}
+.eq-quem span,.eq-valor span{font-size:.75rem;color:var(--ink-2)}
+.eq-valor{grid-area:valor;display:grid;text-align:right;line-height:1.2}
+.eq-valor strong{font:800 1.0625rem/1.1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;white-space:nowrap}
+.eq-barra{grid-area:barra;height:.4rem;background:var(--track);border-radius:2px;overflow:hidden}
+.eq-barra i{display:block;height:100%;width:0;background:var(--red);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .feed{list-style:none;margin:0;padding:0}
 .feed li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.15rem .75rem;padding:.65rem 0;border-top:1px solid var(--line)}
 .feed .f-nome{font-weight:600;font-size:.9375rem;overflow-wrap:anywhere}
@@ -229,10 +244,13 @@ dialog::backdrop{background:var(--shade)}
 .dupla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem}
 .erro{color:var(--red-deep);font-size:.8125rem;font-weight:600;min-height:1.1rem;margin:0}
 .dlg-pe{display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
-.equipe{list-style:none;margin:0;padding:0;display:grid;gap:.4rem;max-height:18rem;overflow:auto}
-.equipe li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.4rem;align-items:center}
+#dlg-equipe{width:min(38rem,calc(100% - 2rem))}
+.equipe{list-style:none;margin:0;padding:0;display:grid;gap:.4rem;max-height:22rem;overflow:auto}
+.equipe li{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:.4rem;align-items:center}
+.equipe li.grupo{display:block;padding:.75rem 0 .1rem;font-size:.6875rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+.equipe li.grupo:first-child{padding-top:0}
 .equipe .conf{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;font-size:.8125rem;color:var(--ink-2)}
-.novo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem;align-items:end}
+.novo{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:.5rem;align-items:end}
 
 .toast{position:fixed;left:50%;bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 2rem);padding:.7rem 1.1rem;border-radius:var(--r);background:var(--ink);color:var(--paper);font-size:.875rem;font-weight:600;z-index:10}
 
@@ -255,6 +273,10 @@ dialog::backdrop{background:var(--shade)}
   .linha.lider .nome{font-size:1.125rem}
   .valor strong{font-size:1.0625rem}
   .dupla{grid-template-columns:minmax(0,1fr)}
+  .novo,.equipe li{grid-template-columns:minmax(0,1fr) auto}
+  .novo .c-nome,.equipe .c-nome{grid-column:1/-1}
+  .equipe{gap:.5rem}
+  .equipe li:not(.grupo){padding-bottom:.5rem;border-bottom:1px solid var(--line)}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}

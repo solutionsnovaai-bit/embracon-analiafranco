@@ -13,10 +13,20 @@ const INTERVALO = 60000; // confere o arquivo a cada 60 s (útil no telão)
 const DEMO = {
   config: { meta: 21000000, metaConsultor: 2000000, unidade: 'Anália Franco' },
   consultores: [
-    ['pedro', 'Pedro'], ['enzo', 'Enzo'], ['caselli', 'Caselli'], ['sales', 'Sales'],
-    ['detilio', 'Detilio'], ['letycia', 'Letycia'], ['tamy', 'Tamy'], ['juliana', 'Juliana']
+    ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
+    ['vanderson-santos', 'Vanderson Santos', 'Esquadrão Alpha'], ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
+    ['sueli-teixeira', 'Sueli Teixeira', 'Esquadrão Alpha'],
+    ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
+    ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['letycia-reis', 'Letycia Reis', 'Artilheiros'],
+    ['nathali-rezende', 'Nathali Rezende', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
+    ['ricardo-neves', 'Ricardo Neves', 'Artilheiros'], ['tamyres-reis', 'Tamyres Reis', 'Artilheiros'],
+    ['bruno-marques', 'Bruno Marques', 'Lekos'], ['matheus-detilio', 'Matheus Detilio', 'Lekos'],
+    ['lais-berloni', 'Lais Berloni', 'Lekos'], ['mateus-sales', 'Mateus Sales', 'Lekos'],
+    ['gabriel-caseri', 'Gabriel Caseri', 'Lekos'], ['juliana-delgado', 'Juliana Delgado', 'Lekos'],
+    ['israel-felix', 'Israel Felix', 'Lekos'], ['fernando', 'Fernando', 'Lekos']
   ]
 };
+const SEM_EQUIPE = 'Sem equipe';
 
 const CATS = { imovel: 'Imóvel', auto: 'Automóvel', pesados: 'Pesados', servicos: 'Serviços' };
 const PADRAO = { meta: 21000000, metaConsultor: 2000000, unidade: 'Anália Franco', ciclo: '', inicio: '', prazo: '', exemplo: false };
@@ -72,7 +82,7 @@ const state = {
   rascunho: false,              // há alterações locais ainda não publicadas
   podeEditar: location.hash === '#editar',
   config: { ...PADRAO },
-  consultores: new Map(),       // id -> {id, nome}
+  consultores: new Map(),       // id -> {id, nome, equipe}
   vendas: [],                   // {id, ordem, consultor, valor, categoria, data}
   atualizadoEm: '',
   filtro: 'ciclo',
@@ -94,6 +104,13 @@ function normConfig(d) {
   c.exemplo = d.exemplo === true;
   return c;
 }
+const limparEquipe = s => typeof s === 'string' ? s.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
+/* equipes na ordem em que aparecem no cadastro (a do arquivo), usada como desempate e nos menus */
+function ordemEquipes() {
+  const nomes = [];
+  for (const p of state.consultores.values()) if (p.equipe && !nomes.includes(p.equipe)) nomes.push(p.equipe);
+  return nomes;
+}
 function normVenda(d) {
   return {
     id: 'v' + (++ordem), ordem, consultor: String(d.consultor || ''), valor: Math.max(0, Number(d.valor) || 0),
@@ -109,7 +126,7 @@ function aplicar(dados) {
     const nome = String(p.nome || '').trim().slice(0, 60);
     if (!nome) continue;
     const id = String(p.id || slug(nome));
-    state.consultores.set(id, { id, nome });
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -119,7 +136,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome })),
+    consultores: [...state.consultores.values()].map(p => p.equipe ? { id: p.id, nome: p.nome, equipe: p.equipe } : { id: p.id, nome: p.nome }),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, data: v.data }))
   };
 }
@@ -163,13 +180,26 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data >= corte && v.data <= hoje) : ciclo;
-  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, valor: 0, cotas: 0, ultima: '' }));
+  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, valor: 0, cotas: 0, ultima: '' }));
   const porId = new Map(linhas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas++; if (v.data > l.ultima) l.ultima = v.data; }
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
 
   let naMeta = 0;
   for (const p of state.consultores.keys()) if ((cicloPor.get(p) || 0) >= c.metaConsultor) naMeta++;
+
+  /* ranking de equipes: soma do crédito do ciclo de cada equipe */
+  const ordemEq = ordemEquipes(), porEquipe = new Map();
+  for (const nome of ordemEq) porEquipe.set(nome, { nome, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: porEquipe.size });
+  for (const p of state.consultores.values()) {
+    const chave = p.equipe || SEM_EQUIPE;
+    if (!porEquipe.has(chave)) porEquipe.set(chave, { nome: chave, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: 1e3 });
+    const e = porEquipe.get(chave), vendido = cicloPor.get(p.id) || 0;
+    e.membros++; e.valor += vendido;
+    if (vendido >= c.metaConsultor) e.naMeta++;
+  }
+  for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas++; }
+  const equipes = ordemEq.length ? [...porEquipe.values()].sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
 
   let ideal = null, restantes = null;
   if (c.prazo) restantes = Math.max(dias(hoje, c.prazo) + 1, 0);
@@ -179,7 +209,7 @@ function calcular() {
     ideal = c.meta * passados / totalDias;
   }
   const feed = [...ciclo].sort((a, b) => b.data.localeCompare(a.data) || b.ordem - a.ordem);
-  return { total, porCat, linhas, naMeta, ideal, restantes, feed, cotas: ciclo.length, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, linhas, equipes, naMeta, ideal, restantes, feed, cotas: ciclo.length, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -280,6 +310,7 @@ function pintar() {
   $('f-cotas-n').textContent = r.cotas ? 'ticket médio de ' + curto(r.total / r.cotas) : 'nenhuma venda no ciclo';
 
   pintarLista(r, editar, carregando);
+  pintarEquipes(r, carregando);
   pintarFeed(r, editar, carregando);
   pintarMix(r);
   if ($('dlg-equipe').open) pintarEquipe();
@@ -354,7 +385,9 @@ function pintarLista(r, editar, carregando) {
     p.pos.textContent = l.valor > 0 ? i + 1 : '–';
     p.av.textContent = iniciais(l.nome);
     p.nome.textContent = l.nome;
-    p.sub.textContent = l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + ' · última ' + quando(l.ultima) : noCiclo ? 'ainda sem venda no ciclo' : 'sem venda no período';
+    p.sub.textContent = '';
+    if (l.equipe) p.sub.append(el('b', { class: 'eq', text: l.equipe }), ' · ');
+    p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + ' · última ' + quando(l.ultima) : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
     p.cheio.style.width = (l.valor / escala * 100) + '%';
     p.marca.hidden = !noCiclo;
     p.marca.style.left = (c.metaConsultor / escala * 100) + '%';
@@ -376,6 +409,44 @@ function pintarLista(r, editar, carregando) {
 
   if (!semMovimento) for (const [id, n] of linhasDom) {
     const a = topo.get(id); if (a == null) continue;
+    const d = a - n.getBoundingClientRect().top;
+    if (Math.abs(d) > 1) n.animate([{ transform: 'translateY(' + d + 'px)' }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+}
+
+const equipesDom = new Map();
+function pintarEquipes(r, carregando) {
+  const sec = $('sec-equipes'), lista = $('equipes');
+  sec.hidden = carregando || !r.equipes.length;
+  if (sec.hidden) return;
+  const topo = new Map();
+  for (const [nome, n] of equipesDom) topo.set(nome, n.getBoundingClientRect().top);
+  const maior = r.equipes[0].valor || 1, vivas = new Set();
+  r.equipes.forEach((e, i) => {
+    vivas.add(e.nome);
+    let n = equipesDom.get(e.nome);
+    if (!n) {
+      const pos = el('span', { class: 'eq-pos' }), nome = el('strong'), sub = el('span'), val = el('strong'), pct = el('span'), cheio = el('i');
+      n = el('li', { class: 'eq-linha' }, pos, el('div', { class: 'eq-quem' }, nome, sub), el('div', { class: 'eq-valor' }, val, pct), el('div', { class: 'eq-barra' }, cheio));
+      n._p = { pos, nome, sub, val, pct, cheio };
+      equipesDom.set(e.nome, n);
+    }
+    const p = n._p, lider = i === 0 && e.valor > 0;
+    n.classList.toggle('lider', lider);
+    p.pos.textContent = e.valor > 0 ? i + 1 : '–';
+    p.nome.textContent = e.nome;
+    /* espaços fixos dentro de cada trecho: a quebra de linha só acontece entre os trechos */
+    p.sub.textContent = [e.membros === 1 ? '1 consultor' : e.membros + ' consultores',
+      e.cotas ? (e.cotas === 1 ? '1 cota' : e.cotas + ' cotas') : 'sem venda no ciclo',
+      e.naMeta ? e.naMeta + ' na meta' : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
+    p.val.textContent = brl(e.valor);
+    p.pct.textContent = r.total ? pctTxt(Math.round(e.valor / r.total * 100)) + ' do total' : '';
+    p.cheio.style.width = (e.valor / maior * 100) + '%';
+    lista.append(n);
+  });
+  for (const [nome, n] of equipesDom) if (!vivas.has(nome)) { n.remove(); equipesDom.delete(nome); }
+  if (!semMovimento) for (const [nome, n] of equipesDom) {
+    const a = topo.get(nome); if (a == null) continue;
     const d = a - n.getBoundingClientRect().top;
     if (Math.abs(d) > 1) n.animate([{ transform: 'translateY(' + d + 'px)' }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.2,.8,.2,1)' });
   }
@@ -423,7 +494,7 @@ async function lerArquivo() {
   return r.text();
 }
 function carregarDemo() {
-  aplicar({ config: { ...DEMO.config }, consultores: DEMO.consultores.map(([id, nome]) => ({ id, nome })), vendas: [] });
+  aplicar({ config: { ...DEMO.config }, consultores: DEMO.consultores.map(([id, nome, equipe]) => ({ id, nome, equipe })), vendas: [] });
   state.modo = 'demo';
 }
 async function conferir() {
@@ -479,7 +550,17 @@ addEventListener('hashchange', () => { state.podeEditar = location.hash === '#ed
 function abrirVenda() {
   if (!state.consultores.size) { abrirEquipe(); toast('Cadastre um consultor antes de lançar a venda.'); return; }
   const sel = $('v-consultor'), atual = sel.value; sel.textContent = '';
-  [...state.consultores.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).forEach(p => sel.append(el('option', { value: p.id, text: p.nome })));
+  const porNome = (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'), pessoas = [...state.consultores.values()];
+  const grupos = ordemEquipes();
+  if (!grupos.length) pessoas.sort(porNome).forEach(p => sel.append(el('option', { value: p.id, text: p.nome })));
+  else {
+    if (pessoas.some(p => !p.equipe)) grupos.push('');
+    for (const g of grupos) {
+      const og = el('optgroup', { label: g || SEM_EQUIPE });
+      pessoas.filter(p => p.equipe === g).sort(porNome).forEach(p => og.append(el('option', { value: p.id, text: p.nome })));
+      sel.append(og);
+    }
+  }
   if (state.consultores.has(atual)) sel.value = atual;
   $('v-valor').value = ''; $('v-data').value = hojeISO(); $('v-erro').textContent = '';
   $('dlg-venda').showModal(); $('v-valor').focus();
@@ -506,20 +587,31 @@ function abrirEquipe() { state.confirmarEquipe = null; pintarEquipe(true); $('dl
 $('btn-equipe').addEventListener('click', abrirEquipe);
 let assinaturaEquipe = '';
 function pintarEquipe(forcar) {
-  const pessoas = [...state.consultores.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  const ass = pessoas.map(p => p.id + ':' + p.nome).join('|') + '#' + state.confirmarEquipe;
+  const ordemEq = ordemEquipes(), posEq = e => e ? ordemEq.indexOf(e) : ordemEq.length;
+  const pessoas = [...state.consultores.values()].sort((a, b) => posEq(a.equipe) - posEq(b.equipe) || a.nome.localeCompare(b.nome, 'pt-BR'));
+  const ass = pessoas.map(p => p.id + ':' + p.nome + ':' + p.equipe).join('|') + '#' + state.confirmarEquipe;
   if (!forcar && ass === assinaturaEquipe) return;
   assinaturaEquipe = ass;
-  const ul = $('equipe'), foco = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.pid : null;
+  const dl = $('lista-equipes'); dl.textContent = '';
+  for (const e of ordemEq) dl.append(el('option', { value: e }));
+  const ul = $('equipe'), ativo = document.activeElement, foco = ativo && ativo.dataset && ativo.dataset.pid ? '[data-pid="' + ativo.dataset.pid + '"][data-campo="' + ativo.dataset.campo + '"]' : null;
   ul.textContent = '';
+  let grupo = null;
   for (const p of pessoas) {
-    const input = el('input', { type: 'text', value: p.nome, 'data-pid': p.id, 'aria-label': 'Nome de ' + p.nome, maxlength: '60', id: 'eq-' + p.id });
+    if (ordemEq.length && p.equipe !== grupo) { grupo = p.equipe; ul.append(el('li', { class: 'grupo', text: grupo || SEM_EQUIPE })); }
+    const input = el('input', { type: 'text', value: p.nome, 'data-pid': p.id, 'data-campo': 'nome', 'aria-label': 'Nome de ' + p.nome, maxlength: '60', id: 'eq-' + p.id });
     input.addEventListener('change', () => {
       const novo = input.value.trim().replace(/\s+/g, ' ');
       if (!novo) { input.value = p.nome; return; }
       if (novo !== p.nome) { p.nome = novo; mudou('Nome atualizado'); }
     });
-    const li = el('li', {}, el('div', { class: 'campo' }, input),
+    const eq = el('input', { type: 'text', value: p.equipe, 'data-pid': p.id, 'data-campo': 'equipe', 'aria-label': 'Equipe de ' + p.nome, maxlength: '40', placeholder: 'Equipe', autocomplete: 'off' });
+    eq.setAttribute('list', 'lista-equipes');
+    eq.addEventListener('change', () => {
+      const nova = limparEquipe(eq.value);
+      if (nova !== p.equipe) { p.equipe = nova; mudou(nova ? p.nome + ' agora está em ' + nova : p.nome + ' ficou sem equipe'); pintarEquipe(); }
+    });
+    const li = el('li', {}, el('div', { class: 'campo c-nome' }, input), el('div', { class: 'campo c-equipe' }, eq),
       el('button', { class: 'btn', type: 'button', text: 'Remover', onclick: () => { state.confirmarEquipe = p.id; pintarEquipe(); } }));
     if (state.confirmarEquipe === p.id) {
       const n = state.vendas.filter(v => v.consultor === p.id).length;
@@ -533,17 +625,17 @@ function pintarEquipe(forcar) {
     }
     ul.append(li);
   }
-  if (foco) { const alvo = ul.querySelector('[data-pid="' + foco + '"]'); if (alvo) alvo.focus(); }
+  if (foco) { const alvo = ul.querySelector(foco); if (alvo) alvo.focus(); }
 }
 $('form-novo').addEventListener('submit', e => {
   e.preventDefault();
-  const nome = $('n-nome').value.trim().replace(/\s+/g, ' ');
+  const nome = $('n-nome').value.trim().replace(/\s+/g, ' '), equipe = limparEquipe($('n-equipe').value);
   if (!nome) { $('n-nome').focus(); return; }
   let base = slug(nome), id = base, i = 2;
   while (state.consultores.has(id)) id = base + '-' + i++;
-  state.consultores.set(id, { id, nome });
+  state.consultores.set(id, { id, nome, equipe });
   $('n-nome').value = '';
-  mudou(nome + ' entrou no ranking'); pintarEquipe();
+  mudou(nome + ' entrou no ranking' + (equipe ? ' (' + equipe + ')' : '')); pintarEquipe();
   $('n-nome').focus();
 });
 

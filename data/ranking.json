@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-10-02T13:15:00-03:00",
+  "atualizadoEm": "2026-10-14T15:30:00-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
@@ -10,14 +10,27 @@
     "exemplo": false
   },
   "consultores": [
-    {"id":"pedro","nome":"Pedro"},
-    {"id":"enzo","nome":"Enzo"},
-    {"id":"caselli","nome":"Caselli"},
-    {"id":"sales","nome":"Sales"},
-    {"id":"detilio","nome":"Detilio"},
-    {"id":"letycia","nome":"Letycia"},
-    {"id":"tamy","nome":"Tamy"},
-    {"id":"juliana","nome":"Juliana"}
+    {"id":"camily-dias","nome":"Camily Dias","equipe":"Esquadrão Alpha"},
+    {"id":"claudia-lino","nome":"Claudia Lino","equipe":"Esquadrão Alpha"},
+    {"id":"vanderson-santos","nome":"Vanderson Santos","equipe":"Esquadrão Alpha"},
+    {"id":"giovana-rodrigues","nome":"Giovana Rodrigues","equipe":"Esquadrão Alpha"},
+    {"id":"sueli-teixeira","nome":"Sueli Teixeira","equipe":"Esquadrão Alpha"},
+    {"id":"alex-sandro","nome":"Alex Sandro","equipe":"Artilheiros"},
+    {"id":"edvan-fernandes","nome":"Edvan Fernandes","equipe":"Artilheiros"},
+    {"id":"enzo-santorelli","nome":"Enzo Santorelli","equipe":"Artilheiros"},
+    {"id":"letycia-reis","nome":"Letycia Reis","equipe":"Artilheiros"},
+    {"id":"nathali-rezende","nome":"Nathali Rezende","equipe":"Artilheiros"},
+    {"id":"pedro-lucas","nome":"Pedro Lucas","equipe":"Artilheiros"},
+    {"id":"ricardo-neves","nome":"Ricardo Neves","equipe":"Artilheiros"},
+    {"id":"tamyres-reis","nome":"Tamyres Reis","equipe":"Artilheiros"},
+    {"id":"bruno-marques","nome":"Bruno Marques","equipe":"Lekos"},
+    {"id":"matheus-detilio","nome":"Matheus Detilio","equipe":"Lekos"},
+    {"id":"lais-berloni","nome":"Lais Berloni","equipe":"Lekos"},
+    {"id":"mateus-sales","nome":"Mateus Sales","equipe":"Lekos"},
+    {"id":"gabriel-caseri","nome":"Gabriel Caseri","equipe":"Lekos"},
+    {"id":"juliana-delgado","nome":"Juliana Delgado","equipe":"Lekos"},
+    {"id":"israel-felix","nome":"Israel Felix","equipe":"Lekos"},
+    {"id":"fernando","nome":"Fernando","equipe":"Lekos"}
   ],
   "vendas": []
 }

@@ -88,6 +88,10 @@
     </section>
 
     <aside class="lado">
+      <section id="sec-equipes" aria-labelledby="h-equipes" hidden>
+        <div class="sec-cab"><h2 id="h-equipes">Ranking de equipes</h2></div>
+        <ol class="equipes" id="equipes"></ol>
+      </section>
       <section aria-labelledby="h-feed">
         <div class="sec-cab"><h2 id="h-feed">Últimas vendas</h2><button class="btn texto" id="btn-todas" type="button" hidden>Ver todas</button></div>
         <ul class="feed" id="feed"></ul>
@@ -130,9 +134,11 @@
   <div class="dlg">
     <h3 id="de-t">Consultores</h3>
     <form class="novo" id="form-novo" novalidate>
-      <div class="campo"><label for="n-nome">Novo consultor</label><input id="n-nome" type="text" autocomplete="off" placeholder="Nome e sobrenome" maxlength="60"></div>
+      <div class="campo c-nome"><label for="n-nome">Novo consultor</label><input id="n-nome" type="text" autocomplete="off" placeholder="Nome e sobrenome" maxlength="60"></div>
+      <div class="campo c-equipe"><label for="n-equipe">Equipe</label><input id="n-equipe" type="text" autocomplete="off" list="lista-equipes" placeholder="Ex.: Lekos" maxlength="40"></div>
       <button class="btn principal" type="submit">Adicionar</button>
     </form>
+    <datalist id="lista-equipes"></datalist>
     <ul class="equipe" id="equipe"></ul>
     <div class="dlg-pe"><button class="btn" type="button" data-fechar>Fechar</button></div>
   </div>
