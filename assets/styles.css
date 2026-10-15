@@ -17,7 +17,7 @@
   --ok:#0B7A45;
   --selo-bg:#E4F4EB; --selo-fg:#0B7A45; --selo-bg-lider:#E4F4EB; --selo-fg-lider:#0B7A45;
   --seg-bg:#FFFFFF; --seg-fg:#151112;
-  --cat-1:#ED1C24; --cat-2:#151112; --cat-3:#6D6E70; --cat-4:#F0A3A6;
+  --cat-1:#ED1C24; --cat-2:#151112; --cat-3:#6D6E70; --cat-4:#F0A3A6; --cat-5:#CFC6C6;
   --shade:rgba(21,17,18,.48);
   --load-bg:#FFFFFF;
   /* movimento: listras e brilho sobre o preenchimento vermelho; *-inv sobre o preenchimento branco do líder */
@@ -54,7 +54,7 @@
   --ok:#FFFFFF;
   --selo-bg:#FFFFFF; --selo-fg:#D3141B; --selo-bg-lider:#ED1C24; --selo-fg-lider:#FFFFFF;
   --seg-bg:#FFFFFF; --seg-fg:#ED1C24;
-  --cat-1:#FFFFFF; --cat-2:#2B0204; --cat-3:#FFAEB1; --cat-4:#8A070D;
+  --cat-1:#FFFFFF; --cat-2:#2B0204; --cat-3:#FFAEB1; --cat-4:#8A070D; --cat-5:#E86A6F;
   --load-bg:#ED1C24;
   --listra:rgba(237,28,36,.12); --brilho:rgba(237,28,36,.3);
   --listra-inv:rgba(255,255,255,.17); --brilho-inv:rgba(255,255,255,.55);
@@ -273,7 +273,7 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .mix li i{width:.7rem;height:.7rem;border-radius:2px}
 .mix li b{font-variant-numeric:tabular-nums;font-weight:700}
 .mix li span{color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:2.6rem;text-align:right}
-.c-imovel{background:var(--cat-1)}.c-auto{background:var(--cat-2)}.c-pesados{background:var(--cat-3)}.c-servicos{background:var(--cat-4)}
+.c-imovel{background:var(--cat-1)}.c-auto{background:var(--cat-2)}.c-pesados{background:var(--cat-3)}.c-servicos{background:var(--cat-4)}.c-outros{background:var(--cat-5)}
 
 /* ---------- diálogos ---------- */
 dialog{color-scheme:light;width:min(30rem,calc(100% - 2rem));max-height:calc(100% - 2rem);padding:0;border:0;border-radius:8px;background:var(--paper);color:var(--ink);box-shadow:0 1.5rem 4rem rgba(21,17,18,.28)}

@@ -1,13 +1,14 @@
 {
-  "atualizadoEm": "2026-10-15T12:40:00-03:00",
+  "atualizadoEm": "2026-10-15T13:20:00-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
     "metaConsultor": 2000000,
-    "ciclo": "",
-    "inicio": "",
-    "prazo": "",
-    "exemplo": false
+    "ciclo": "ATA de Outubro",
+    "inicio": "2026-10-01",
+    "prazo": "2026-10-30",
+    "exemplo": false,
+    "metaEquipe": 7000000
   },
   "consultores": [
     {"id":"camily-dias","nome":"Camily Dias","equipe":"Esquadrão Alpha"},
@@ -30,5 +31,13 @@
     {"id":"fernando","nome":"Fernando","equipe":"Lekos"},
     {"id":"stephanie-martins","nome":"Stephanie Martins","equipe":"Lekos"}
   ],
-  "vendas": []
+  "vendas": [
+    {"consultor":"gabriel-caseri","valor":770000,"cotas":2},
+    {"consultor":"juliana-delgado","valor":540000},
+    {"consultor":"mateus-sales","valor":400000},
+    {"consultor":"edvan-fernandes","valor":700000},
+    {"consultor":"tamyres-reis","valor":80000},
+    {"consultor":"tamyres-reis","valor":60000},
+    {"consultor":"ricardo-neves","valor":100000}
+  ]
 }

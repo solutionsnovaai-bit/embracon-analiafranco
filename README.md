@@ -41,7 +41,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
-    "metaConsultor": 2000000,
+    "metaEquipe": 7000000,
     "ciclo": "Outubro 2026",
     "inicio": "2026-10-01",
     "prazo": "2026-10-31",
@@ -59,7 +59,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | Campo | O que é |
 | --- | --- |
 | `config.meta` | Meta da franquia no ciclo, em reais, sem pontos nem centavos. |
-| `config.metaConsultor` | Meta individual de cada consultor. |
+| `config.metaEquipe` | Meta de cada equipe na ATA. Aparece no ranking de equipes com o quanto falta. |
 | `config.ciclo` | Nome do ciclo exibido no placar (opcional). |
 | `config.inicio` e `config.prazo` | Datas do ciclo em `AAAA-MM-DD`. Só as vendas dentro desse intervalo entram no placar. Com as duas preenchidas, a régua mostra o ritmo esperado para hoje. |
 | `config.exemplo` | `true` exibe a faixa avisando que os dados são de exemplo. Use `false` com os dados reais. |
@@ -67,8 +67,9 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
-| `vendas[].categoria` | `imovel`, `auto`, `pesados` ou `servicos`. |
-| `vendas[].data` | Data da venda em `AAAA-MM-DD`. |
+| `vendas[].categoria` | `imovel`, `auto`, `pesados` ou `servicos` (opcional; sem ela a venda entra como não informada). |
+| `vendas[].data` | Data da venda em `AAAA-MM-DD` (opcional; sem data, a venda conta no ciclo, mas fica fora dos filtros de 7 dias e hoje). |
+| `vendas[].cotas` | Quantas cotas a linha representa (opcional, padrão 1). |
 | `atualizadoEm` | Data e hora da última atualização, mostrada no topo do painel. |
 
 O ranking, os totais, os percentuais e o ritmo são calculados a partir das vendas. Não existe total para manter à mão.

@@ -11,7 +11,7 @@ const INTERVALO = 60000; // confere o arquivo a cada 60 s (útil no telão)
 /* Reserva usada só quando data/ranking.json não pode ser lido
    (por exemplo, index.html aberto direto do disco): equipe sem vendas. */
 const DEMO = {
-  config: { meta: 21000000, metaConsultor: 2000000, unidade: 'Anália Franco' },
+  config: { meta: 21000000, metaConsultor: 2000000, metaEquipe: 7000000, unidade: 'Anália Franco' },
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
     ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
@@ -27,8 +27,8 @@ const DEMO = {
 };
 const SEM_EQUIPE = 'Sem equipe';
 
-const CATS = { imovel: 'Imóvel', auto: 'Automóvel', pesados: 'Pesados', servicos: 'Serviços' };
-const PADRAO = { meta: 21000000, metaConsultor: 2000000, unidade: 'Anália Franco', ciclo: '', inicio: '', prazo: '', exemplo: false };
+const CATS = { imovel: 'Imóvel', auto: 'Automóvel', pesados: 'Pesados', servicos: 'Serviços', outros: 'Não informada' };
+const PADRAO = { meta: 21000000, metaConsultor: 2000000, metaEquipe: 0, unidade: 'Anália Franco', ciclo: '', inicio: '', prazo: '', exemplo: false };
 const $ = id => document.getElementById(id);
 const app = $('app');
 const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -97,6 +97,7 @@ function normConfig(d) {
   const c = { ...PADRAO };
   if (Number(d.meta) > 0) c.meta = Number(d.meta);
   if (Number(d.metaConsultor) > 0) c.metaConsultor = Number(d.metaConsultor);
+  if (Number(d.metaEquipe) > 0) c.metaEquipe = Number(d.metaEquipe);
   if (typeof d.unidade === 'string' && d.unidade.trim()) c.unidade = d.unidade.trim().slice(0, 40);
   if (typeof d.ciclo === 'string') c.ciclo = d.ciclo.trim().slice(0, 40);
   if (ehData(d.inicio)) c.inicio = d.inicio;
@@ -114,7 +115,9 @@ function ordemEquipes() {
 function normVenda(d) {
   return {
     id: 'v' + (++ordem), ordem, consultor: String(d.consultor || ''), valor: Math.max(0, Number(d.valor) || 0),
-    categoria: CATS[d.categoria] ? d.categoria : 'imovel', data: ehData(d.data) ? d.data : hojeISO()
+    /* sem data: a venda conta no ciclo, mas fica fora dos filtros de 7 dias e hoje; cotas: quantas cotas a linha representa */
+    categoria: CATS[d.categoria] ? d.categoria : 'outros', data: ehData(d.data) ? d.data : '',
+    cotas: Math.max(1, Math.round(Number(d.cotas) || 1))
   };
 }
 function aplicar(dados) {
@@ -137,7 +140,7 @@ function exportar() {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
     consultores: [...state.consultores.values()].map(p => p.equipe ? { id: p.id, nome: p.nome, equipe: p.equipe } : { id: p.id, nome: p.nome }),
-    vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, data: v.data }))
+    vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
 }
 function textoJson(d) {
@@ -171,22 +174,22 @@ function baixar() {
 /* ---------- cálculo ---------- */
 function calcular() {
   const c = state.config, hoje = hojeISO();
-  const noCiclo = v => state.consultores.has(v.consultor) && (!c.inicio || v.data >= c.inicio) && (!c.prazo || v.data <= c.prazo);
+  const noCiclo = v => state.consultores.has(v.consultor) && (!v.data || ((!c.inicio || v.data >= c.inicio) && (!c.prazo || v.data <= c.prazo)));
   const ciclo = state.vendas.filter(noCiclo);
   const total = ciclo.reduce((s, v) => s + v.valor, 0);
-  const porCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0 };
+  const porCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 };
   const cicloPor = new Map();
   for (const v of ciclo) { porCat[v.categoria] += v.valor; cicloPor.set(v.consultor, (cicloPor.get(v.consultor) || 0) + v.valor); }
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
-  const base = corte ? ciclo.filter(v => v.data >= corte && v.data <= hoje) : ciclo;
+  const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
   const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, valor: 0, cotas: 0, ultima: '' }));
   const porId = new Map(linhas.map(l => [l.id, l]));
-  for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas++; if (v.data > l.ultima) l.ultima = v.data; }
+  for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
 
-  let naMeta = 0;
-  for (const p of state.consultores.keys()) if ((cicloPor.get(p) || 0) >= c.metaConsultor) naMeta++;
+  let venderam = 0;
+  for (const p of state.consultores.keys()) if ((cicloPor.get(p) || 0) > 0) venderam++;
 
   /* ranking de equipes: soma do crédito do ciclo de cada equipe */
   const ordemEq = ordemEquipes(), porEquipe = new Map();
@@ -196,9 +199,8 @@ function calcular() {
     if (!porEquipe.has(chave)) porEquipe.set(chave, { nome: chave, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: 1e3 });
     const e = porEquipe.get(chave), vendido = cicloPor.get(p.id) || 0;
     e.membros++; e.valor += vendido;
-    if (vendido >= c.metaConsultor) e.naMeta++;
   }
-  for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas++; }
+  for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
   const equipes = ordemEq.length ? [...porEquipe.values()].sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
 
   let ideal = null, restantes = null;
@@ -208,10 +210,10 @@ function calcular() {
     const passados = Math.min(Math.max(dias(c.inicio, hoje) + 1, 0), totalDias);
     ideal = c.meta * passados / totalDias;
   }
-  const feed = [...ciclo].sort((a, b) => b.data.localeCompare(a.data) || b.ordem - a.ordem);
+  const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
   const lideres = [...state.consultores.values()].map(p => ({ nome: p.nome, equipe: p.equipe, valor: cicloPor.get(p.id) || 0 }))
     .filter(l => l.valor > 0).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'));
-  return { total, porCat, linhas, equipes, lideres, naMeta, ideal, restantes, feed, cotas: ciclo.length, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, linhas, equipes, lideres, venderam, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -281,6 +283,7 @@ function pintarStatus() {
 }
 
 /* destaques do placar: frases montadas com os números do momento */
+const descrever = v => state.consultores.get(v.consultor).nome + ', ' + curto(v.valor) + (v.categoria !== 'outros' ? ' em ' + CATS[v.categoria].toLowerCase() : '') + (v.data ? ', ' + quando(v.data) : '');
 const listaNatural = l => l.length > 1 ? l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1] : l.join('');
 function mensagens(r) {
   if (state.modo === 'carregando') return [];
@@ -289,15 +292,14 @@ function mensagens(r) {
     const l = r.lideres[0];
     if (l) m.push(l.nome + ' lidera o ranking com ' + curto(l.valor));
     if (r.equipes.length && r.equipes[0].valor > 0) m.push(r.equipes[0].nome + ' está na frente entre as equipes com ' + curto(r.equipes[0].valor));
-    const u = r.feed[0];
-    if (u) m.push('Última venda: ' + state.consultores.get(u.consultor).nome + ', ' + curto(u.valor) + ' em ' + CATS[u.categoria].toLowerCase() + ', ' + quando(u.data));
+    const u = r.feed.find(v => v.data);
+    if (u) m.push('Última venda: ' + descrever(u));
     m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
-    m.push(r.naMeta ? r.naMeta + ' de ' + n + (n === 1 ? ' consultor já passou de ' : ' consultores já passaram de ') + curto(c.metaConsultor)
-      : 'Meta individual de ' + curto(c.metaConsultor) + ' por consultor');
+    m.push(r.venderam + ' de ' + n + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') + ' neste ciclo');
     if (r.restantes > 0 && r.falta > 0) m.push('Para fechar a meta: ' + curto(r.falta / r.restantes) + ' por dia até ' + dataCurta(c.prazo));
   } else if (n) {
     m.push('Placar zerado: a primeira venda do ciclo abre o ranking');
-    m.push('Meta da franquia de ' + curto(c.meta) + ' e ' + curto(c.metaConsultor) + ' por consultor');
+    m.push('Meta da franquia de ' + curto(c.meta) + (c.metaEquipe ? ' e ' + curto(c.metaEquipe) + ' por equipe' : ''));
     const eqs = r.equipes.filter(e => e.nome !== SEM_EQUIPE).map(e => e.nome);
     if (eqs.length > 1) m.push(n + ' consultores em ' + eqs.length + ' equipes: ' + listaNatural(eqs));
   }
@@ -363,8 +365,8 @@ function pintar() {
   } else if (r.restantes === 0) { $('f-ritmo').textContent = 'Ciclo encerrado'; $('f-ritmo-n').textContent = 'terminou em ' + dataCurta(c.prazo); }
   else { $('f-ritmo').textContent = 'Sem prazo'; $('f-ritmo-n').textContent = editar ? 'defina o fim do ciclo em Ajustes' : 'fim do ciclo não definido'; }
 
-  $('f-meta').textContent = r.naMeta + ' de ' + state.consultores.size;
-  $('f-meta-n').textContent = 'consultores com ' + curto(c.metaConsultor) + ' ou mais';
+  $('f-meta').textContent = r.venderam + ' de ' + state.consultores.size;
+  $('f-meta-n').textContent = 'consultores com venda no ciclo';
   $('f-cotas').textContent = nf.format(r.cotas);
   $('f-cotas-n').textContent = r.cotas ? 'ticket médio de ' + curto(r.total / r.cotas) : 'nenhuma venda no ciclo';
 
@@ -415,8 +417,7 @@ function criarLinha() {
 
 function pintarLista(r, editar, carregando) {
   const c = state.config, lista = $('lista'), noCiclo = state.filtro === 'ciclo';
-  $('legenda').hidden = !noCiclo || !r.linhas.length;
-  $('legenda-txt').textContent = 'meta individual de ' + curto(c.metaConsultor);
+  $('legenda').hidden = true;
   lista.querySelectorAll('.vazio').forEach(n => n.remove());
 
   if (!r.linhas.length) {
@@ -434,7 +435,7 @@ function pintarLista(r, editar, carregando) {
 
   const topo = new Map();
   for (const [id, n] of linhasDom) topo.set(id, n.getBoundingClientRect().top);
-  const escala = Math.max(noCiclo ? c.metaConsultor : 0, r.linhas[0].valor) || 1;
+  const escala = r.linhas[0].valor || 1;          // barras proporcionais ao líder
   const vivos = new Set();
 
   r.linhas.forEach((l, i) => {
@@ -449,19 +450,12 @@ function pintarLista(r, editar, carregando) {
     p.nome.textContent = l.nome;
     p.sub.textContent = '';
     if (l.equipe) p.sub.append(el('b', { class: 'eq', text: l.equipe }), ' · ');
-    p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + ' · última ' + quando(l.ultima) : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
+    p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
     p.cheio.style.width = (l.valor / escala * 100) + '%';
-    p.marca.hidden = !noCiclo;
-    p.marca.style.left = (c.metaConsultor / escala * 100) + '%';
+    p.marca.hidden = true;
     p.val.textContent = brl(l.valor);
-    if (noCiclo) {
-      const bateu = l.valor >= c.metaConsultor;
-      p.nota.className = bateu ? 'batida' : '';
-      p.nota.textContent = bateu ? 'Meta batida' : 'faltam ' + curto(c.metaConsultor - l.valor);
-    } else {
-      p.nota.className = '';
-      p.nota.textContent = r.somaFiltro ? pctTxt(Math.round(l.valor / r.somaFiltro * 100)) + ' do período' : '';
-    }
+    p.nota.className = '';
+    p.nota.textContent = !noCiclo && r.somaFiltro ? pctTxt(Math.round(l.valor / r.somaFiltro * 100)) + ' do período' : '';
     lista.append(n);
     const antes = valorAntes.get(l.id);
     if (noCiclo && antes != null && l.valor > antes && !semMovimento) { n.classList.remove('pulsa'); void n.offsetWidth; n.classList.add('pulsa'); }
@@ -483,7 +477,7 @@ function pintarEquipes(r, carregando) {
   if (sec.hidden) return;
   const topo = new Map();
   for (const [nome, n] of equipesDom) topo.set(nome, n.getBoundingClientRect().top);
-  const maior = r.equipes[0].valor || 1, vivas = new Set();
+  const metaEq = state.config.metaEquipe, maior = metaEq || r.equipes[0].valor || 1, vivas = new Set();
   r.equipes.forEach((e, i) => {
     vivas.add(e.nome);
     let n = equipesDom.get(e.nome);
@@ -501,10 +495,11 @@ function pintarEquipes(r, carregando) {
     /* espaços fixos dentro de cada trecho: a quebra de linha só acontece entre os trechos */
     p.sub.textContent = [e.membros === 1 ? '1 consultor' : e.membros + ' consultores',
       e.cotas ? (e.cotas === 1 ? '1 cota' : e.cotas + ' cotas') : 'sem venda no ciclo',
-      e.naMeta ? e.naMeta + ' na meta' : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
+      metaEq && e.nome !== SEM_EQUIPE ? (e.valor >= metaEq ? 'meta batida' : 'faltam ' + curto(metaEq - e.valor)) : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
     p.val.textContent = brl(e.valor);
-    p.pct.textContent = r.total ? pctTxt(Math.round(e.valor / r.total * 100)) + ' do total' : '';
-    p.cheio.style.width = (e.valor / maior * 100) + '%';
+    p.pct.textContent = metaEq && e.nome !== SEM_EQUIPE ? pctTxt(Math.floor(e.valor / metaEq * 1000) / 10) + ' de ' + curto(metaEq)
+      : r.total ? pctTxt(Math.round(e.valor / r.total * 100)) + ' do total' : '';
+    p.cheio.style.width = Math.min(e.valor / maior * 100, 100) + '%';
     lista.append(n);
   });
   for (const [nome, n] of equipesDom) if (!vivas.has(nome)) { n.remove(); equipesDom.delete(nome); }
@@ -529,7 +524,7 @@ function pintarFeed(r, editar, carregando) {
   if (!r.feed.length) feed.append(el('li', {}, el('span', { class: 'f-sub', text: carregando ? 'Carregando' : 'Nenhuma venda lançada no ciclo ainda.' })));
   for (const v of itens) {
     const p = state.consultores.get(v.consultor);
-    const sub = el('div', { class: 'f-sub' }, CATS[v.categoria] + ' · ' + quando(v.data));
+    const sub = el('div', { class: 'f-sub' }, [v.categoria !== 'outros' ? CATS[v.categoria] : '', v.cotas > 1 ? v.cotas + ' cotas' : '', v.data ? quando(v.data) : 'sem data'].filter(Boolean).join(' · '));
     const confirmando = editar && state.confirmar === v.id;
     if (editar && !confirmando) sub.append(' · ', el('button', { class: 'btn texto', type: 'button', text: 'Remover', 'aria-label': 'Remover venda de ' + p.nome, onclick: () => { state.confirmar = v.id; render(); } }));
     const li = el('li', {}, el('div', {}, el('div', { class: 'f-nome', text: p.nome }), sub), el('div', { class: 'f-valor', text: brl(v.valor) }));
@@ -547,8 +542,11 @@ function pintarFeed(r, editar, carregando) {
 
 function pintarMix(r) {
   const barra = $('mix-barra'), lista = $('mix'); barra.textContent = ''; lista.textContent = '';
+  /* se nenhuma venda tem categoria, o bloco não tem o que mostrar */
+  $('h-mix').closest('section').hidden = r.total > 0 && r.porCat.outros === r.total;
   for (const k of Object.keys(CATS)) {
     const v = r.porCat[k], p = r.total ? v / r.total * 100 : 0;
+    if (k === 'outros' && !v) continue;
     if (v > 0) barra.append(el('i', { class: 'c-' + k, style: 'width:' + p + '%' }));
     lista.append(el('li', {}, el('i', { class: 'c-' + k }), el('div', { text: CATS[k] }), el('b', { text: curto(v) }), el('span', { text: pctTxt(Math.round(p)) })));
   }
@@ -570,11 +568,11 @@ function itensFaixa(r) {
     itens.push(['Crédito vendido', curto(r.total) + ' de ' + curto(c.meta) + ' (' + pctTxt(Math.floor(r.total / c.meta * 1000) / 10) + ')']);
     r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor)]));
     r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor)]));
-    r.feed.slice(0, 4).forEach(v => itens.push(['Venda', state.consultores.get(v.consultor).nome + ', ' + curto(v.valor) + ' em ' + CATS[v.categoria].toLowerCase() + ', ' + quando(v.data)]));
+    r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v)]));
     if (r.falta > 0) itens.push(['Faltam', curto(r.falta) + ' para a meta da franquia']);
   } else {
     itens.push(['Meta da franquia', curto(c.meta)]);
-    itens.push(['Meta individual', curto(c.metaConsultor) + ' por consultor']);
+    if (c.metaEquipe) itens.push(['Meta por equipe', curto(c.metaEquipe)]);
     r.equipes.filter(e => e.nome !== SEM_EQUIPE).forEach(e => itens.push([e.nome, e.membros + (e.membros === 1 ? ' consultor' : ' consultores')]));
     itens.push(['Placar zerado', 'a primeira venda do ciclo abre o ranking']);
   }
@@ -820,16 +818,16 @@ $('form-novo').addEventListener('submit', e => {
 
 $('btn-ajustes').addEventListener('click', () => {
   const c = state.config;
-  $('a-meta').value = nf.format(c.meta); $('a-metac').value = nf.format(c.metaConsultor);
+  $('a-meta').value = nf.format(c.meta); $('a-metac').value = c.metaEquipe ? nf.format(c.metaEquipe) : '';
   $('a-unidade').value = c.unidade; $('a-ciclo').value = c.ciclo; $('a-inicio').value = c.inicio; $('a-prazo').value = c.prazo;
   $('a-erro').textContent = ''; $('dlg-ajustes').showModal();
 });
 $('form-ajustes').addEventListener('submit', e => {
   e.preventDefault();
-  const meta = lerValor($('a-meta')), metaConsultor = lerValor($('a-metac')), inicio = $('a-inicio').value, prazo = $('a-prazo').value;
-  if (!meta || !metaConsultor) { $('a-erro').textContent = 'Preencha as duas metas com valores acima de zero.'; return; }
+  const meta = lerValor($('a-meta')), metaEquipe = lerValor($('a-metac')), inicio = $('a-inicio').value, prazo = $('a-prazo').value;
+  if (!meta) { $('a-erro').textContent = 'Preencha a meta da franquia com um valor acima de zero.'; return; }
   if (inicio && prazo && prazo < inicio) { $('a-erro').textContent = 'O fim do ciclo precisa ser depois do início.'; return; }
-  state.config = normConfig({ meta, metaConsultor, unidade: $('a-unidade').value, ciclo: $('a-ciclo').value, inicio, prazo, exemplo: state.config.exemplo });
+  state.config = normConfig({ meta, metaEquipe, metaConsultor: state.config.metaConsultor, unidade: $('a-unidade').value, ciclo: $('a-ciclo').value, inicio, prazo, exemplo: state.config.exemplo });
   $('dlg-ajustes').close();
   mudou('Ajustes salvos');
 });
