@@ -2,7 +2,7 @@
 
 Painel de ranking de vendas da franquia: placar da meta, posição dos consultores, ranking das equipes, últimas vendas e crédito por categoria.
 
-Site estático, sem build e sem dependências. Os números ficam em um único arquivo, `data/ranking.json`.
+Site estático, sem build e sem dependências. Os números vêm de uma planilha do Google (o jeito mais simples de lançar) ou, sem ela, de um único arquivo, `data/ranking.json`.
 
 ## Estrutura
 
@@ -10,10 +10,12 @@ Site estático, sem build e sem dependências. Os números ficam em um único ar
 index.html                 página do painel
 assets/styles.css          estilos
 assets/app.js              lógica do painel
+assets/config.js           link da planilha do Google (vazio: usa data/ranking.json)
 assets/logo-embracon.png          logo original colorido (base do logo em vetor do tema claro e ícone da aba)
 assets/logo-embracon-branco.png   logo original branco (base do logo em vetor do tema vermelho)
 assets/marca/              logo em camadas (mão em 4 traços, "Consórcio", "Embracon") para as animações
-data/ranking.json          dados: metas, consultores (com equipe) e vendas
+data/ranking.json          dados: metas, consultores (com equipe e foto) e vendas
+planilha/ranking-embracon-analia-franco.xlsx   planilha estilizada para importar no Google
 ```
 
 ## Publicar
@@ -30,6 +32,31 @@ npx serve .
 ```
 
 ## Atualizar os números
+
+### Pela planilha do Google (o jeito mais simples)
+
+A planilha `planilha/ranking-embracon-analia-franco.xlsx` tem duas abas:
+
+- **Ranking:** onde a equipe lança. Cada consultor tem uma linha, e cada venda vai numa casinha cinza ao lado, **em mil**: 50 vira R$ 50.000, 1.000 vira R$ 1 milhão. Total, posição, equipes e o placar da franquia se calculam sozinhos. Metas e datas do ciclo ficam nos cartões do topo.
+- **Telão:** alimenta o painel sozinha a partir da aba Ranking. Não precisa mexer.
+
+Para ligar:
+
+1. No Google Drive, clique em **Novo > Upload de arquivo** e envie o `.xlsx`. Abra com o Google Planilhas e use **Arquivo > Salvar como Planilhas Google**.
+2. Em **Arquivo > Configurações**, deixe a localidade como **Brasil**. É isso que faz o 50 aparecer como R$ 50.000 e as datas ficarem no formato dia/mês.
+3. Clique em **Compartilhar** e, em "Acesso geral", escolha **Qualquer pessoa com o link: Leitor**. Quem vai lançar as vendas entra como **Editor** pelo e-mail.
+4. Copie o link da planilha, cole em `assets/config.js` no campo `planilha` e publique no GitHub.
+
+Com a planilha ligada:
+
+- O telão confere a planilha a cada minuto. Cada casinha nova vira uma venda: aparece o aviso de **venda nova**, o ranking se reordena e a venda entra nas últimas vendas.
+- A planilha não guarda o dia de cada venda, então o painel anota o dia em que viu cada casinha nova (fica guardado no navegador da TV). As vendas que já estavam lá quando a TV abriu o painel pela primeira vez ficam sem data.
+- Cada casinha conta como 1 cota. Uma venda de várias cotas pode ir em várias casinhas.
+- Unidade, nome do ciclo e fotos continuam vindo do `data/ranking.json`. A foto é ligada pelo nome, então escreva o nome do consultor igual nos dois lugares. Nome novo na planilha entra no ranking com as iniciais na bolinha.
+- Os botões de edição do `#editar` somem, porque quem manda é a planilha.
+- Se a planilha não responder (sem internet, compartilhamento desligado), o painel abre com o `data/ranking.json` e tenta a planilha de novo a cada minuto.
+
+### Pelo arquivo data/ranking.json
 
 O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 segundos. Basta publicar uma nova versão do arquivo para o telão atualizar sozinho, com o ranking se reordenando na tela.
 

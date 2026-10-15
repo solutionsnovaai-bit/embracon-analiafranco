@@ -1,12 +1,26 @@
 (() => {
 'use strict';
 
-/* Fonte dos dados: data/ranking.json (atualizado por commit, IA ou automação).
-   Alterações feitas pela tela ficam só neste navegador até o arquivo ser
-   baixado e substituído no repositório. */
+/* Fonte dos dados:
+   - com o link da planilha do Google em assets/config.js, as vendas, as metas e as datas vêm da
+     aba Telão da planilha; do data/ranking.json continuam vindo a unidade, o nome do ciclo e as fotos;
+   - sem o link, tudo vem do data/ranking.json (atualizado por commit, IA ou automação). Alterações
+     feitas pela tela ficam só neste navegador até o arquivo ser baixado e substituído no repositório. */
 const ARQUIVO = 'data/ranking.json';
 const CHAVE = 'ranking-rascunho-v1';
 const INTERVALO = 60000; // confere o arquivo a cada 60 s (útil no telão)
+const PLANILHA = (window.RANKING_CONFIG && String(window.RANKING_CONFIG.planilha || '').trim()) || '';
+const FONTES_PLANILHA = PLANILHA ? fontesPlanilha(PLANILHA) : [];
+
+/* aceita o link normal da planilha (o da barra de endereço ou o de "Compartilhar") e lê a aba Telão em CSV */
+function fontesPlanilha(link) {
+  if (/output=csv|tqx=out:csv/.test(link)) return [link];
+  const id = (/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/.exec(link) || [])[1];
+  if (!id) return [];
+  const gid = (/[#&?]gid=(\d+)/.exec(link) || [])[1];
+  const raiz = 'https://docs.google.com/spreadsheets/d/' + id + '/gviz/tq?tqx=out:csv&headers=1';
+  return [raiz + '&sheet=' + encodeURIComponent('Telão'), ...(gid ? [raiz + '&gid=' + gid] : [])];
+}
 
 /* Reserva usada só quando data/ranking.json não pode ser lido
    (por exemplo, index.html aberto direto do disco): equipe sem vendas. */
@@ -79,7 +93,7 @@ function el(tag, props, ...filhos) {
 const state = {
   modo: 'carregando',           // carregando | arquivo | demo
   rascunho: false,              // há alterações locais ainda não publicadas
-  podeEditar: location.hash === '#editar',
+  podeEditar: !PLANILHA && location.hash === '#editar',   // com a planilha, quem lança é a planilha
   config: { ...PADRAO },
   consultores: new Map(),       // id -> {id, nome, equipe}
   vendas: [],                   // {id, ordem, consultor, valor, categoria, data}
@@ -630,7 +644,7 @@ function proximoAviso() {
   avisando = true;
   const f = $('flash');
   $('flash-nome').textContent = p.nome;
-  $('flash-info').textContent = CATS[v.categoria] + (p.equipe ? ' · ' + p.equipe : '');
+  $('flash-info').textContent = [v.categoria !== 'outros' ? CATS[v.categoria] : '', p.equipe].filter(Boolean).join(' · ');
   $('flash-valor').textContent = brl(v.valor);
   f.getAnimations().forEach(a => a.cancel());
   f.hidden = false;
@@ -648,10 +662,123 @@ function vendasNovas(antes, depois) {
   return depois.filter((v, i) => !ja.has(ks[i]));
 }
 
-async function lerArquivo() {
-  const r = await fetch(ARQUIVO + '?t=' + Date.now(), { cache: 'no-store' });
+async function buscar(url) {
+  const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.text();
+}
+const lerArquivo = () => buscar(ARQUIVO);
+
+/* ---------- planilha do Google ---------- */
+let base = null, fonteBoa = 0, ultimoCsv = '', ultimaMudanca = '';
+function lerCsv(t) {
+  const linhas = []; let linha = [], campo = '', aspas = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (aspas) { if (c === '"') { if (t[i + 1] === '"') { campo += '"'; i++; } else aspas = false; } else campo += c; continue; }
+    if (c === '"') aspas = true;
+    else if (c === ',') { linha.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; linha.push(campo); linhas.push(linha); linha = []; campo = ''; }
+    else campo += c;
+  }
+  if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas;
+}
+/* "770000", "770.000", "R$ 770.000,00" e "1,300,000.00" viram reais */
+function reais(s) {
+  let t = String(s == null ? '' : s).trim().replace(/r\$|\s|\u00a0/gi, '').replace(/[^\d.,]/g, '');
+  if (!t) return 0;
+  if (t.includes(',') && t.includes('.')) t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  else if (t.includes(',')) t = /,\d{3}(,|$)/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
+  else if (/\.\d{3}(\.|$)/.test(t)) t = t.replace(/\./g, '');
+  const v = Number(t);
+  return v > 0 ? Math.round(v) : 0;
+}
+/* "01/10/2026" (planilha em português) ou "2026-10-01" */
+function dataIso(s) {
+  const t = String(s == null ? '' : s).trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t);
+  return m && +m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31 ? m[3] + '-' + doisDig(m[2]) + '-' + doisDig(m[1]) : '';
+}
+const normNome = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+/* Aba Telão: uma linha por consultor, com Consultor, Equipe, Vendido e as colunas Venda 1, Venda 2...
+   (cada casinha preenchida é uma venda). Metas e datas vêm na primeira linha, nas colunas com esses nomes.
+   Também aceita uma planilha simples só com Consultor, Equipe e Vendido. */
+function dadosDaPlanilha(texto, cadastro) {
+  const linhas = lerCsv(texto).filter(l => l.some(c => c.trim()));
+  const CAB = { nome: /^(consultor|consultora|nome|vendedor)/, equipe: /^(equipe|time)/, valor: /^(vendido|total|valor)/,
+    meta: /^meta da franquia/, metaEquipe: /^meta (por|de cada|da) equipe/, inicio: /^inicio/, prazo: /^fim/ };
+  let ini = -1, col = null, colVendas = [];
+  for (let i = 0; i < Math.min(linhas.length, 5) && !col; i++) {
+    const achou = {}, vs = [];
+    linhas[i].forEach((c, j) => { const t = normNome(c); if (/^venda \d+$/.test(t)) vs.push(j); else for (const k in CAB) if (achou[k] === undefined && CAB[k].test(t)) achou[k] = j; });
+    if (achou.nome !== undefined && (achou.valor !== undefined || vs.length)) { ini = i + 1; col = achou; colVendas = vs; }
+  }
+  if (!col) return null;
+  const b = cadastro && typeof cadastro === 'object' ? cadastro : {}, cfg = { ...(b.config || {}) }, primeira = linhas[ini] || [];
+  for (const k of ['meta', 'metaEquipe']) if (col[k] !== undefined) { const v = reais(primeira[col[k]]); if (v > 0) cfg[k] = v; }
+  for (const k of ['inicio', 'prazo']) if (col[k] !== undefined) { const d = dataIso(primeira[col[k]]); if (d) cfg[k] = d; }
+  /* foto e identificador vêm do cadastro (data/ranking.json), pelo nome escrito igual */
+  const doCadastro = new Map();
+  for (const p of Array.isArray(b.consultores) ? b.consultores : []) if (p && p.nome) { doCadastro.set(normNome(p.nome), p); if (p.id) doCadastro.set('#' + p.id, p); }
+  const consultores = [], vendas = [], usados = new Set();
+  for (const l of linhas.slice(ini)) {
+    const nome = String(l[col.nome] || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (!nome) continue;
+    const cad = doCadastro.get(normNome(nome)) || doCadastro.get('#' + slug(nome));
+    const raizId = cad && cad.id ? String(cad.id) : slug(nome);
+    let id = raizId, n = 2;
+    while (usados.has(id)) id = raizId + '-' + n++;
+    usados.add(id);
+    const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
+    consultores.push({ id, nome, equipe, ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|' + (k + 1) + '|' + v }); });
+    else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
+  }
+  return { config: { ...cfg, exemplo: false }, consultores, vendas };
+}
+/* A planilha não guarda o dia de cada venda: o painel anota o dia em que viu cada casinha nova pela
+   primeira vez (guardado neste navegador). O que já estava lá na primeira leitura fica sem data. */
+const VISTOS = 'ranking-planilha-vistos-v1';
+function carimbar(vendas) {
+  let mapa = null;
+  try { mapa = JSON.parse(localStorage.getItem(VISTOS) || 'null'); } catch (e) { mapa = null; }
+  const primeira = !mapa || typeof mapa !== 'object', hoje = hojeISO(), novo = {};
+  if (primeira) mapa = {};
+  for (const v of vendas) {
+    const d = Object.prototype.hasOwnProperty.call(mapa, v.chave) ? mapa[v.chave] : primeira ? '' : hoje;
+    novo[v.chave] = ehData(d) ? d : '';
+    if (novo[v.chave]) v.data = novo[v.chave];
+  }
+  try { localStorage.setItem(VISTOS, JSON.stringify(novo)); } catch (e) { /* sem armazenamento local: as vendas ficam sem data */ }
+}
+async function lerPlanilha() {
+  let erro = null;
+  for (let i = fonteBoa; i < FONTES_PLANILHA.length; i++) {
+    try {
+      const t = await buscar(FONTES_PLANILHA[i]);
+      if (!dadosDaPlanilha(t, base)) throw new Error('a aba lida não tem as colunas Consultor e Vendido');
+      fonteBoa = i;
+      return t;
+    } catch (e) { erro = e; }
+  }
+  throw erro || new Error('link da planilha não reconhecido');
+}
+function dePlanilha(t) {
+  const d = dadosDaPlanilha(t, base);
+  if (!d) return null;
+  carimbar(d.vendas);
+  if (t !== ultimoCsv) { ultimoCsv = t; ultimaMudanca = new Date().toISOString(); }
+  d.atualizadoEm = ultimaMudanca;
+  return d;
+}
+/* com a planilha, o cadastro (fotos, ciclo) é relido a cada conferência; a "marca" junta os dois textos */
+async function lerTudo() {
+  if (!PLANILHA) { const t = await lerArquivo(); return { marca: t, dados: () => JSON.parse(t) }; }
+  const [csv, json] = await Promise.all([lerPlanilha(), lerArquivo().catch(() => '')]);
+  return { marca: csv + '\u0000' + json, dados: () => { if (json) { try { base = JSON.parse(json); } catch (e) { /* mantém o cadastro anterior */ } } return dePlanilha(csv); } };
 }
 function carregarDemo() {
   aplicar({ config: { ...DEMO.config }, consultores: DEMO.consultores.map(([id, nome, equipe]) => ({ id, nome, equipe })), vendas: [] });
@@ -660,11 +787,12 @@ function carregarDemo() {
 async function conferir() {
   if (document.hidden || state.rascunho || state.modo !== 'arquivo') return;
   try {
-    const t = await lerArquivo();
+    const l = await lerTudo();
     state.conferidoEm = new Date();
-    if (t === textoArquivo) { render(); return; }
-    const d = JSON.parse(t), antes = state.vendas;
-    textoArquivo = t; aplicar(d); render();
+    if (l.marca === textoArquivo) { render(); return; }
+    const d = l.dados(), antes = state.vendas;
+    if (!d) return;
+    textoArquivo = l.marca; aplicar(d); render();
     vendasNovas(antes, state.vendas).slice(-3).forEach(anunciar);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
 }
@@ -719,13 +847,19 @@ async function iniciar() {
   const demora = setTimeout(() => { if (telaLoad) { telaLoad.classList.add('espera'); $('load-pct').hidden = true; } }, 3400);
   let texto = '', dados = null;
   try { texto = await lerArquivo(); dados = JSON.parse(texto); } catch (e) { dados = null; }
+  if (PLANILHA) {
+    /* a planilha manda; se ela não responder agora, abre com o data/ranking.json e tenta de novo a cada minuto */
+    base = dados;
+    try { const csv = await lerPlanilha(); const d = dePlanilha(csv); if (d) { texto = csv + '\u0000' + texto; dados = d; } }
+    catch (e) { console.warn('Planilha não lida, usando data/ranking.json:', e.message); }
+  }
   await espera;
   clearTimeout(demora);
   if (!dados) { carregarDemo(); render(); requestAnimationFrame(abrirPainel); iniciarGiros(); return; }
   textoArquivo = texto;
   let rasc = null;
   try { rasc = JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch (e) { rasc = null; }
-  if (rasc && rasc.base === marca(texto) && rasc.dados) { aplicar(rasc.dados); state.rascunho = true; }
+  if (!PLANILHA && rasc && rasc.base === marca(texto) && rasc.dados) { aplicar(rasc.dados); state.rascunho = true; }
   else { if (rasc) apagarRascunho(); aplicar(dados); }
   state.modo = 'arquivo';
   state.conferidoEm = new Date();
@@ -745,7 +879,7 @@ const lerValor = input => Number(input.value.replace(/\D/g, '')) || 0;
 
 document.querySelectorAll('[data-fechar]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
-addEventListener('hashchange', () => { state.podeEditar = location.hash === '#editar'; if (location.hash === '#telao') marcarTelao(true); render(); });
+addEventListener('hashchange', () => { state.podeEditar = !PLANILHA && location.hash === '#editar'; if (location.hash === '#telao') marcarTelao(true); render(); });
 
 function abrirVenda() {
   if (!state.consultores.size) { abrirEquipe(); toast('Cadastre um consultor antes de lançar a venda.'); return; }
