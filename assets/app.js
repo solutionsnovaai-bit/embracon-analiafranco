@@ -105,6 +105,8 @@ function normConfig(d) {
   c.exemplo = d.exemplo === true;
   return c;
 }
+/* foto do consultor: só caminhos de arquivo do próprio site (ex.: assets/consultores/nome.jpg) */
+const fotoValida = s => typeof s === 'string' && /^[\w\-/.]+\.(jpe?g|png|webp)$/i.test(s) && !s.includes('..') ? s : '';
 const limparEquipe = s => typeof s === 'string' ? s.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
 /* equipes na ordem em que aparecem no cadastro (a do arquivo), usada como desempate e nos menus */
 function ordemEquipes() {
@@ -129,7 +131,7 @@ function aplicar(dados) {
     const nome = String(p.nome || '').trim().slice(0, 60);
     if (!nome) continue;
     const id = String(p.id || slug(nome));
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe) });
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), foto: fotoValida(p.foto) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -139,7 +141,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => p.equipe ? { id: p.id, nome: p.nome, equipe: p.equipe } : { id: p.id, nome: p.nome }),
+    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
 }
@@ -183,7 +185,7 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, valor: 0, cotas: 0, ultima: '' }));
+  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
   const porId = new Map(linhas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -415,6 +417,20 @@ function criarLinha() {
   return li;
 }
 
+/* bolinha do consultor: a foto quando existe, as iniciais quando não existe ou não carrega */
+const fotosRuins = new Set();
+function pintarAvatar(av, l) {
+  const foto = l.foto && !fotosRuins.has(l.foto) ? l.foto : '';
+  if ((av.dataset.foto || '') === foto && (foto || av.textContent)) return;
+  av.dataset.foto = foto;
+  av.classList.toggle('com-foto', !!foto);
+  av.textContent = foto ? '' : iniciais(l.nome);
+  if (!foto) return;
+  const img = el('img', { src: foto, alt: '', decoding: 'async' });
+  img.addEventListener('error', () => { fotosRuins.add(foto); av.dataset.foto = ''; av.classList.remove('com-foto'); av.textContent = iniciais(l.nome); });
+  av.append(img);
+}
+
 function pintarLista(r, editar, carregando) {
   const c = state.config, lista = $('lista'), noCiclo = state.filtro === 'ciclo';
   $('legenda').hidden = true;
@@ -446,7 +462,7 @@ function pintarLista(r, editar, carregando) {
     n.style.setProperty('--i', i);
     n.className = 'linha' + (i < 3 && l.valor > 0 ? ' top' : '') + (lider ? ' lider' : '');
     p.pos.textContent = l.valor > 0 ? i + 1 : '–';
-    p.av.textContent = iniciais(l.nome);
+    pintarAvatar(p.av, l);
     p.nome.textContent = l.nome;
     p.sub.textContent = '';
     if (l.equipe) p.sub.append(el('b', { class: 'eq', text: l.equipe }), ' · ');
