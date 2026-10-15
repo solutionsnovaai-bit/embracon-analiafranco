@@ -6,5 +6,5 @@
 
    Com o campo vazio, o painel lê o arquivo data/ranking.json. */
 window.RANKING_CONFIG = {
-  planilha: ''
+  planilha: 'https://docs.google.com/spreadsheets/d/1jGeweJLf4pd_AYmE3KFEeMUcL0gtQyYX/edit'
 };
