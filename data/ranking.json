@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-10-15T15:30:00-03:00",
+  "atualizadoEm": "2026-10-15T14:02:00-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
@@ -38,6 +38,7 @@
     {"consultor":"edvan-fernandes","valor":700000},
     {"consultor":"tamyres-reis","valor":80000},
     {"consultor":"tamyres-reis","valor":60000},
-    {"consultor":"ricardo-neves","valor":100000}
+    {"consultor":"ricardo-neves","valor":100000},
+    {"consultor":"mateus-sales","valor":70000,"data":"2026-10-15"}
   ]
 }
