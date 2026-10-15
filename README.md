@@ -49,12 +49,12 @@ Para ligar:
 
 Com a planilha ligada:
 
-- O telão confere a planilha a cada minuto. Cada casinha nova vira uma venda: aparece o aviso de **venda nova**, o ranking se reordena e a venda entra nas últimas vendas.
+- O telão confere a planilha a cada 8 segundos. Cada casinha nova vira uma venda: aparece o aviso de **venda nova**, o ranking se reordena e a venda entra nas últimas vendas.
 - A planilha não guarda o dia de cada venda, então o painel anota o dia em que viu cada casinha nova (fica guardado no navegador da TV). As vendas que já estavam lá quando a TV abriu o painel pela primeira vez ficam sem data.
 - Cada casinha conta como 1 cota. Uma venda de várias cotas pode ir em várias casinhas.
-- Unidade, nome do ciclo e fotos continuam vindo do `data/ranking.json`. A foto é ligada pelo nome, então escreva o nome do consultor igual nos dois lugares. Nome novo na planilha entra no ranking com as iniciais na bolinha.
+- Unidade, nome do ciclo e fotos continuam vindo do `data/ranking.json` (relido a cada 5 minutos). A foto é ligada pelo nome, então escreva o nome do consultor igual nos dois lugares. Nome novo na planilha entra no ranking com as iniciais na bolinha.
 - Os botões de edição do `#editar` somem, porque quem manda é a planilha.
-- Se a planilha não responder (sem internet, compartilhamento desligado), o painel abre com o `data/ranking.json` e tenta a planilha de novo a cada minuto.
+- Se a planilha não responder (sem internet, compartilhamento desligado), o painel abre com o `data/ranking.json` e tenta a planilha de novo a cada 8 segundos.
 
 ### Pelo arquivo data/ranking.json
 

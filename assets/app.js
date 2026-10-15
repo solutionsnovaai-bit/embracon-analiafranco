@@ -8,8 +8,10 @@
      feitas pela tela ficam só neste navegador até o arquivo ser baixado e substituído no repositório. */
 const ARQUIVO = 'data/ranking.json';
 const CHAVE = 'ranking-rascunho-v1';
-const INTERVALO = 60000; // confere o arquivo a cada 60 s (útil no telão)
 const PLANILHA = (window.RANKING_CONFIG && String(window.RANKING_CONFIG.planilha || '').trim()) || '';
+/* com a planilha, o painel confere a cada 8 s (lançou, a TV mostra em segundos); com o arquivo, a cada 60 s */
+const INTERVALO = PLANILHA ? 8000 : 60000;
+const INTERVALO_CADASTRO = 300000;   // com a planilha, fotos e nome do ciclo (data/ranking.json) são relidos a cada 5 min
 const FONTES_PLANILHA = PLANILHA ? fontesPlanilha(PLANILHA) : [];
 
 /* aceita o link normal da planilha (o da barra de endereço ou o de "Compartilhar") e lê a aba Telão em CSV */
@@ -670,7 +672,7 @@ async function buscar(url) {
 const lerArquivo = () => buscar(ARQUIVO);
 
 /* ---------- planilha do Google ---------- */
-let base = null, fonteBoa = 0, ultimoCsv = '', ultimaMudanca = '';
+let base = null, baseTexto = '', baseLidaEm = 0, fonteBoa = 0, ultimoCsv = '', ultimaMudanca = '';
 function lerCsv(t) {
   const linhas = []; let linha = [], campo = '', aspas = false;
   for (let i = 0; i < t.length; i++) {
@@ -774,18 +776,26 @@ function dePlanilha(t) {
   d.atualizadoEm = ultimaMudanca;
   return d;
 }
-/* com a planilha, o cadastro (fotos, ciclo) é relido a cada conferência; a "marca" junta os dois textos */
+/* com a planilha, o cadastro (fotos, ciclo) é relido de tempos em tempos; a "marca" junta os dois textos */
+function guardarCadastro(json) {
+  try { base = JSON.parse(json); baseTexto = json; } catch (e) { /* mantém o cadastro anterior */ }
+  baseLidaEm = Date.now();
+}
 async function lerTudo() {
   if (!PLANILHA) { const t = await lerArquivo(); return { marca: t, dados: () => JSON.parse(t) }; }
-  const [csv, json] = await Promise.all([lerPlanilha(), lerArquivo().catch(() => '')]);
-  return { marca: csv + '\u0000' + json, dados: () => { if (json) { try { base = JSON.parse(json); } catch (e) { /* mantém o cadastro anterior */ } } return dePlanilha(csv); } };
+  const reler = Date.now() - baseLidaEm > INTERVALO_CADASTRO;
+  const [csv, json] = await Promise.all([lerPlanilha(), reler ? lerArquivo().catch(() => '') : '']);
+  if (json) guardarCadastro(json);
+  return { marca: csv + '\u0000' + baseTexto, dados: () => dePlanilha(csv) };
 }
 function carregarDemo() {
   aplicar({ config: { ...DEMO.config }, consultores: DEMO.consultores.map(([id, nome, equipe]) => ({ id, nome, equipe })), vendas: [] });
   state.modo = 'demo';
 }
+let conferindo = false;
 async function conferir() {
-  if (document.hidden || state.rascunho || state.modo !== 'arquivo') return;
+  if (conferindo || document.hidden || state.rascunho || state.modo !== 'arquivo') return;
+  conferindo = true;
   try {
     const l = await lerTudo();
     state.conferidoEm = new Date();
@@ -795,6 +805,7 @@ async function conferir() {
     textoArquivo = l.marca; aplicar(d); render();
     vendasNovas(antes, state.vendas).slice(-3).forEach(anunciar);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
+  finally { conferindo = false; }
 }
 /* tela de abertura: fica o tempo de a animação se completar e sai quando os dados chegam */
 const telaLoad = $('load');
@@ -849,8 +860,8 @@ async function iniciar() {
   try { texto = await lerArquivo(); dados = JSON.parse(texto); } catch (e) { dados = null; }
   if (PLANILHA) {
     /* a planilha manda; se ela não responder agora, abre com o data/ranking.json e tenta de novo a cada minuto */
-    base = dados;
-    try { const csv = await lerPlanilha(); const d = dePlanilha(csv); if (d) { texto = csv + '\u0000' + texto; dados = d; } }
+    if (dados) guardarCadastro(texto);   // sem o cadastro agora, ele é relido na próxima conferência
+    try { const csv = await lerPlanilha(); const d = dePlanilha(csv); if (d) { texto = csv + '\u0000' + baseTexto; dados = d; } }
     catch (e) { console.warn('Planilha não lida, usando data/ranking.json:', e.message); }
   }
   await espera;
