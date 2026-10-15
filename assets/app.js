@@ -898,39 +898,38 @@ function onda() {
   document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.querySelectorAll('.eq-quem, .eq-valor').forEach(x => x.animate(quadros, { duration: 1050, delay: 300 + i * 120, easing: 'ease-in-out' })));
 }
 
-/* ---------- logo do topo sempre pronto ----------
-   Com a página lá embaixo, o navegador pode descartar a imagem já decodificada do logo
-   e, na volta, pintá-lo atrasado. Por isso o logo é decodificado de novo antes de a
-   página subir, seja na rolagem automática do telão, seja na rolagem à mão. */
-const logos = [...document.querySelectorAll('.marca img')];
-const prepararLogo = () => Promise.all(logos.filter(i => i.offsetWidth && i.decode).map(i => i.decode().catch(() => {})));
-let logoY = scrollY, logoPronto = 0;
-addEventListener('scroll', () => {
-  const y = scrollY, agora = performance.now();
-  if (y < logoY && y < innerHeight * 2.5 && agora - logoPronto > 1500) { logoPronto = agora; prepararLogo(); }
-  logoY = y;
-}, { passive: true });
-
 /* ---------- telão: a página rola sozinha para mostrar todo o ranking ----------
-   Para no topo, desce devagar até o fim, espera e volta. Qualquer toque, rolagem
-   ou tecla pausa por 20 s. */
-const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0 };
+   Para no topo e desce devagar até o fim, arrancando e freando suave. Espera, volta ao
+   topo numa subida com aceleração e, ao chegar, a mão do logo acena. Qualquer toque,
+   rolagem ou tecla pausa por 20 s. */
+const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0, ini: 0, de: 0, dur: 0 };
+const suave = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+function acenar() {
+  if (semMovimento) return;
+  const m = document.querySelector('.marca');
+  m.classList.remove('acena'); void m.offsetWidth; m.classList.add('acena');
+  clearTimeout(acenar.t); acenar.t = setTimeout(() => m.classList.remove('acena'), 2100);
+}
 function passoRolagem(t) {
   requestAnimationFrame(passoRolagem);
   if (!raiz.classList.contains('tv') || state.modo === 'carregando' || document.querySelector('dialog[open]') || t < rolagem.pausaAte) { rolagem.fase = 'parado'; return; }
   const max = document.documentElement.scrollHeight - innerHeight;
   if (max < 40) return;
   if (rolagem.fase === 'parado') { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
-  else if (rolagem.fase === 'espera' && t >= rolagem.ate) { rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; }
+  else if (rolagem.fase === 'espera' && t >= rolagem.ate) { rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; rolagem.ini = t; }
   else if (rolagem.fase === 'desce') {
-    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045, max); rolagem.ult = t;   // ~45 px por segundo
+    // ~45 px por segundo, ganhando velocidade no primeiro 1,5 s e freando nos últimos 160 px
+    const ritmo = Math.max(.12, Math.min(1, (t - rolagem.ini) / 1500, (max - rolagem.y) / 160));
+    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045 * ritmo, max); rolagem.ult = t;
     scrollTo(0, rolagem.y);
     if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + 7000; }
   } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) {
-    rolagem.fase = 'sobe'; rolagem.ate = t + 4000;
-    prepararLogo().then(() => { if (rolagem.fase === 'sobe') scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' }); });
+    rolagem.fase = 'sobe'; rolagem.ini = t; rolagem.de = scrollY; rolagem.dur = semMovimento ? 0 : Math.min(2600, Math.max(1300, scrollY * .8));
+  } else if (rolagem.fase === 'sobe') {
+    const k = rolagem.dur ? Math.min((t - rolagem.ini) / rolagem.dur, 1) : 1;
+    scrollTo(0, Math.round(rolagem.de * (1 - suave(k))));
+    if (k >= 1) { rolagem.fase = 'espera'; rolagem.ate = t + 9000; acenar(); }
   }
-  else if (rolagem.fase === 'sobe' && (t >= rolagem.ate || scrollY < 2)) { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
 }
 ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { rolagem.pausaAte = performance.now() + 20000; }, { passive: true }));
 requestAnimationFrame(passoRolagem);

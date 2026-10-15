@@ -10,8 +10,8 @@ Site estático, sem build e sem dependências. Os números ficam em um único ar
 index.html                 página do painel
 assets/styles.css          estilos
 assets/app.js              lógica do painel
-assets/logo-embracon.png          logo original, usado no tema claro
-assets/logo-embracon-branco.png   logo branco, usado no tema vermelho
+assets/logo-embracon.png          logo original colorido (base do logo em vetor do tema claro e ícone da aba)
+assets/logo-embracon-branco.png   logo original branco (base do logo em vetor do tema vermelho)
 assets/marca/              logo em camadas (mão em 4 traços, "Consórcio", "Embracon") para as animações
 data/ranking.json          dados: metas, consultores (com equipe) e vendas
 ```
@@ -120,7 +120,9 @@ Quem usa o sistema com a opção de reduzir movimento ativada vê o painel parad
 
 O botão **Modo telão** coloca o painel em tela cheia, aumenta a escala e mantém a tela ligada. Sem o `#editar` no endereço, o painel fica somente leitura, que é a versão indicada para a TV e para compartilhar com a equipe.
 
-No modo telão a página rola sozinha para mostrar o ranking inteiro: fica 9 segundos no topo, desce devagar até o fim, espera e volta. Um toque, uma rolagem ou uma tecla pausa a rolagem por 20 segundos.
+No modo telão a página rola sozinha para mostrar o ranking inteiro: fica 9 segundos no topo, desce devagar até o fim (ganhando velocidade no começo e freando no fim), espera e sobe de volta numa subida com aceleração. Ao chegar ao topo, a mão do logo acena. Um toque, uma rolagem ou uma tecla pausa a rolagem por 20 segundos.
+
+O logo do topo é desenhado em vetor, dentro do próprio `index.html`, a partir dos dois PNGs originais. Por isso aparece na hora, junto com o texto, mesmo em TVs com navegador mais lento: não depende de carregar nem de decodificar imagem quando a página volta ao topo.
 
 Para a TV já abrir no modo telão, use o endereço com `#telao` no fim (por exemplo `https://seu-endereco/#telao`). A tela cheia continua pedindo um clique no botão ou a tecla F11.
 

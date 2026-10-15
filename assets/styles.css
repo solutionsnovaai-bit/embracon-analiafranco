@@ -135,12 +135,25 @@ button,input,select{font:inherit;color:inherit}
 
 /* ---------- topo ---------- */
 .topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.25rem 2rem;padding-block:.5rem .25rem}
-/* --logo-w é a largura visível da marca; o PNG colorido tem margem transparente, compensada abaixo */
+/* --logo-w é a largura visível da marca. O logo é vetor (SVG no próprio HTML): é pintado junto
+   com o texto, sem esperar imagem, então aparece na hora inclusive quando a página volta ao topo. */
 .marca{--logo-w:clamp(11rem,21vw,18rem);--logo-caixa:calc(var(--logo-w)*1.1111);display:flex;align-items:center;gap:clamp(1.25rem,2.4vw,2.25rem);min-width:0}
-.logo{display:block;width:var(--logo-caixa);height:var(--logo-caixa);max-width:none;margin-block:calc(var(--logo-caixa)*-.235);margin-inline-start:calc(var(--logo-caixa)*-.05);flex:none}
-.logo-branco{display:none;width:var(--logo-w);height:auto;margin-block:calc(var(--logo-caixa)*.024);margin-inline-end:calc(var(--logo-caixa)*.05);flex:none}
+.logo{display:block;flex:none;width:var(--logo-w);height:calc(var(--logo-w)*.535);margin-block:calc(var(--logo-caixa)*.024);margin-inline-end:calc(var(--logo-caixa)*.05);overflow:visible}
+.logo-cor .lv-mao{fill:#ED1C24}
+.logo-cor .lv-consorcio,.logo-cor .lv-embracon{fill:#000000}
+.logo-cor .lv-assinatura{fill:#6D6E70}
+.logo-branco{display:none;fill:#FFFFFF}
 :root[data-tema="vermelho"] .logo-cor{display:none}
 :root[data-tema="vermelho"] .logo-branco{display:block}
+/* a mão do logo acena quando o telão volta ao topo: os três dedos em onda e a palma balança */
+.logo .lv-palma,.logo .lv-dedo{transform-box:fill-box;transform-origin:50% 50%}
+.logo .lv-palma{transform-origin:30% 70%}
+.marca.acena .lv-dedo{animation:aceno-dedo .95s var(--ease) 2}
+.marca.acena .lv-d2{animation-delay:.11s}
+.marca.acena .lv-d3{animation-delay:.22s}
+.marca.acena .lv-palma{animation:aceno-palma 1.9s var(--ease-io)}
+@keyframes aceno-dedo{0%,100%{transform:none}38%{transform:translate(17%,-15%)}}
+@keyframes aceno-palma{0%,100%{transform:none}25%{transform:rotate(-7deg)}55%{transform:rotate(4deg)}80%{transform:rotate(-2deg)}}
 .unidade{display:grid;gap:.25rem;padding-inline-start:clamp(1.25rem,2.4vw,2.25rem);border-inline-start:1px solid var(--line);line-height:1.2}
 .rotulo{font-size:.6875rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
 .unidade strong{font:800 clamp(1.5rem,2.9vw,2.5rem)/1.05 var(--display);font-stretch:84%;text-wrap:balance}
