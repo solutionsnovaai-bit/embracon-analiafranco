@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-10-15T14:32:00-03:00",
+  "atualizadoEm": "2026-10-15T14:37:00-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
@@ -15,7 +15,7 @@
     {"id":"claudia-lino","nome":"Claudia Lino","equipe":"Esquadrão Alpha","foto":"assets/consultores/claudia-lino.jpg"},
     {"id":"giovana-rodrigues","nome":"Giovana Rodrigues","equipe":"Esquadrão Alpha","foto":"assets/consultores/giovana-rodrigues.jpg"},
     {"id":"sueli-teixeira","nome":"Suli Teixeira","equipe":"Esquadrão Alpha","foto":"assets/consultores/sueli-teixeira.jpg"},
-    {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha"},
+    {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha","foto":"assets/consultores/izabella-nascimento.jpg"},
     {"id":"alex-sandro","nome":"Alex Sandro","equipe":"Artilheiros","foto":"assets/consultores/alex-sandro.jpg"},
     {"id":"edvan-fernandes","nome":"Edvan Fernandes","equipe":"Artilheiros","foto":"assets/consultores/edvan-fernandes.jpg"},
     {"id":"enzo-santorelli","nome":"Enzo Santorelli","equipe":"Artilheiros","foto":"assets/consultores/enzo-santorelli.jpg"},
