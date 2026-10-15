@@ -417,18 +417,25 @@ function criarLinha() {
   return li;
 }
 
-/* bolinha do consultor: a foto quando existe, as iniciais quando não existe ou não carrega */
+/* bolinha do consultor: as iniciais ficam sempre por baixo e a foto entra por cima quando termina de carregar;
+   se a foto não carregar, ela some e as iniciais continuam ali */
 const fotosRuins = new Set();
 function pintarAvatar(av, l) {
   const foto = l.foto && !fotosRuins.has(l.foto) ? l.foto : '';
-  if ((av.dataset.foto || '') === foto && (foto || av.textContent)) return;
-  av.dataset.foto = foto;
+  const chave = foto + '|' + l.nome;
+  if (av.dataset.chave === chave) return;
+  av.dataset.chave = chave;
   av.classList.toggle('com-foto', !!foto);
-  av.textContent = foto ? '' : iniciais(l.nome);
+  av.textContent = '';
+  av.append(el('span', { class: 'av-ini', text: iniciais(l.nome) }));
   if (!foto) return;
-  const img = el('img', { src: foto, alt: '', decoding: 'async' });
-  img.addEventListener('error', () => { fotosRuins.add(foto); av.dataset.foto = ''; av.classList.remove('com-foto'); av.textContent = iniciais(l.nome); });
+  const img = el('img', { alt: '', width: 200, height: 200, decoding: 'async' });
+  const pronta = () => img.classList.add('ok');
+  img.addEventListener('load', pronta);
+  img.addEventListener('error', () => { fotosRuins.add(foto); img.remove(); av.classList.remove('com-foto'); av.dataset.chave = '|' + l.nome; });
+  img.src = foto;
   av.append(img);
+  if (img.complete && img.naturalWidth) pronta();
 }
 
 function pintarLista(r, editar, carregando) {

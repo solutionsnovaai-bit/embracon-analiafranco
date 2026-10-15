@@ -225,7 +225,9 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .linha.top .pos{font-size:1.75rem;color:var(--l-fg)}
 .linha.lider .pos{font-size:2.75rem}
 .avatar{grid-area:av;display:grid;place-items:center;width:2.75rem;height:2.75rem;border-radius:50%;background:var(--l-av);font:700 .9375rem/1 var(--display);font-stretch:90%;letter-spacing:.02em}
-.avatar img{grid-area:1/1;display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 40%}
+.avatar>*{grid-area:1/1}
+.avatar img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 40%;opacity:0;transition:opacity .35s ease}
+.avatar img.ok{opacity:1}
 .avatar.com-foto{box-shadow:0 0 0 2px var(--l-av)}
 .quem{grid-area:quem;min-width:0;display:grid;line-height:1.25}
 .nome{font-weight:700;font-size:1rem;overflow-wrap:anywhere}
