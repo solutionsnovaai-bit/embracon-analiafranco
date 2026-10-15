@@ -15,15 +15,14 @@ const DEMO = {
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
     ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
-    ['sueli-teixeira', 'Sueli Teixeira', 'Esquadrão Alpha'],
+    ['sueli-teixeira', 'Sueli Teixeira', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
-    ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['letycia-reis', 'Letycia Reis', 'Artilheiros'],
-    ['nathali-rezende', 'Nathali Rezende', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
+    ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
     ['ricardo-neves', 'Ricardo Neves', 'Artilheiros'], ['tamyres-reis', 'Tamyres Reis', 'Artilheiros'],
     ['bruno-marques', 'Bruno Marques', 'Lekos'], ['matheus-detilio', 'Matheus Detilio', 'Lekos'],
     ['lais-berloni', 'Lais Berloni', 'Lekos'], ['mateus-sales', 'Mateus Sales', 'Lekos'],
     ['gabriel-caseri', 'Gabriel Caseri', 'Lekos'], ['juliana-delgado', 'Juliana Delgado', 'Lekos'],
-    ['fernando', 'Fernando', 'Lekos']
+    ['fernando', 'Fernando', 'Lekos'], ['stephanie-martins', 'Stephanie Martins', 'Lekos']
   ]
 };
 const SEM_EQUIPE = 'Sem equipe';
