@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-10-15T14:16:00-03:00",
+  "atualizadoEm": "2026-10-15T14:32:00-03:00",
   "config": {
     "unidade": "Anália Franco",
     "meta": 21000000,
@@ -20,15 +20,15 @@
     {"id":"edvan-fernandes","nome":"Edvan Fernandes","equipe":"Artilheiros","foto":"assets/consultores/edvan-fernandes.jpg"},
     {"id":"enzo-santorelli","nome":"Enzo Santorelli","equipe":"Artilheiros","foto":"assets/consultores/enzo-santorelli.jpg"},
     {"id":"pedro-lucas","nome":"Pedro Lucas","equipe":"Artilheiros","foto":"assets/consultores/pedro-lucas.jpg"},
-    {"id":"ricardo-neves","nome":"Ricardo Neves","equipe":"Artilheiros"},
+    {"id":"ricardo-neves","nome":"Ricardo Neves","equipe":"Artilheiros","foto":"assets/consultores/ricardo-neves.jpg"},
     {"id":"tamyres-reis","nome":"Tamyres Reis","equipe":"Artilheiros","foto":"assets/consultores/tamyres-reis.jpg"},
-    {"id":"bruno-marques","nome":"Bruno Marques","equipe":"Lekos"},
+    {"id":"bruno-marques","nome":"Bruno Marques","equipe":"Lekos","foto":"assets/consultores/bruno-marques.jpg"},
     {"id":"matheus-detilio","nome":"Matheus Detilio","equipe":"Lekos","foto":"assets/consultores/matheus-detilio.jpg"},
     {"id":"lais-berloni","nome":"Lais Berloni","equipe":"Lekos","foto":"assets/consultores/lais-berloni.jpg"},
     {"id":"mateus-sales","nome":"Mateus Sales","equipe":"Lekos","foto":"assets/consultores/mateus-sales.jpg"},
     {"id":"gabriel-caseri","nome":"Gabriel Caseri","equipe":"Lekos","foto":"assets/consultores/gabriel-caseri.jpg"},
     {"id":"juliana-delgado","nome":"Juliana Delgado","equipe":"Lekos","foto":"assets/consultores/juliana-delgado.jpg"},
-    {"id":"fernando","nome":"Fernando","equipe":"Lekos"},
+    {"id":"fernando","nome":"Fernando Kasemodel","equipe":"Lekos","foto":"assets/consultores/fernando.jpg"},
     {"id":"stephanie-martins","nome":"Stephanie Martins","equipe":"Lekos"}
   ],
   "vendas": [

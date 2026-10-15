@@ -22,7 +22,7 @@ const DEMO = {
     ['bruno-marques', 'Bruno Marques', 'Lekos'], ['matheus-detilio', 'Matheus Detilio', 'Lekos'],
     ['lais-berloni', 'Lais Berloni', 'Lekos'], ['mateus-sales', 'Mateus Sales', 'Lekos'],
     ['gabriel-caseri', 'Gabriel Caseri', 'Lekos'], ['juliana-delgado', 'Juliana Delgado', 'Lekos'],
-    ['fernando', 'Fernando', 'Lekos'], ['stephanie-martins', 'Stephanie Martins', 'Lekos']
+    ['fernando', 'Fernando Kasemodel', 'Lekos'], ['stephanie-martins', 'Stephanie Martins', 'Lekos']
   ]
 };
 const SEM_EQUIPE = 'Sem equipe';
@@ -898,6 +898,19 @@ function onda() {
   document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.querySelectorAll('.eq-quem, .eq-valor').forEach(x => x.animate(quadros, { duration: 1050, delay: 300 + i * 120, easing: 'ease-in-out' })));
 }
 
+/* ---------- logo do topo sempre pronto ----------
+   Com a página lá embaixo, o navegador pode descartar a imagem já decodificada do logo
+   e, na volta, pintá-lo atrasado. Por isso o logo é decodificado de novo antes de a
+   página subir, seja na rolagem automática do telão, seja na rolagem à mão. */
+const logos = [...document.querySelectorAll('.marca img')];
+const prepararLogo = () => Promise.all(logos.filter(i => i.offsetWidth && i.decode).map(i => i.decode().catch(() => {})));
+let logoY = scrollY, logoPronto = 0;
+addEventListener('scroll', () => {
+  const y = scrollY, agora = performance.now();
+  if (y < logoY && y < innerHeight * 2.5 && agora - logoPronto > 1500) { logoPronto = agora; prepararLogo(); }
+  logoY = y;
+}, { passive: true });
+
 /* ---------- telão: a página rola sozinha para mostrar todo o ranking ----------
    Para no topo, desce devagar até o fim, espera e volta. Qualquer toque, rolagem
    ou tecla pausa por 20 s. */
@@ -913,7 +926,10 @@ function passoRolagem(t) {
     rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045, max); rolagem.ult = t;   // ~45 px por segundo
     scrollTo(0, rolagem.y);
     if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + 7000; }
-  } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) { rolagem.fase = 'sobe'; rolagem.ate = t + 2600; scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' }); }
+  } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) {
+    rolagem.fase = 'sobe'; rolagem.ate = t + 4000;
+    prepararLogo().then(() => { if (rolagem.fase === 'sobe') scrollTo({ top: 0, behavior: semMovimento ? 'auto' : 'smooth' }); });
+  }
   else if (rolagem.fase === 'sobe' && (t >= rolagem.ate || scrollY < 2)) { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
 }
 ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { rolagem.pausaAte = performance.now() + 20000; }, { passive: true }));
