@@ -1336,7 +1336,9 @@ function confetePodio(forca) {
   chuva(b.left + b.width / 2, b.top + b.height * .35, Math.round(64 * forca), 1.3 * Math.max(forca, .55));
 }
 
-/* ---------- tela: uma por equipe ---------- */
+/* ---------- tela: uma por equipe ----------
+   À esquerda, quem supervisiona: foto num anel que enche com a meta da equipe e mãozinhas em órbita.
+   À direita, os números da equipe e o time em ordem, do maior vendido para o menor. */
 let equipeAss = '';
 function montarEquipe(r, forcar) {
   const eqs = equipesValidas(r), corpo = $('te-corpo'), chips = $('te-chips');
@@ -1351,34 +1353,38 @@ function montarEquipe(r, forcar) {
   for (const x of eqs) chips.append(el('button', { type: 'button', class: 'te-chip', 'aria-pressed': String(x.nome === e.nome), text: x.nome, onclick: () => irPara('equipes', { equipe: x.nome, rapida: true }) }));
 
   const pos = r.equipes.indexOf(e) + 1, pct = metaEq ? e.valor / metaEq * 100 : r.total ? e.valor / r.total * 100 : 0;
+  const pctLegivel = pctTxt(Math.floor(pct * 10) / 10);
   const anel = el('span', { class: 'te-anel', style: '--p:' + Math.min(pct, 100).toFixed(2) });
   const av = el('span', { class: 'avatar te-av', 'aria-hidden': 'true' });
   if (e.sup) pintarAvatar(av, e.sup); else av.append(maoEl('te-av-mao'));
   anel.append(av);
   const sup = el('aside', { class: 'te-sup' },
-    el('span', { class: 'te-pos' + (pos === 1 && e.valor > 0 ? ' lider' : '') }, maoEl('te-pos-mao'), e.valor > 0 ? pos + 'º entre as equipes' : 'Na largada'),
+    el('span', { class: 'te-pos' }, maoEl('te-pos-mao'), e.valor > 0 ? pos + 'º entre as equipes' : 'Na largada'),
     el('div', { class: 'te-foto' }, el('div', { class: 'te-orbita', 'aria-hidden': 'true' }, maoEl('te-o te-o1'), maoEl('te-o te-o2'), maoEl('te-o te-o3')), anel),
-    e.sup ? el('span', { class: 'rotulo', text: 'Supervisão' }) : null,
-    e.sup ? el('strong', { class: 'te-sup-nome', text: e.sup.nome }) : null,
-    e.sup && e.sup.cargo ? el('span', { class: 'te-sup-cargo', text: e.sup.cargo }) : null);
+    el('strong', { class: 'te-sup-nome', text: e.sup ? e.sup.nome : e.nome }),
+    el('span', { class: 'te-sup-cargo', text: e.sup ? (e.sup.cargo ? e.sup.cargo + ' da equipe' : 'Supervisão da equipe') : 'Equipe sem supervisão cadastrada' }),
+    el('p', { class: 'te-sup-meta' }, el('strong', { text: pctLegivel }), metaEq ? ' da meta da equipe' : ' do crédito da franquia'));
 
-  const total = el('span', { class: 'reluz te-total-v', text: nf.format(e.valor) }); total._alvo = e.valor;
+  const total = el('span', { class: 'te-total-v', text: nf.format(e.valor) }); total._alvo = e.valor;
   const cheio = el('div', { class: 'barra-cheio' }); cheio.style.width = Math.min(pct, 100) + '%';
-  const fato = (rot, val, sub) => el('div', { class: 'fato' }, el('dt', { text: rot }), el('dd', {}, el('strong', { text: val }), el('span', { text: sub })));
   const falta = metaEq ? Math.max(metaEq - e.valor, 0) : 0, maior = (membros[0] && membros[0].valor) || 1;
+  const fato = (rot, val, sub) => el('div', { class: 'te-fato' }, el('dt', { text: rot }), el('dd', {}, el('strong', { text: val }), el('span', { text: sub })));
+  const regua = metaEq ? el('div', { class: 'te-meta' },
+    el('div', { class: 'te-regua' }, cheio),
+    el('div', { class: 'te-marcas' }, el('span', { text: 'R$ 0' }), el('span', { text: curto(metaEq / 2) }), el('span', { text: 'Meta ' + curto(metaEq) }))) : el('div', { class: 'te-meta' }, el('div', { class: 'te-regua' }, cheio));
   const dados = el('div', { class: 'te-dados' },
     el('div', { class: 'te-topo' },
-      el('div', { class: 'te-titulo' }, el('span', { class: 'rotulo', text: 'Equipe' }), el('h2', { class: 'te-nome', id: 'te-nome', text: e.nome })),
+      el('h2', { class: 'te-nome', id: 'te-nome', text: e.nome }),
       el('div', { class: 'te-num' },
-        el('p', { class: 'total te-total' }, el('small', { text: 'R$' }), total),
-        el('p', { class: 'te-pct' }, el('strong', { class: 'reluz', text: pctTxt(Math.floor(pct * 10) / 10) }), ' ' + (metaEq ? 'da meta de ' + curto(metaEq) : 'do total da franquia')))),
-    el('div', { class: 'te-regua' }, cheio),
-    el('dl', { class: 'fatos te-fatos' },
-      fato('Falta vender', metaEq ? (falta > 0 ? curto(falta) : 'Meta batida') : '—', metaEq ? 'para a meta da equipe' : 'sem meta por equipe'),
-      fato('Já venderam', e.venderam + ' de ' + e.membros, 'consultores da equipe'),
-      fato('Cotas', nf.format(e.cotas), e.cotas ? 'ticket médio de ' + curto(e.valor / e.cotas) : 'nenhuma venda ainda'),
-      fato('Participação', r.total ? pctTxt(Math.round(e.valor / r.total * 100)) : '0%', 'do crédito da franquia')),
-    el('ol', { class: 'te-time' }, ...membros.map((p, k) => pessoaEquipe(p, k, maior))));
+        el('p', { class: 'te-total' }, el('small', { text: 'R$' }), total),
+        el('p', { class: 'te-de' }, metaEq ? 'de ' + curto(metaEq) + ' de meta' : 'do total da franquia'))),
+    regua,
+    el('dl', { class: 'te-fatos' },
+      fato('Falta vender', metaEq ? (falta > 0 ? curto(falta) : 'Meta batida') : '—', metaEq ? 'para fechar a meta' : 'sem meta por equipe'),
+      fato('Já venderam', e.venderam + ' de ' + e.membros, 'consultores'),
+      fato('Cotas', nf.format(e.cotas), e.cotas ? 'ticket médio ' + curto(e.valor / e.cotas) : 'nenhuma ainda'),
+      fato('Na franquia', r.total ? pctTxt(Math.round(e.valor / r.total * 100)) : '0%', 'do crédito vendido')),
+    el('ol', { class: 'te-time', style: 'grid-template-rows:repeat(' + Math.max(Math.ceil(membros.length / 2), 1) + ',auto)' }, ...membros.map((p, k) => pessoaEquipe(p, k, maior))));
   corpo.textContent = '';
   corpo.append(sup, dados);
 }
@@ -1387,9 +1393,11 @@ function pessoaEquipe(p, k, maior) {
   const cheio = el('i'); cheio.style.width = (p.valor / maior * 100) + '%';
   const destaque = k === 0 && p.valor > 0;
   return el('li', { class: 'te-p' + (destaque ? ' destaque' : '') + (p.valor > 0 ? '' : ' zerado') },
-    destaque ? maoEl('te-p-mao') : null, av,
-    el('div', { class: 'te-p-txt' }, el('strong', { class: 'te-p-nome', text: p.nome }),
-      el('span', { class: 'te-p-linha' }, el('b', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }), ' · ' + (p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda'))),
+    el('span', { class: 'te-p-pos', text: p.valor > 0 ? k + 1 : '–' }), av,
+    el('div', { class: 'te-p-txt' },
+      el('strong', { class: 'te-p-nome' }, el('span', { text: p.nome }), destaque ? maoEl('te-p-mao') : null),
+      el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda no ciclo' })),
+    el('strong', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }),
     el('span', { class: 'te-p-barra' }, cheio));
 }
 function encherDe0(b, dur, atraso) {
@@ -1402,32 +1410,32 @@ function entrarEquipe() {
   const t = $('te-corpo'), ease = 'cubic-bezier(.2,.8,.2,1)', mola = 'cubic-bezier(.34,1.5,.6,1)';
   const anel = t.querySelector('.te-anel');
   if (anel) {
-    anel.animate([{ transform: 'scale(.35) rotate(-40deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 950, delay: 150, easing: mola, fill: 'backwards' });
+    anel.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 900, delay: 150, easing: mola, fill: 'backwards' });
     const p = anel.style.getPropertyValue('--p');
     anel.style.transition = 'none'; anel.style.setProperty('--p', 0); void anel.offsetWidth;
     anel.style.transition = '--p 1.9s cubic-bezier(.2,.8,.2,1) .7s'; anel.style.setProperty('--p', p);
   }
-  t.querySelectorAll('.te-o').forEach((m, i) => setTimeout(() => maoVai(m), 500 + i * 160));
-  t.querySelectorAll('.te-pos-mao, .te-p-mao').forEach((m, i) => setTimeout(() => maoVai(m), 400 + i * 600));
+  t.querySelectorAll('.te-o').forEach((m, i) => setTimeout(() => maoVai(m), 600 + i * 160));
+  t.querySelectorAll('.te-pos-mao, .te-p-mao').forEach((m, i) => setTimeout(() => maoVai(m), 400 + i * 700));
+  t.querySelectorAll('.te-sup-nome, .te-sup-cargo, .te-sup-meta').forEach((x, i) => x.animate([{ opacity: 0, transform: 'translateY(.6rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 420 + i * 90, easing: ease, fill: 'backwards' }));
   const nome = t.querySelector('.te-nome');
-  if (nome) nome.animate([{ clipPath: 'inset(-10% 100% -10% 0)', transform: 'translateX(-3%)' }, { clipPath: 'inset(-10% 0 -10% 0)', transform: 'none' }], { duration: 850, delay: 260, easing: ease, fill: 'backwards' });
+  if (nome) nome.animate([{ clipPath: 'inset(-10% 100% -10% 0)', transform: 'translateX(-2%)' }, { clipPath: 'inset(-10% 0 -10% 0)', transform: 'none' }], { duration: 850, delay: 260, easing: ease, fill: 'backwards' });
   const tot = t.querySelector('.te-total-v');
   if (tot) { tot.textContent = '0'; setTimeout(() => contar(tot, 0, tot._alvo, v => nf.format(Math.round(v))), 420); }
   const regua = t.querySelector('.te-regua .barra-cheio'); if (regua) encherDe0(regua, 1600, 520);
-  t.querySelectorAll('.te-fatos .fato').forEach((f, i) => f.animate([{ opacity: 0, transform: 'translateY(.8rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 560 + i * 90, easing: ease, fill: 'backwards' }));
+  t.querySelectorAll('.te-fato').forEach((f, i) => f.animate([{ opacity: 0, transform: 'translateY(.8rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 560 + i * 80, easing: ease, fill: 'backwards' }));
   t.querySelectorAll('.te-p').forEach((p, i) => {
-    p.animate([{ opacity: 0, transform: 'translateY(1.2rem) scale(.95)' }, { opacity: 1, transform: 'none' }], { duration: 650, delay: 760 + i * 75, easing: ease, fill: 'backwards' });
-    const b = p.querySelector('.te-p-barra i'); if (b) encherDe0(b, 1200, 1000 + i * 75);
+    p.animate([{ opacity: 0, transform: 'translateX(-1rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 760 + i * 60, easing: ease, fill: 'backwards' });
+    const b = p.querySelector('.te-p-barra i'); if (b) encherDe0(b, 1200, 960 + i * 60);
   });
 }
 
 /* ---------- tela: mural ----------
-   Frase grande que troca (slogans e números do momento) e duas faixas de fotos andando em sentidos opostos,
-   com cartões de palavras no meio. */
+   Uma frase que troca (slogans e números do momento) e duas faixas de retratos andando em sentidos
+   opostos, com algumas frases curtas no meio. */
 let muralAss = '', giroMural = 0;
 function frasesMural(r) {
-  const c = state.config;
-  return ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Franquia ' + c.unidade, ...mensagens(r)].filter(f => f.length <= 84);
+  return ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', ...mensagens(r)].filter(f => f.length <= 84);
 }
 function girarMural(r) {
   const f = frasesMural(r || calcular());
@@ -1435,12 +1443,16 @@ function girarMural(r) {
 }
 function montarMural(r, forcar) {
   const c = state.config, sups = [...state.supervisores.values()];
-  $('mu-rot').textContent = 'Franquia ' + c.unidade + (c.ciclo ? ' · ' + c.ciclo : '');
+  $('mu-rot').textContent = 'Franquia ' + c.unidade + (c.ciclo ? ', ' + c.ciclo : '');
+  const num = $('mu-num'); num.textContent = '';
+  num.append(
+    el('div', {}, el('dt', { text: 'vendidos no ciclo' }), el('dd', { text: curto(r.total) })),
+    el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: r.venderam + ' de ' + state.consultores.size })));
   const ass = JSON.stringify([r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
   if (!forcar && ass === muralAss) return;
   muralAss = ass;
   const box = $('mu-linhas'); box.textContent = '';
-  const palavras = ['Porque sonhar não tem limites', 'Franquia ' + c.unidade, 'Meta de ' + curto(c.meta), 'Quem faz conta, faz consórcio', ...equipesValidas(r).map(e => e.nome), ...(c.ciclo ? [c.ciclo] : [])];
+  const palavras = ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Franquia ' + c.unidade];
   const metade = Math.ceil(r.pessoas.length / 2);
   const a = intercalar(r.pessoas.slice(0, metade).map(cartaoPessoa), palavras.filter((_, i) => i % 2 === 0));
   const b = intercalar([...sups.map(cartaoSup), ...r.pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
@@ -1452,13 +1464,14 @@ function montarMural(r, forcar) {
     const base = grupo.offsetWidth || 1;
     for (let w = base; w < box.clientWidth + 60 && w < 30000; w += base) itens.forEach(n => grupo.append(n.cloneNode(true)));
     trilho.append(grupo.cloneNode(true));
-    trilho.style.setProperty('--dur', Math.max(grupo.offsetWidth / 42, 18).toFixed(1) + 's');   // ~42 px por segundo
+    trilho.style.setProperty('--dur', Math.max(grupo.offsetWidth / 34, 20).toFixed(1) + 's');   // ~34 px por segundo
   }
 }
+/* uma frase curta a cada quatro retratos */
 function intercalar(cartas, palavras) {
   const out = [];
-  cartas.forEach((c, i) => { out.push(c); if (i % 3 === 1 && palavras.length) out.push(cartaoPalavra(palavras[Math.floor(i / 3) % palavras.length])); });
-  if (cartas.length < 2 && palavras.length) out.push(cartaoPalavra(palavras[0]));
+  cartas.forEach((c, i) => { out.push(c); if (i % 4 === 2 && palavras.length) out.push(cartaoPalavra(palavras[Math.floor(i / 4) % palavras.length])); });
+  if (cartas.length < 3 && palavras.length) out.push(cartaoPalavra(palavras[0]));
   return out;
 }
 function fotoMural(nome, foto) {
@@ -1466,19 +1479,22 @@ function fotoMural(nome, foto) {
 }
 function cartaoPessoa(p) {
   return el('figure', { class: 'mu-card' + (p.valor > 0 ? ' vendeu' : '') },
-    el('div', { class: 'mu-foto' }, fotoMural(p.nome, p.foto), p.valor > 0 ? el('b', { class: 'mu-selo' }, maoEl('mu-selo-mao'), curto(p.valor)) : null),
+    fotoMural(p.nome, p.foto),
+    p.valor > 0 ? el('b', { class: 'mu-valor' }, maoEl('mu-valor-mao'), curto(p.valor)) : null,
     el('figcaption', {}, el('strong', { text: p.nome }), el('span', { text: p.equipe || '' })));
 }
 function cartaoSup(s) {
   return el('figure', { class: 'mu-card sup' },
-    el('div', { class: 'mu-foto' }, fotoMural(s.nome, s.foto), el('b', { class: 'mu-selo' }, maoEl('mu-selo-mao'), 'Supervisão')),
+    fotoMural(s.nome, s.foto),
+    el('b', { class: 'mu-tag', text: 'Supervisão' }),
     el('figcaption', {}, el('strong', { text: s.nome }), el('span', { text: s.equipe })));
 }
 const cartaoPalavra = txt => el('div', { class: 'mu-palavra' }, maoEl('mu-palavra-mao'), el('span', { text: txt }));
 function entrarMural() {
   const f = $('mu-frase'); f._texto = null; f.textContent = '';
   giroMural = 0; girarMural();
-  document.querySelectorAll('#mu-linhas .mu-linha').forEach((l, i) => l.animate([{ opacity: 0, transform: 'translateX(' + (i ? '-' : '') + '6rem)' }, { opacity: 1, transform: 'none' }], { duration: 1000, delay: 250 + i * 180, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  document.querySelectorAll('#mu-num > div').forEach((d, i) => d.animate([{ opacity: 0, transform: 'translateY(.6rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 350 + i * 110, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  document.querySelectorAll('#mu-linhas .mu-linha').forEach((l, i) => l.animate([{ opacity: 0, transform: 'translateX(' + (i ? '-' : '') + '4rem)' }, { opacity: 1, transform: 'none' }], { duration: 1100, delay: 300 + i * 180, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
 }
 let muralT = 0;
 addEventListener('resize', () => { clearTimeout(muralT); muralT = setTimeout(() => { if (telaAtual === 'mural' && state.modo !== 'carregando') montarMural(calcular(), true); }, 300); });
