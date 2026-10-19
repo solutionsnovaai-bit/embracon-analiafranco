@@ -75,7 +75,6 @@ function quando(s) {
   if (n > 1 && n < 7) return 'há ' + n + ' dias';
   return dataCurta(s);
 }
-const primeiroNome = nome => nome.trim().split(/\s+/)[0] || nome;
 /* "Supervisora" vira "supervisora" no meio da frase; siglas como "CEO" ficam como estão */
 const cargoTxt = c => /^[A-ZÀ-Ú]{2,5}$/.test(c) ? c : c.toLowerCase();
 const iniciais = nome => { const p = nome.trim().split(/\s+/); return (p.length > 1 ? p[0][0] + p[p.length - 1][0] : (p[0] || '?').slice(0, 2)).toUpperCase(); };
@@ -333,7 +332,7 @@ function mensagens(r) {
     const l = r.lideres[0];
     if (l) m.push(l.nome + ' lidera o ranking com ' + curto(l.valor));
     const e1 = r.equipes[0];
-    if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + primeiroNome(e1.sup.nome) + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
+    if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + e1.sup.nome + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
     const u = r.feed.find(v => v.data);
     if (u) m.push('Última venda: ' + descrever(u));
     m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
@@ -350,7 +349,7 @@ function mensagens(r) {
   return m;
 }
 function fraseSupervisao(r) {
-  const l = r.equipes.filter(e => e.sup).map(e => primeiroNome(e.sup.nome) + ' (' + e.nome + ')');
+  const l = r.equipes.filter(e => e.sup).map(e => e.sup.nome + ' (' + e.nome + ')');
   return l.length ? 'Supervisão: ' + listaNatural(l) : '';
 }
 let giroDestaque = 0;
@@ -647,7 +646,7 @@ function itensFaixa(r) {
   if (r.total > 0) {
     itens.push(['Crédito vendido', curto(r.total) + ' de ' + curto(c.meta) + ' (' + pctTxt(Math.floor(r.total / c.meta * 1000) / 10) + ')']);
     /* equipes com a foto da supervisão; consultores e vendas com a foto de quem vendeu */
-    r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + primeiroNome(e.sup.nome) : ''), e.sup && e.sup.foto]));
+    r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + e.sup.nome : ''), e.sup && e.sup.foto]));
     r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor), l.foto]));
     r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v), state.consultores.get(v.consultor).foto]));
     if (r.falta > 0) itens.push(['Faltam', curto(r.falta) + ' para a meta da franquia']);

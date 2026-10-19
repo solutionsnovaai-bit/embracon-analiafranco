@@ -125,7 +125,7 @@ O `PUT` recebe o conteúdo novo em Base64, a mensagem do commit e o `sha` devolv
 
 Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e quanto falta para a meta da equipe.
 
-Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Rafael Ferraz nos Artilheiros e Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
+Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Rafael Ferraz nos Artilheiros e Diego Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
 
 ## Temas
 
