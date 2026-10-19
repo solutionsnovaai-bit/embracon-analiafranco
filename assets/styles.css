@@ -215,7 +215,7 @@ html.tv .so-edicao{display:none}
 .fato dd span.abaixo{color:var(--red-deep);font-weight:600}
 
 /* ---------- colunas ---------- */
-.colunas{display:grid;grid-template-columns:minmax(0,1fr) 21.5rem;gap:2rem 2.5rem;align-items:start}
+.colunas{display:grid;grid-template-columns:minmax(0,1fr) 23.5rem;gap:2rem 2.5rem;align-items:start}
 .sec-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem 1rem;margin-bottom:.9rem}
 h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:balance}
 .lado h2{font-size:1.0625rem}
@@ -262,14 +262,45 @@ h2{margin:0;font:800 1.375rem/1.15 var(--display);font-stretch:84%;text-wrap:bal
 .lado{display:grid;gap:2rem;min-width:0}
 /* ranking de equipes: um cartão por equipe, barra relativa à equipe que mais vendeu */
 .equipes{list-style:none;margin:0;padding:0;display:grid;gap:.5rem}
-.eq-linha{display:grid;grid-template-columns:1.5rem minmax(0,1fr) auto;grid-template-areas:"pos quem valor" "pos barra barra";align-items:center;column-gap:.75rem;row-gap:.6rem;
+.eq-linha{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:1.5rem minmax(0,1fr) auto;grid-template-areas:"pos quem valor" "pos barra barra";align-items:center;column-gap:.75rem;row-gap:.7rem;
   padding:.85rem .95rem;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);transition:background-color .35s ease,border-color .35s ease,box-shadow .35s ease}
-.eq-linha.lider{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+/* com supervisão: foto ao lado do nome da equipe e de quem supervisiona; números da equipe embaixo, a barra com a porcentagem da meta no fim */
+.eq-linha.com-sup{grid-template-columns:1.5rem 3.4rem minmax(0,1fr) auto;grid-template-areas:"pos av nome valor" "pos av sup sup" "pos sub sub sub" "pos barra barra pct";row-gap:0}
+.eq-linha.com-sup .eq-quem,.eq-linha.com-sup .eq-valor{display:contents}
+.com-sup .eq-pos{padding-top:.95rem}
+.com-sup .eq-nome{grid-area:nome;align-self:end}
+.com-sup .eq-quem .eq-sup{grid-area:sup;align-self:start;margin-top:.1rem}
+.com-sup .eq-sub{grid-area:sub;margin-top:.6rem}
+.com-sup .eq-valor strong{grid-area:valor;align-self:end;text-align:right}
+.com-sup .eq-valor span{grid-area:pct;align-self:center;margin-top:.55rem;text-align:right;white-space:nowrap}
+.com-sup .eq-barra{margin-top:.55rem}
+.eq-linha.lider{border-color:var(--red)}
+/* equipe na frente: uma luz dá a volta na borda do cartão */
+.eq-linha.lider::before{content:"";position:absolute;z-index:-2;left:50%;top:50%;width:150%;aspect-ratio:1;
+  background:conic-gradient(from 0deg,var(--red) 0 7%,var(--red-wash) 20% 70%,var(--red) 93%);transform:translate(-50%,-50%);animation:borda-gira 5s linear infinite}
+.eq-linha.lider::after{content:"";position:absolute;z-index:-1;inset:2px;border-radius:calc(var(--r) - 2px);background:var(--paper);transition:background-color .35s ease}
+@keyframes borda-gira{to{transform:translate(-50%,-50%) rotate(1turn)}}
+/* supervisão: foto recortada num anel que enche com a meta da equipe (--p de 0 a 100) */
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+.eq-av{grid-area:av;position:relative;display:block;width:3.4rem;aspect-ratio:1;padding:3.5px;box-sizing:border-box;border-radius:50%;
+  background:conic-gradient(var(--red) calc(var(--p) * 1%),var(--track) 0);transition:--p 1.2s var(--ease)}
+.eq-av .avatar,.eq-av .avatar.com-foto{width:100%;height:100%;box-sizing:border-box;border:2px solid var(--paper);box-shadow:none;background:var(--track);font-size:.875rem}
+.eq-av .avatar img{object-position:50% 35%}
+/* um brilho corre pelo anel */
+.eq-av::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:conic-gradient(from 0deg,transparent 0 78%,rgba(255,255,255,.85) 92%,transparent 100%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+  animation:anel-gira 3.6s linear infinite;animation-delay:calc(var(--i,0) * -.9s)}
+@keyframes anel-gira{to{transform:rotate(1turn)}}
+/* a supervisão da equipe na frente ganha um pulso em volta */
+.eq-linha.lider .eq-av::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--red);animation:anel-lider 2.4s ease-out infinite}
 .eq-pos{grid-area:pos;align-self:start;padding-top:.1rem;font:800 1.375rem/1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:center}
 .eq-linha.lider .eq-pos{color:var(--red)}
-.eq-quem{grid-area:quem;display:grid;min-width:0;line-height:1.25}
+.eq-quem{grid-area:quem;display:grid;gap:.08rem;min-width:0;line-height:1.25}
 .eq-quem strong{font:800 1.0625rem/1.15 var(--display);font-stretch:86%;overflow-wrap:anywhere}
 .eq-quem span,.eq-valor span{font-size:.75rem;color:var(--ink-2)}
+.eq-quem .eq-sup{font-size:.8125rem;line-height:1.3;color:var(--ink-2);text-wrap:balance}
+.eq-sup b{color:var(--ink);font-weight:700}
 .eq-valor{grid-area:valor;display:grid;text-align:right;line-height:1.2}
 .eq-valor strong{font:800 1.0625rem/1.1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;white-space:nowrap}
 .eq-barra{grid-area:barra;height:.4rem;background:var(--track);border-radius:2px;overflow:hidden}
@@ -361,6 +392,11 @@ dialog::backdrop{background:var(--shade)}
 .pct .reluz{--r-base:var(--red);--r-luz:var(--reluz-pct);color:transparent;animation-delay:3.1s}
 @keyframes reluz{0%,64%{background-position:100% 0}86%,100%{background-position:0 0}}
 
+/* sinal no ar: uma luz corre na borda de cima do placar */
+.placar::before{content:"";position:absolute;z-index:2;left:0;top:0;width:32%;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--red) 50%,transparent);transform:translateX(-100%);animation:linha-viva 4.4s var(--ease-io) .8s infinite}
+@keyframes linha-viva{0%{transform:translateX(-100%)}62%,100%{transform:translateX(320%)}}
+
 /* mão grande no placar: os dedos fazem uma onda, a mão flutua */
 .placar>*{position:relative;z-index:1}
 .placar>.placar-mao{position:absolute;z-index:0;right:-3%;top:50%;width:min(36rem,50%);margin-top:calc(min(36rem,50%) * -.427);--mao-cor:var(--red);opacity:var(--mao-fundo);
@@ -400,6 +436,24 @@ dialog::backdrop{background:var(--shade)}
 .faixa-selo{position:relative;z-index:1;flex:none;display:flex;align-items:center;gap:.55rem;padding:0 1.1rem 0 1rem;background:var(--selo-faixa);color:#FFFFFF;
   font:800 .8125rem/1 var(--display);font-stretch:90%;letter-spacing:.08em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,calc(100% - .9rem) 100%,0 100%);padding-inline-end:1.8rem}
 .faixa-selo i{width:.5rem;height:.5rem;border-radius:50%;background:var(--red);animation:ao-vivo-faixa 1.6s ease-out infinite}
+/* selo de transmissão: barrinhas de equalizador, relógio com os dois pontos piscando e um brilho que passa */
+.faixa-eq{display:inline-flex;align-items:flex-end;gap:2px;height:.85rem}
+.faixa-eq b{display:block;width:3px;height:100%;border-radius:1px;background:currentColor;transform-origin:50% 100%;animation:eq-vivo .9s ease-in-out infinite alternate}
+.faixa-eq b:nth-child(2){animation-duration:.62s;animation-delay:-.35s}
+.faixa-eq b:nth-child(3){animation-duration:.78s;animation-delay:-.6s}
+.faixa-eq b:nth-child(4){animation-duration:.54s;animation-delay:-.15s}
+@keyframes eq-vivo{from{transform:scaleY(.22)}to{transform:scaleY(1)}}
+.faixa-hora{display:inline-flex;align-items:center;margin-inline-start:.2rem;padding-inline-start:.7rem;border-inline-start:1px solid rgba(255,255,255,.32);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.05em}
+.faixa-selo .faixa-hora i{width:auto;height:auto;border-radius:0;background:none;font-style:normal;animation:pisca 1s steps(1) infinite}
+@keyframes pisca{50%{opacity:0}}
+.faixa-selo::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);
+  transform:translateX(-100%);animation:selo-brilho 5s var(--ease-io) 1.5s infinite}
+@keyframes selo-brilho{0%{transform:translateX(-100%)}35%,100%{transform:translateX(100%)}}
+/* linha fina no alto da faixa: enche até a próxima conferência da planilha */
+.faixa::before{content:"";position:absolute;z-index:2;left:0;right:0;top:0;height:2px;background:var(--on-red);opacity:.6;transform-origin:0 50%;transform:scaleX(0)}
+.faixa.confere::before{animation:confere var(--confere,8s) linear forwards}
+@keyframes confere{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.fx-foto{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;object-fit:cover;object-position:50% 38%;background:var(--red-deep);box-shadow:0 0 0 2px var(--on-red)}
 @keyframes ao-vivo-faixa{0%{box-shadow:0 0 0 0 var(--red)}70%,100%{box-shadow:0 0 0 .45rem transparent}}
 .faixa-janela{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;
   -webkit-mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent);mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent)}
@@ -442,6 +496,7 @@ dialog::backdrop{background:var(--shade)}
   .placar>.placar-mao{width:78%;right:-22%;top:2rem;margin-top:0}
   .faixa{font-size:.875rem}
   .faixa-selo{padding-inline:.8rem 1.4rem}
+  .faixa-hora{display:none}
   .flash{top:.75rem;gap:.8rem;padding:.8rem 1rem}
   .flash-mao{width:2.6rem}
   .flash-txt strong{font-size:1.125rem}
@@ -455,6 +510,6 @@ dialog::backdrop{background:var(--shade)}
   *,*::before,*::after{animation:none!important;transition:none!important}
   .load-barra i{transform:none}
   .reluz{color:var(--r-base);background:none}
-  .regua-cheio::after,.barra-cheio::after,.eq-barra i::after,.mix-barra::after,.regua-trilho::after,.linha.lider::after{display:none}
+  .regua-cheio::after,.barra-cheio::after,.eq-barra i::after,.mix-barra::after,.regua-trilho::after,.linha.lider::after,.eq-av::after,.placar::before,.faixa-selo::after,.faixa::before{display:none}
   .faixa-janela{overflow-x:auto}
 }

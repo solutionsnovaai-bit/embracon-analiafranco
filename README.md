@@ -14,7 +14,7 @@ assets/config.js           link da planilha do Google (vazio: usa data/ranking.j
 assets/logo-embracon.png          logo original colorido (base do logo em vetor do tema claro e ícone da aba)
 assets/logo-embracon-branco.png   logo original branco (base do logo em vetor do tema vermelho)
 assets/marca/              logo em camadas (mão em 4 traços, "Consórcio", "Embracon") para as animações
-data/ranking.json          dados: metas, consultores (com equipe e foto) e vendas
+data/ranking.json          dados: metas, consultores (com equipe e foto), supervisão das equipes e vendas
 planilha/ranking-embracon-analia-franco.xlsx   planilha estilizada para importar no Google
 ```
 
@@ -77,6 +77,9 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
   "consultores": [
     { "id": "nome-do-consultor", "nome": "Nome do Consultor", "equipe": "Artilheiros" }
   ],
+  "supervisores": [
+    { "equipe": "Artilheiros", "nome": "Rafael Ferraz", "cargo": "CEO", "foto": "assets/supervisores/rafael-ferraz.jpg" }
+  ],
   "vendas": [
     { "consultor": "nome-do-consultor", "valor": 300000, "categoria": "imovel", "data": "2026-10-02" }
   ]
@@ -93,6 +96,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `consultores[].id` | Identificador curto, sem espaços nem acentos. É o que liga a venda ao consultor. |
 | `consultores[].foto` | Foto da bolinha do consultor (opcional), por exemplo `assets/consultores/juliana-delgado.jpg`. Quadrada, de preferência 320 × 320. Sem foto, a bolinha mostra as iniciais. |
 | `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. |
+| `supervisores[]` | Quem supervisiona cada equipe: `equipe` (escrita igual à dos consultores), `nome`, `cargo` (ex.: Supervisora, CEO) e `foto` (quadrada, em `assets/supervisores/`). Aparece com foto no cartão da equipe, nos destaques e na faixa ao vivo. Com a planilha do Google ligada, a supervisão continua vindo daqui. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
 | `vendas[].categoria` | `imovel`, `auto`, `pesados` ou `servicos` (opcional; sem ela a venda entra como não informada). |
@@ -119,7 +123,9 @@ O `PUT` recebe o conteúdo novo em Base64, a mensagem do commit e o `sha` devolv
 
 ## Equipes
 
-Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e de quem já bateu a meta individual.
+Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e quanto falta para a meta da equipe.
+
+Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Rafael Ferraz nos Artilheiros e Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
 
 ## Temas
 
@@ -136,7 +142,10 @@ O painel foi feito para ficar passando no telão, então nunca fica parado:
 - **Barras:** listras correm na inclinação dos dedos da mão e um brilho atravessa cada barra de tempos em tempos. No tema claro o preenchimento é vermelho; no vermelho, branco.
 - **Destaques:** embaixo do total, uma frase troca a cada 6,5 segundos (quem lidera, equipe na frente, última venda, quanto falta). As palavras saem por cima e entram por baixo.
 - **Ao vivo:** o topo alterna entre a hora da última atualização dos números e a hora em que o painel conferiu o arquivo pela última vez.
-- **Faixa ao vivo:** no rodapé, um letreiro corre com o placar, as equipes, os primeiros colocados e as últimas vendas.
+- **Faixa ao vivo:** no rodapé, um letreiro corre com o placar, as equipes (com a foto da supervisão), os primeiros colocados e as últimas vendas (com a foto de quem vendeu). O selo AO VIVO tem barrinhas de equalizador, relógio com os dois pontos piscando e um brilho que passa; uma linha fina no alto da faixa enche até a próxima conferência da planilha.
+- **Equipes:** a luz dá a volta na borda do cartão da equipe que está na frente, um brilho corre pelo anel de cada supervisão, a foto da supervisão da equipe líder pulsa e, a cada 16 segundos, as fotos da supervisão dão um giro de moeda, uma depois da outra.
+- **Valores contando:** quando uma venda entra, o valor do consultor e o da equipe sobem contando até o número novo.
+- **Placar:** uma luz corre na borda de cima, como sinal no ar.
 - **Venda nova:** quando a conferência automática encontra vendas novas, um aviso desce no topo da tela com o nome, a equipe e o valor.
 - **Onda:** a cada 45 segundos, os nomes e valores do ranking somem e voltam, de cima para baixo.
 - **Mão de fundo:** no placar, uma mão grande faz uma onda com os dedos.

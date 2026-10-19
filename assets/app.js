@@ -75,6 +75,9 @@ function quando(s) {
   if (n > 1 && n < 7) return 'há ' + n + ' dias';
   return dataCurta(s);
 }
+const primeiroNome = nome => nome.trim().split(/\s+/)[0] || nome;
+/* "Supervisora" vira "supervisora" no meio da frase; siglas como "CEO" ficam como estão */
+const cargoTxt = c => /^[A-ZÀ-Ú]{2,5}$/.test(c) ? c : c.toLowerCase();
 const iniciais = nome => { const p = nome.trim().split(/\s+/); return (p.length > 1 ? p[0][0] + p[p.length - 1][0] : (p[0] || '?').slice(0, 2)).toUpperCase(); };
 const slug = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'consultor';
 function marca(texto) { let h = 5381; for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) | 0; return String(h) + ':' + texto.length; }
@@ -98,7 +101,8 @@ const state = {
   podeEditar: !PLANILHA && location.hash === '#editar',   // com a planilha, quem lança é a planilha
   config: { ...PADRAO },
   consultores: new Map(),       // id -> {id, nome, equipe}
-  vendas: [],                   // {id, ordem, consultor, valor, categoria, data}
+  supervisores: new Map(),      // nome da equipe (normalizado) -> {equipe, nome, cargo, foto}
+  vendas: [],                  // {id, ordem, consultor, valor, categoria, data}
   atualizadoEm: '',
   conferidoEm: null,            // última vez que o painel leu o arquivo
   filtro: 'ciclo',
@@ -149,6 +153,14 @@ function aplicar(dados) {
     const id = String(p.id || slug(nome));
     state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), foto: fotoValida(p.foto) });
   }
+  /* supervisão de cada equipe: aparece com foto no cartão da equipe e na faixa ao vivo */
+  state.supervisores = new Map();
+  for (const s of Array.isArray(d.supervisores) ? d.supervisores : []) {
+    if (!s || typeof s !== 'object') continue;
+    const equipe = limparEquipe(s.equipe), nome = String(s.nome || '').trim().slice(0, 60);
+    if (!equipe || !nome) continue;
+    state.supervisores.set(normNome(equipe), { equipe, nome, cargo: String(s.cargo || '').trim().slice(0, 30), foto: fotoValida(s.foto) });
+  }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
   state.confirmar = null;
@@ -158,13 +170,14 @@ function exportar() {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
     consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
+    supervisores: [...state.supervisores.values()].map(s => ({ equipe: s.equipe, nome: s.nome, ...(s.cargo ? { cargo: s.cargo } : {}), ...(s.foto ? { foto: s.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
 }
 function textoJson(d) {
   const bloco = lista => lista.length ? '[\n' + lista.map(o => '    ' + JSON.stringify(o)).join(',\n') + '\n  ]' : '[]';
   return '{\n  "atualizadoEm": ' + JSON.stringify(d.atualizadoEm) + ',\n  "config": ' + JSON.stringify(d.config, null, 2).replace(/\n/g, '\n  ') +
-    ',\n  "consultores": ' + bloco(d.consultores) + ',\n  "vendas": ' + bloco(d.vendas) + '\n}\n';
+    ',\n  "consultores": ' + bloco(d.consultores) + (d.supervisores && d.supervisores.length ? ',\n  "supervisores": ' + bloco(d.supervisores) : '') + ',\n  "vendas": ' + bloco(d.vendas) + '\n}\n';
 }
 
 /* ---------- rascunho local ---------- */
@@ -220,6 +233,7 @@ function calcular() {
   }
   for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
   const equipes = ordemEq.length ? [...porEquipe.values()].sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
+  for (const e of equipes) e.sup = state.supervisores.get(normNome(e.nome)) || null;
 
   let ideal = null, restantes = null;
   if (c.prazo) restantes = Math.max(dias(hoje, c.prazo) + 1, 0);
@@ -229,7 +243,7 @@ function calcular() {
     ideal = c.meta * passados / totalDias;
   }
   const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
-  const lideres = [...state.consultores.values()].map(p => ({ nome: p.nome, equipe: p.equipe, valor: cicloPor.get(p.id) || 0 }))
+  const lideres = [...state.consultores.values()].map(p => ({ nome: p.nome, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0 }))
     .filter(l => l.valor > 0).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'));
   return { total, porCat, linhas, equipes, lideres, venderam, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
@@ -249,6 +263,15 @@ function contar(alvo, de, para, fmt) {
     if (k < 1) alvo._q = requestAnimationFrame(passo);
   };
   alvo._q = requestAnimationFrame(passo);
+}
+
+/* valores das linhas e das equipes sobem contando quando mudam */
+function contarValor(alvo, valor) {
+  if (alvo._v === valor) return;
+  const de = alvo._v;
+  alvo._v = valor;
+  if (de == null) { alvo.textContent = brl(valor); return; }
+  contar(alvo, de, valor, brl);
 }
 
 function passoRegua(meta) {
@@ -309,19 +332,26 @@ function mensagens(r) {
   if (r.total > 0) {
     const l = r.lideres[0];
     if (l) m.push(l.nome + ' lidera o ranking com ' + curto(l.valor));
-    if (r.equipes.length && r.equipes[0].valor > 0) m.push(r.equipes[0].nome + ' está na frente entre as equipes com ' + curto(r.equipes[0].valor));
+    const e1 = r.equipes[0];
+    if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + primeiroNome(e1.sup.nome) + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
     const u = r.feed.find(v => v.data);
     if (u) m.push('Última venda: ' + descrever(u));
     m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
     m.push(r.venderam + ' de ' + n + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') + ' neste ciclo');
     if (r.restantes > 0 && r.falta > 0) m.push('Para fechar a meta: ' + curto(r.falta / r.restantes) + ' por dia até ' + dataCurta(c.prazo));
+    if (fraseSupervisao(r)) m.push(fraseSupervisao(r));
   } else if (n) {
     m.push('Placar zerado: a primeira venda do ciclo abre o ranking');
     m.push('Meta da franquia de ' + curto(c.meta) + (c.metaEquipe ? ' e ' + curto(c.metaEquipe) + ' por equipe' : ''));
     const eqs = r.equipes.filter(e => e.nome !== SEM_EQUIPE).map(e => e.nome);
     if (eqs.length > 1) m.push(n + ' consultores em ' + eqs.length + ' equipes: ' + listaNatural(eqs));
+    if (fraseSupervisao(r)) m.push(fraseSupervisao(r));
   }
   return m;
+}
+function fraseSupervisao(r) {
+  const l = r.equipes.filter(e => e.sup).map(e => primeiroNome(e.sup.nome) + ' (' + e.nome + ')');
+  return l.length ? 'Supervisão: ' + listaNatural(l) : '';
 }
 let giroDestaque = 0;
 function pintarDestaque(r) {
@@ -492,7 +522,7 @@ function pintarLista(r, editar, carregando) {
     p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
     p.cheio.style.width = (l.valor / escala * 100) + '%';
     p.marca.hidden = true;
-    p.val.textContent = brl(l.valor);
+    contarValor(p.val, l.valor);
     p.nota.className = '';
     p.nota.textContent = !noCiclo && r.somaFiltro ? pctTxt(Math.round(l.valor / r.somaFiltro * 100)) + ' do período' : '';
     lista.append(n);
@@ -521,21 +551,32 @@ function pintarEquipes(r, carregando) {
     vivas.add(e.nome);
     let n = equipesDom.get(e.nome);
     if (!n) {
-      const pos = el('span', { class: 'eq-pos' }), nome = el('strong'), sub = el('span'), val = el('strong'), pct = el('span'), cheio = el('i');
-      n = el('li', { class: 'eq-linha' }, pos, el('div', { class: 'eq-quem' }, nome, sub), el('div', { class: 'eq-valor' }, val, pct), el('div', { class: 'eq-barra' }, cheio));
-      n._p = { pos, nome, sub, val, pct, cheio };
+      const pos = el('span', { class: 'eq-pos' }), nome = el('strong', { class: 'eq-nome' }), sup = el('span', { class: 'eq-sup' }), sub = el('span', { class: 'eq-sub' }), val = el('strong'), pct = el('span'), cheio = el('i');
+      /* bolinha da supervisão: foto recortada dentro de um anel que enche com a meta da equipe */
+      const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }), anel = el('span', { class: 'eq-av' }, av);
+      n = el('li', { class: 'eq-linha' }, pos, anel, el('div', { class: 'eq-quem' }, nome, sup, sub), el('div', { class: 'eq-valor' }, val, pct), el('div', { class: 'eq-barra' }, cheio));
+      n._p = { pos, anel, av, nome, sup, sub, val, pct, cheio };
       equipesDom.set(e.nome, n);
     }
     const p = n._p, lider = i === 0 && e.valor > 0;
     n.style.setProperty('--i', i + 2);
     n.classList.toggle('lider', lider);
+    n.classList.toggle('com-sup', !!e.sup);
     p.pos.textContent = e.valor > 0 ? i + 1 : '–';
     p.nome.textContent = e.nome;
+    p.anel.hidden = !e.sup;
+    p.sup.hidden = !e.sup;
+    if (e.sup) {
+      pintarAvatar(p.av, e.sup);
+      p.sup.textContent = '';
+      p.sup.append(el('b', { text: e.sup.nome }), e.sup.cargo ? ' · ' + cargoTxt(e.sup.cargo) : '');
+      p.anel.style.setProperty('--p', metaEq && e.nome !== SEM_EQUIPE ? Math.min(e.valor / metaEq * 100, 100).toFixed(2) : r.total ? (e.valor / r.total * 100).toFixed(2) : 0);
+    }
     /* espaços fixos dentro de cada trecho: a quebra de linha só acontece entre os trechos */
     p.sub.textContent = [e.membros === 1 ? '1 consultor' : e.membros + ' consultores',
       e.cotas ? (e.cotas === 1 ? '1 cota' : e.cotas + ' cotas') : 'sem venda no ciclo',
       metaEq && e.nome !== SEM_EQUIPE ? (e.valor >= metaEq ? 'meta batida' : 'faltam ' + curto(metaEq - e.valor)) : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
-    p.val.textContent = brl(e.valor);
+    contarValor(p.val, e.valor);
     p.pct.textContent = metaEq && e.nome !== SEM_EQUIPE ? pctTxt(Math.floor(e.valor / metaEq * 1000) / 10) + ' de ' + curto(metaEq)
       : r.total ? pctTxt(Math.round(e.valor / r.total * 100)) + ' do total' : '';
     p.cheio.style.width = Math.min(e.valor / maior * 100, 100) + '%';
@@ -605,14 +646,15 @@ function itensFaixa(r) {
   const c = state.config, itens = [];
   if (r.total > 0) {
     itens.push(['Crédito vendido', curto(r.total) + ' de ' + curto(c.meta) + ' (' + pctTxt(Math.floor(r.total / c.meta * 1000) / 10) + ')']);
-    r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor)]));
-    r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor)]));
-    r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v)]));
+    /* equipes com a foto da supervisão; consultores e vendas com a foto de quem vendeu */
+    r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + primeiroNome(e.sup.nome) : ''), e.sup && e.sup.foto]));
+    r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor), l.foto]));
+    r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v), state.consultores.get(v.consultor).foto]));
     if (r.falta > 0) itens.push(['Faltam', curto(r.falta) + ' para a meta da franquia']);
   } else {
     itens.push(['Meta da franquia', curto(c.meta)]);
     if (c.metaEquipe) itens.push(['Meta por equipe', curto(c.metaEquipe)]);
-    r.equipes.filter(e => e.nome !== SEM_EQUIPE).forEach(e => itens.push([e.nome, e.membros + (e.membros === 1 ? ' consultor' : ' consultores')]));
+    r.equipes.filter(e => e.nome !== SEM_EQUIPE).forEach(e => itens.push([e.nome, e.membros + (e.membros === 1 ? ' consultor' : ' consultores') + (e.sup ? ' · supervisão de ' + e.sup.nome : ''), e.sup && e.sup.foto]));
     itens.push(['Placar zerado', 'a primeira venda do ciclo abre o ranking']);
   }
   return itens;
@@ -622,7 +664,9 @@ function pintarFaixa(r, forcar) {
   if (!forcar && ass === faixaAss) return;
   faixaAss = ass;
   const trilho = $('faixa-trilho'), janela = trilho.parentNode;
-  const item = ([forte, resto]) => el('span', { class: 'fx' }, el('span', { class: 'mao fx-mao' }, ...pecasMao()), el('b', { text: forte }), ' ' + resto);
+  const item = ([forte, resto, foto]) => el('span', { class: 'fx' },
+    foto && !fotosRuins.has(foto) ? el('img', { class: 'fx-foto', src: foto, alt: '', width: 64, height: 64, decoding: 'async' }) : el('span', { class: 'mao fx-mao' }, ...pecasMao()),
+    el('b', { text: forte }), ' ' + resto);
   const grupo = el('div', { class: 'faixa-grupo' }, ...itens.map(item));
   trilho.textContent = ''; trilho.append(grupo);
   /* o grupo precisa ser mais largo que a janela para o laço não deixar buraco */
@@ -739,7 +783,8 @@ function dadosDaPlanilha(texto, cadastro) {
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
-  return { config: { ...cfg, exemplo: false }, consultores, vendas };
+  /* a supervisão de cada equipe também vem do cadastro */
+  return { config: { ...cfg, exemplo: false }, consultores, supervisores: Array.isArray(b.supervisores) ? b.supervisores : [], vendas };
 }
 /* A planilha não guarda o dia de cada venda: o painel anota o dia em que viu cada casinha nova pela
    primeira vez (guardado neste navegador). O que já estava lá na primeira leitura fica sem data. */
@@ -807,6 +852,13 @@ async function conferir() {
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
   finally { conferindo = false; }
 }
+/* a linha do alto da faixa enche no tempo exato entre uma conferência e a próxima */
+function marcarConferencia() {
+  const f = $('faixa');
+  if (semMovimento || !f) return;
+  f.style.setProperty('--confere', INTERVALO + 'ms');
+  f.classList.remove('confere'); void f.offsetWidth; f.classList.add('confere');
+}
 /* tela de abertura: fica o tempo de a animação se completar e sai quando os dados chegam */
 const telaLoad = $('load');
 const ABERTURA = { barraDe: 350, barraPor: 2100, minimo: 2650 };
@@ -826,6 +878,12 @@ function reencher() {
   void document.body.offsetWidth;
   barras.forEach((b, i) => { b.style.transition = 'width 1.5s cubic-bezier(.2,.8,.2,1) ' + (.45 + Math.min(i, 22) * .045) + 's'; b.style.width = b._alvo; });
   setTimeout(() => barras.forEach(b => { b.style.transition = ''; }), 3200);
+  /* anel da supervisão enche junto com as barras das equipes */
+  const aneis = [...document.querySelectorAll('#equipes .eq-av')];
+  aneis.forEach(a => { a._alvo = a.style.getPropertyValue('--p'); a.style.transition = 'none'; a.style.setProperty('--p', 0); });
+  void document.body.offsetWidth;
+  aneis.forEach((a, i) => { a.style.transition = '--p 1.8s cubic-bezier(.2,.8,.2,1) ' + (.9 + i * .12) + 's'; a.style.setProperty('--p', a._alvo); });
+  setTimeout(() => aneis.forEach(a => { a.style.transition = ''; }), 3600);
 }
 /* linhas entram em cascata */
 function cascata() {
@@ -833,6 +891,8 @@ function cascata() {
   const ease = 'cubic-bezier(.2,.8,.2,1)';
   document.querySelectorAll('#lista .linha').forEach((li, i) => li.animate([{ opacity: 0, transform: 'translateX(-2.5rem)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 380 + Math.min(i, 16) * 48, easing: ease, fill: 'backwards' }));
   document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.animate([{ opacity: 0, transform: 'translateY(1.25rem)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 560 + i * 110, easing: ease, fill: 'backwards' }));
+  /* a foto da supervisão salta para dentro do anel */
+  document.querySelectorAll('#equipes .eq-av .avatar').forEach((a, i) => a.animate([{ opacity: 0, transform: 'scale(.3) rotate(-25deg)' }, { opacity: 1, transform: 'none' }], { duration: 760, delay: 820 + i * 120, easing: 'cubic-bezier(.34,1.5,.6,1)', fill: 'backwards' }));
 }
 function depoisDeAbrir() { app.classList.add('entra'); reencher(); cascata(); }
 function abrirPainel() {
@@ -877,7 +937,8 @@ async function iniciar() {
   render();
   requestAnimationFrame(abrirPainel);   // pinta primeiro, depois revela (as barras crescem do zero)
   iniciarGiros();
-  setInterval(conferir, INTERVALO);
+  marcarConferencia();
+  setInterval(() => { marcarConferencia(); conferir(); }, INTERVALO);
   document.addEventListener('visibilitychange', conferir);
 }
 
@@ -1034,13 +1095,28 @@ function iniciarGiros() {
   setInterval(() => { giroStatus++; pintarStatus(); }, 5000);
   setInterval(() => { giroDestaque++; if (state.modo !== 'carregando') pintarDestaque(calcular()); }, 6500);
   setInterval(onda, 45000);
+  setInterval(giroSupervisao, 16000);
 }
+relogio();
+setInterval(relogio, 1000);
 /* a cada 45 s os nomes e valores do ranking somem e voltam, de cima para baixo */
 function onda() {
   if (semMovimento || document.hidden || document.querySelector('dialog[open]')) return;
   const quadros = [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-45%)', offset: .42 }, { opacity: 0, transform: 'translateY(45%)', offset: .58 }, { opacity: 1, transform: 'none' }];
   document.querySelectorAll('#lista .linha').forEach((li, i) => li.querySelectorAll('.quem, .valor').forEach(x => x.animate(quadros, { duration: 1050, delay: i * 55, easing: 'ease-in-out' })));
-  document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.querySelectorAll('.eq-quem, .eq-valor').forEach(x => x.animate(quadros, { duration: 1050, delay: 300 + i * 120, easing: 'ease-in-out' })));
+  document.querySelectorAll('#equipes .eq-linha').forEach((li, i) => li.querySelectorAll('.eq-quem > *, .eq-valor > *').forEach(x => x.animate(quadros, { duration: 1050, delay: 300 + i * 120, easing: 'ease-in-out' })));
+}
+/* a cada 16 s as fotos da supervisão dão um giro de moeda, uma depois da outra */
+function giroSupervisao() {
+  if (semMovimento || document.hidden || document.querySelector('dialog[open]')) return;
+  document.querySelectorAll('#equipes .eq-av .avatar').forEach((a, i) => a.animate([{ transform: 'perspective(14rem) rotateY(0)' }, { transform: 'perspective(14rem) rotateY(360deg)' }], { duration: 1100, delay: i * 180, easing: 'cubic-bezier(.7,0,.2,1)' }));
+}
+/* relógio da faixa ao vivo */
+function relogio() {
+  const h = $('faixa-hora'); if (!h) return;
+  const d = new Date();
+  h.firstChild.textContent = doisDig(d.getHours());
+  h.lastChild.textContent = doisDig(d.getMinutes());
 }
 
 /* ---------- telão: a página rola sozinha para mostrar todo o ranking ----------

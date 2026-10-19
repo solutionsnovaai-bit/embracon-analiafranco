@@ -31,6 +31,11 @@
     {"id":"fernando","nome":"Fernando Kasemodel","equipe":"Lekos","foto":"assets/consultores/fernando.jpg"},
     {"id":"stephanie-martins","nome":"Stephanie Martins","equipe":"Lekos"}
   ],
+  "supervisores": [
+    {"equipe":"Esquadrão Alpha","nome":"Enaila Rocha","cargo":"Supervisora","foto":"assets/supervisores/enaila-rocha.jpg"},
+    {"equipe":"Artilheiros","nome":"Rafael Ferraz","cargo":"CEO","foto":"assets/supervisores/rafael-ferraz.jpg"},
+    {"equipe":"Lekos","nome":"Lins","cargo":"Supervisor","foto":"assets/supervisores/lins.jpg"}
+  ],
   "vendas": [
     {"consultor":"gabriel-caseri","valor":770000,"cotas":2},
     {"consultor":"juliana-delgado","valor":540000},
