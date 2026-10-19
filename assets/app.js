@@ -242,9 +242,14 @@ function calcular() {
     ideal = c.meta * passados / totalDias;
   }
   const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
-  const lideres = [...state.consultores.values()].map(p => ({ nome: p.nome, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0 }))
-    .filter(l => l.valor > 0).sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'));
-  return { total, porCat, linhas, equipes, lideres, venderam, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
+  const cotasPor = new Map();
+  for (const v of ciclo) cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
+  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0 }))
+    .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
+  for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
+  const lideres = pessoas.filter(l => l.valor > 0);
+  return { total, porCat, linhas, equipes, lideres, pessoas, venderam, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -422,7 +427,7 @@ function pintar() {
   pintarFeed(r, editar, carregando);
   pintarMix(r);
   pintarDestaque(r);
-  if (!carregando) pintarFaixa(r);
+  if (!carregando) { pintarFaixa(r); pintarTela(r); }
   if ($('dlg-equipe').open) pintarEquipe();
 }
 
@@ -457,7 +462,8 @@ function criarLinha() {
   const nome = el('strong', { class: 'nome' }), sub = el('span', { class: 'sub' });
   const cheio = el('div', { class: 'barra-cheio' }), marcaMeta = el('i', { class: 'barra-meta' });
   const val = el('strong'), nota = el('span');
-  const li = el('li', { class: 'linha' }, pos, av, el('div', { class: 'quem' }, nome, sub), el('div', { class: 'barra' }, cheio, marcaMeta), el('div', { class: 'valor' }, val, nota));
+  /* a mão d'água só aparece na linha do líder (CSS) */
+  const li = el('li', { class: 'linha' }, maoEl('linha-mao'), pos, av, el('div', { class: 'quem' }, nome, sub), el('div', { class: 'barra' }, cheio, marcaMeta), el('div', { class: 'valor' }, val, nota));
   li._p = { pos, av, nome, sub, cheio, marca: marcaMeta, val, nota };
   return li;
 }
@@ -553,7 +559,7 @@ function pintarEquipes(r, carregando) {
       const pos = el('span', { class: 'eq-pos' }), nome = el('strong', { class: 'eq-nome' }), sup = el('span', { class: 'eq-sup' }), sub = el('span', { class: 'eq-sub' }), val = el('strong'), pct = el('span'), cheio = el('i');
       /* bolinha da supervisão: foto recortada dentro de um anel que enche com a meta da equipe */
       const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }), anel = el('span', { class: 'eq-av' }, av);
-      n = el('li', { class: 'eq-linha' }, pos, anel, el('div', { class: 'eq-quem' }, nome, sup, sub), el('div', { class: 'eq-valor' }, val, pct), el('div', { class: 'eq-barra' }, cheio));
+      n = el('li', { class: 'eq-linha' }, maoEl('eq-mao'), pos, anel, el('div', { class: 'eq-quem' }, nome, sup, sub), el('div', { class: 'eq-valor' }, val, pct), el('div', { class: 'eq-barra' }, cheio));
       n._p = { pos, anel, av, nome, sup, sub, val, pct, cheio };
       equipesDom.set(e.nome, n);
     }
@@ -696,6 +702,8 @@ function proximoAviso() {
   maoVai($('flash-mao'));
   const fora = { transform: 'translate(-50%,-170%)', opacity: 0 }, dentro = { transform: 'translate(-50%,0)', opacity: 1 };
   if (!semMovimento && f.animate) f.animate([fora, dentro], { duration: 650, easing: 'cubic-bezier(.34,1.4,.6,1)', fill: 'both' });
+  /* venda nova: chuva de mãozinhas saindo do aviso */
+  setTimeout(() => { const b = f.getBoundingClientRect(); chuva(b.left + b.width / 2, b.bottom - 10, 46, 1.1); }, 380);
   setTimeout(() => {
     const fim = () => { f.hidden = true; f.getAnimations().forEach(a => a.cancel()); proximoAviso(); };
     if (semMovimento || !f.animate) { fim(); return; }
@@ -893,7 +901,7 @@ function cascata() {
   /* a foto da supervisão salta para dentro do anel */
   document.querySelectorAll('#equipes .eq-av .avatar').forEach((a, i) => a.animate([{ opacity: 0, transform: 'scale(.3) rotate(-25deg)' }, { opacity: 1, transform: 'none' }], { duration: 760, delay: 820 + i * 120, easing: 'cubic-bezier(.34,1.5,.6,1)', fill: 'backwards' }));
 }
-function depoisDeAbrir() { app.classList.add('entra'); reencher(); cascata(); }
+function depoisDeAbrir() { app.classList.add('entra'); entrar(telaAtual, true); }
 function abrirPainel() {
   if (!telaLoad || !telaLoad.isConnected) return;
   $('load-pct').textContent = '100%';
@@ -1095,6 +1103,9 @@ function iniciarGiros() {
   setInterval(() => { giroDestaque++; if (state.modo !== 'carregando') pintarDestaque(calcular()); }, 6500);
   setInterval(onda, 45000);
   setInterval(giroSupervisao, 16000);
+  /* mural: a frase grande troca a cada 4,2 s; pódio: uma chuvinha de mãozinhas sobre o 1º a cada 5 s */
+  setInterval(() => { if (telaAtual === 'mural' && !trocando && !document.hidden) girarMural(); }, 4200);
+  setInterval(() => { if (telaAtual === 'podio' && !trocando) confetePodio(.3); }, 5200);
 }
 relogio();
 setInterval(relogio, 1000);
@@ -1118,11 +1129,372 @@ function relogio() {
   h.lastChild.textContent = doisDig(d.getMinutes());
 }
 
-/* ---------- telão: a página rola sozinha para mostrar todo o ranking ----------
-   Para no topo e desce devagar até o fim, arrancando e freando suave. Espera, volta ao
-   topo numa subida com aceleração e, ao chegar, a mão do logo acena. Qualquer toque,
-   rolagem ou tecla pausa por 20 s. */
-const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0, ini: 0, de: 0, dur: 0 };
+/* ==========================================================================
+   Telas: Ranking (o painel de sempre), Pódio, Equipes e Mural.
+   No telão giram sozinhas; no celular e no computador, troca pela barra de abas.
+   Toda troca passa por uma cortina com a mão da Embracon se montando e o nome da franquia.
+   ========================================================================== */
+const TELAS = {
+  ranking: { nome: 'Ranking', titulo: 'Ranking ao vivo' },
+  podio: { nome: 'Pódio', titulo: 'Pódio do ciclo' },
+  equipes: { nome: 'Equipes', titulo: 'Equipes' },
+  mural: { nome: 'Mural', titulo: 'Mural da franquia' }
+};
+let telaAtual = 'ranking', equipeAtual = '', trocando = false;
+const maoEl = cls => el('span', { class: 'mao ' + cls, 'aria-hidden': 'true' }, ...pecasMao());
+const equipesValidas = r => r.equipes.filter(e => e.nome !== SEM_EQUIPE);
+const cotasTxt = n => n === 1 ? '1 cota' : n + ' cotas';
+
+/* ordem do giro no telão: ranking, pódio, uma tela por equipe (da que está na frente para trás) e mural */
+function sequencia(r) {
+  const s = [{ tela: 'ranking' }];
+  if (r.pessoas.length) s.push({ tela: 'podio' });
+  for (const e of equipesValidas(r)) s.push({ tela: 'equipes', equipe: e.nome });
+  if (r.pessoas.length) s.push({ tela: 'mural' });
+  return s;
+}
+function depoisDaAtual(r) {
+  const s = sequencia(r);
+  const i = s.findIndex(x => x.tela === telaAtual && (x.tela !== 'equipes' || x.equipe === equipeAtual));
+  return s[(i + 1) % s.length];
+}
+function proximaTela() {
+  const prox = depoisDaAtual(calcular());
+  if (!irPara(prox.tela, { equipe: prox.equipe })) rolagem.fase = 'parado';
+}
+
+/* troca de tela; devolve false quando não há o que trocar */
+function irPara(tela, opc = {}) {
+  if (trocando || !TELAS[tela] || state.modo === 'carregando') return false;
+  const r = calcular();
+  let equipe = '';
+  if (tela === 'equipes') {
+    const eqs = equipesValidas(r);
+    if (!eqs.length) return false;
+    equipe = eqs.some(e => e.nome === opc.equipe) ? opc.equipe : eqs.some(e => e.nome === equipeAtual) ? equipeAtual : eqs[0].nome;
+  }
+  if (tela === telaAtual && equipe === equipeAtual) return false;
+  const titulo = tela === 'equipes' ? equipe : TELAS[tela].titulo;
+  if (semMovimento || !$('cortina').animate) { mostrarTela(tela, equipe); entrar(tela); return true; }
+  cortina(titulo, !!opc.rapida, () => mostrarTela(tela, equipe), () => { acenar(); entrar(tela); });
+  return true;
+}
+function mostrarTela(tela, equipe) {
+  telaAtual = tela; equipeAtual = equipe || '';
+  for (const s of document.querySelectorAll('#telas .tela')) s.hidden = s.dataset.tela !== tela;
+  scrollTo(0, 0);
+  rolagem.fase = 'parado';
+  if (tela === 'ranking') posicionarRitmo();
+  pintarTela(calcular(), true);
+}
+function pintarTela(r, forcar) {
+  if (telaAtual === 'podio') montarPodio(r, forcar);
+  else if (telaAtual === 'equipes') montarEquipe(r, forcar);
+  else if (telaAtual === 'mural') montarMural(r, forcar);
+  pintarNav(r);
+}
+function entrar(tela, primeira) {
+  if (semMovimento) return;
+  if (tela === 'ranking') {
+    reencher(); cascata();
+    document.querySelectorAll('#tela-ranking .h2-mao').forEach((m, i) => setTimeout(() => maoVai(m), 300 + i * 220));
+    if (!primeira) contar($('total'), 0, mostrado.total, v => nf.format(Math.round(v)));
+  } else if (tela === 'podio') entrarPodio();
+  else if (tela === 'equipes') entrarEquipe();
+  else if (tela === 'mural') entrarMural();
+}
+
+/* ---------- barra de abas ---------- */
+function pintarNav(r) {
+  const tv = raiz.classList.contains('tv');
+  document.querySelectorAll('#telas-nav .tn').forEach(b => {
+    const ativo = b.dataset.tela === telaAtual;
+    if (ativo) b.setAttribute('aria-current', 'page'); else { b.removeAttribute('aria-current'); progressoAba(0, b); }
+    if (ativo && !b._ativo) maoVai(b.querySelector('.mao'));
+    b._ativo = ativo;
+  });
+  const prox = $('tn-prox');
+  if (!tv || !r) { prox.textContent = ''; prox._t = ''; return; }
+  const p = depoisDaAtual(r), nome = p.tela === 'equipes' ? p.equipe : TELAS[p.tela].nome;
+  if (prox._t === nome) return;
+  prox._t = nome; prox.textContent = '';
+  prox.append(maoEl('tn-prox-mao'), el('span', { text: 'A seguir' }), el('b', { text: nome }));
+}
+function progressoAba(p, botao) {
+  const b = (botao || document.querySelector('#telas-nav .tn[aria-current] ')) ;
+  const barra = b && b.querySelector('.tn-prog');
+  if (!barra || barra._p === p) return;
+  barra._p = p; barra.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+}
+$('telas-nav').addEventListener('click', e => { const b = e.target.closest('.tn'); if (b) irPara(b.dataset.tela, { rapida: true }); });
+
+/* ---------- cortina da troca de tela ----------
+   1. a cortina vermelha entra na diagonal com mãozinhas voando junto
+   2. a mão da Embracon se monta no centro, com um anel saindo dela, e o nome da tela sobe
+   3. a tela troca por baixo e a cortina sai na mesma diagonal, revelando a tela nova */
+function cortina(titulo, rapida, noMeio, noFim) {
+  trocando = true;
+  const c = $('cortina'), corte = 'cubic-bezier(.7,0,.2,1)', fechada = 'polygon(-60% 0,160% 0,135% 100%,-85% 100%)';
+  c.getAnimations({ subtree: true }).forEach(a => a.cancel());
+  $('cortina-rot').textContent = 'Franquia ' + state.config.unidade;
+  const tit = $('cortina-tit'); tit._texto = null; tit.textContent = ''; trocar(tit, titulo);
+  c.hidden = false;
+  maoVai($('cortina-mao'));
+  $('cortina-anel').animate([{ opacity: .9, transform: 'scale(.3)' }, { opacity: 0, transform: 'scale(2.6)' }], { duration: 1150, delay: 520, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+  c.querySelectorAll('.cortina-voo').forEach((m, i) => m.animate([
+    { transform: 'translateX(-40vw) rotate(-28deg) scale(.8)', opacity: 0 }, { opacity: 1, offset: .18 }, { opacity: 1, offset: .8 },
+    { transform: 'translateX(140vw) rotate(24deg) scale(1.1)', opacity: 0 }], { duration: 1650 + i * 140, delay: i * 85, easing: 'cubic-bezier(.35,.45,.25,1)', fill: 'both' }));
+  $('cortina-in').animate([{ opacity: 0, transform: 'translateY(1.5rem) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: 200, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+  c.animate([{ clipPath: 'polygon(-60% 0,-60% 0,-85% 100%,-85% 100%)' }, { clipPath: fechada }], { duration: 580, easing: corte, fill: 'forwards' }).onfinish = () => {
+    noMeio();
+    setTimeout(() => {
+      $('cortina-in').animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-1rem) scale(.98)' }], { duration: 300, easing: 'cubic-bezier(.6,0,.8,.4)', fill: 'forwards' });
+      c.animate([{ clipPath: fechada }, { clipPath: 'polygon(160% 0,160% 0,135% 100%,135% 100%)' }], { duration: 720, delay: 120, easing: corte, fill: 'forwards' }).onfinish = () => {
+        c.hidden = true; c.getAnimations({ subtree: true }).forEach(a => a.cancel()); trocando = false;
+      };
+      setTimeout(noFim, 330);   // a tela nova começa a se montar enquanto a cortina sai
+    }, rapida ? 560 : 1300);
+  };
+}
+
+/* ---------- chuva de mãozinhas e confete ---------- */
+function chuva(x, y, n, forca) {
+  if (semMovimento || document.hidden) return;
+  const camada = $('chuva'), cores = ['var(--cf-1)', 'var(--cf-2)', 'var(--cf-3)'], f = forca || 1;
+  for (let i = 0; i < n; i++) {
+    const ehMao = Math.random() < .34, cor = cores[i % 3];
+    const p = ehMao ? maoEl('cf-mao') : el('i', { class: 'cf-papel' });
+    if (ehMao) { p.style.width = (14 + Math.random() * 18).toFixed(0) + 'px'; p.style.setProperty('--mao-cor', cor); }
+    else { p.style.background = cor; if (Math.random() < .4) p.style.borderRadius = '50%'; }
+    camada.append(p);
+    const ang = (-90 + (Math.random() - .5) * 120) * Math.PI / 180, vel = f * (180 + Math.random() * 340);
+    const dx = Math.cos(ang) * vel, dy = Math.sin(ang) * vel, queda = innerHeight - y + 60 + Math.random() * 80;
+    const giro = (Math.random() - .5) * 1000, deriva = (Math.random() - .5) * 160;
+    p.animate([
+      { transform: `translate(${x}px,${y}px) rotate(0deg) scale(.6)`, opacity: 1, easing: 'cubic-bezier(.12,.75,.3,1)' },
+      { transform: `translate(${x + dx}px,${y + dy}px) rotate(${giro * .3}deg) scale(1)`, opacity: 1, offset: .26, easing: 'cubic-bezier(.45,0,.75,.55)' },
+      { transform: `translate(${x + dx * 1.35 + deriva}px,${y + queda}px) rotate(${giro}deg) scale(1)`, opacity: .85 }
+    ], { duration: 2300 + Math.random() * 1700, fill: 'forwards' }).onfinish = () => p.remove();
+  }
+}
+
+/* ---------- tela: pódio ---------- */
+let podioAss = '';
+function montarPodio(r, forcar) {
+  const c = state.config, top = r.lideres;
+  $('pd-rot').textContent = 'Pódio do ciclo' + (c.ciclo ? ' · ' + c.ciclo : '');
+  const ass = JSON.stringify([top.slice(0, 8).map(p => [p.id, p.valor, p.cotas, p.foto, p.equipe]), r.total, r.venderam]);
+  if (!forcar && ass === podioAss) return;
+  podioAss = ass;
+  const num = $('pd-num'); num.textContent = '';
+  num.append(el('strong', { text: curto(r.total) }), el('span', { text: r.venderam + ' de ' + state.consultores.size + ' consultores já venderam' }));
+  const palco = $('pd-palco'); palco.textContent = '';
+  palco.append(el('div', { class: 'pd-raios', 'aria-hidden': 'true' }));
+  for (const i of [1, 0, 2]) palco.append(lugarPodio(top[i], i + 1));
+  const cola = $('pd-cola'); cola.textContent = '';
+  top.slice(3, 8).forEach((p, k) => {
+    const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }); pintarAvatar(av, p);
+    cola.append(el('li', { class: 'pd-chip' }, el('b', { class: 'pd-chip-pos', text: (k + 4) + 'º' }), av,
+      el('span', { class: 'pd-chip-txt' }, el('strong', { text: p.nome }), el('span', { text: p.equipe || cotasTxt(p.cotas) })),
+      el('strong', { class: 'pd-chip-v', text: curto(p.valor) })));
+  });
+  $('pd-cola-sec').hidden = top.length <= 3;
+}
+function lugarPodio(p, n) {
+  const av = el('span', { class: 'avatar pd-av', 'aria-hidden': 'true' });
+  if (p) pintarAvatar(av, p); else av.append(el('span', { class: 'av-ini', text: '?' }));
+  const val = el('strong', { class: 'pd-valor', text: p ? brl(p.valor) : '—' });
+  val._alvo = p ? p.valor : 0;
+  return el('div', { class: 'pd-lugar pd-' + n + (p ? '' : ' vago') },
+    el('div', { class: 'pd-pessoa' },
+      n === 1 ? maoEl('pd-coroa') : null,
+      el('div', { class: 'pd-foto' }, av),
+      el('strong', { class: 'pd-nome', text: p ? p.nome : 'Vaga aberta' }),
+      el('span', { class: 'pd-eq', text: p ? [p.equipe, cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }),
+      val),
+    el('div', { class: 'pd-bloco' }, maoEl('pd-bloco-mao'), el('span', { class: 'pd-pos', text: n + 'º' })));
+}
+function entrarPodio() {
+  const ease = 'cubic-bezier(.2,.8,.2,1)', mola = 'cubic-bezier(.34,1.5,.6,1)', atraso = { 3: 0, 2: 280, 1: 600 };
+  maoVai(document.querySelector('#tela-podio .tl-mao'));
+  for (const n of [1, 2, 3]) {
+    const l = document.querySelector('#pd-palco .pd-' + n); if (!l) continue;
+    const d = 250 + atraso[n];
+    l.querySelector('.pd-bloco').animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: 950, delay: d, easing: ease, fill: 'backwards' });
+    l.querySelector('.pd-pessoa').animate([{ opacity: 0, transform: 'translateY(-55%) scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 950, delay: d + 420, easing: mola, fill: 'backwards' });
+    const v = l.querySelector('.pd-valor');
+    if (v._alvo) { v.textContent = brl(0); setTimeout(() => contar(v, 0, v._alvo, brl), d + 760); }
+  }
+  setTimeout(() => maoVai(document.querySelector('#pd-palco .pd-coroa')), 1500);
+  document.querySelectorAll('#pd-cola .pd-chip').forEach((c, i) => c.animate([{ opacity: 0, transform: 'translateY(1rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 1500 + i * 90, easing: ease, fill: 'backwards' }));
+  setTimeout(() => { if (telaAtual === 'podio') confetePodio(1); }, 1650);
+}
+function confetePodio(forca) {
+  const f = document.querySelector('#pd-palco .pd-1:not(.vago) .pd-foto');
+  if (!f) return;
+  const b = f.getBoundingClientRect();
+  chuva(b.left + b.width / 2, b.top + b.height * .35, Math.round(64 * forca), 1.3 * Math.max(forca, .55));
+}
+
+/* ---------- tela: uma por equipe ---------- */
+let equipeAss = '';
+function montarEquipe(r, forcar) {
+  const eqs = equipesValidas(r), corpo = $('te-corpo'), chips = $('te-chips');
+  if (!eqs.length) { corpo.textContent = ''; chips.textContent = ''; equipeAss = ''; return; }
+  const e = eqs.find(x => x.nome === equipeAtual) || eqs[0];
+  equipeAtual = e.nome;
+  const metaEq = state.config.metaEquipe, membros = r.pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome);
+  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome)]);
+  if (!forcar && ass === equipeAss) return;
+  equipeAss = ass;
+  chips.textContent = '';
+  for (const x of eqs) chips.append(el('button', { type: 'button', class: 'te-chip', 'aria-pressed': String(x.nome === e.nome), text: x.nome, onclick: () => irPara('equipes', { equipe: x.nome, rapida: true }) }));
+
+  const pos = r.equipes.indexOf(e) + 1, pct = metaEq ? e.valor / metaEq * 100 : r.total ? e.valor / r.total * 100 : 0;
+  const anel = el('span', { class: 'te-anel', style: '--p:' + Math.min(pct, 100).toFixed(2) });
+  const av = el('span', { class: 'avatar te-av', 'aria-hidden': 'true' });
+  if (e.sup) pintarAvatar(av, e.sup); else av.append(maoEl('te-av-mao'));
+  anel.append(av);
+  const sup = el('aside', { class: 'te-sup' },
+    el('span', { class: 'te-pos' + (pos === 1 && e.valor > 0 ? ' lider' : '') }, maoEl('te-pos-mao'), e.valor > 0 ? pos + 'º entre as equipes' : 'Na largada'),
+    el('div', { class: 'te-foto' }, el('div', { class: 'te-orbita', 'aria-hidden': 'true' }, maoEl('te-o te-o1'), maoEl('te-o te-o2'), maoEl('te-o te-o3')), anel),
+    e.sup ? el('span', { class: 'rotulo', text: 'Supervisão' }) : null,
+    e.sup ? el('strong', { class: 'te-sup-nome', text: e.sup.nome }) : null,
+    e.sup && e.sup.cargo ? el('span', { class: 'te-sup-cargo', text: e.sup.cargo }) : null);
+
+  const total = el('span', { class: 'reluz te-total-v', text: nf.format(e.valor) }); total._alvo = e.valor;
+  const cheio = el('div', { class: 'barra-cheio' }); cheio.style.width = Math.min(pct, 100) + '%';
+  const fato = (rot, val, sub) => el('div', { class: 'fato' }, el('dt', { text: rot }), el('dd', {}, el('strong', { text: val }), el('span', { text: sub })));
+  const falta = metaEq ? Math.max(metaEq - e.valor, 0) : 0, maior = (membros[0] && membros[0].valor) || 1;
+  const dados = el('div', { class: 'te-dados' },
+    el('div', { class: 'te-topo' },
+      el('div', { class: 'te-titulo' }, el('span', { class: 'rotulo', text: 'Equipe' }), el('h2', { class: 'te-nome', id: 'te-nome', text: e.nome })),
+      el('div', { class: 'te-num' },
+        el('p', { class: 'total te-total' }, el('small', { text: 'R$' }), total),
+        el('p', { class: 'te-pct' }, el('strong', { class: 'reluz', text: pctTxt(Math.floor(pct * 10) / 10) }), ' ' + (metaEq ? 'da meta de ' + curto(metaEq) : 'do total da franquia')))),
+    el('div', { class: 'te-regua' }, cheio),
+    el('dl', { class: 'fatos te-fatos' },
+      fato('Falta vender', metaEq ? (falta > 0 ? curto(falta) : 'Meta batida') : '—', metaEq ? 'para a meta da equipe' : 'sem meta por equipe'),
+      fato('Já venderam', e.venderam + ' de ' + e.membros, 'consultores da equipe'),
+      fato('Cotas', nf.format(e.cotas), e.cotas ? 'ticket médio de ' + curto(e.valor / e.cotas) : 'nenhuma venda ainda'),
+      fato('Participação', r.total ? pctTxt(Math.round(e.valor / r.total * 100)) : '0%', 'do crédito da franquia')),
+    el('ol', { class: 'te-time' }, ...membros.map((p, k) => pessoaEquipe(p, k, maior))));
+  corpo.textContent = '';
+  corpo.append(sup, dados);
+}
+function pessoaEquipe(p, k, maior) {
+  const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }); pintarAvatar(av, p);
+  const cheio = el('i'); cheio.style.width = (p.valor / maior * 100) + '%';
+  const destaque = k === 0 && p.valor > 0;
+  return el('li', { class: 'te-p' + (destaque ? ' destaque' : '') + (p.valor > 0 ? '' : ' zerado') },
+    destaque ? maoEl('te-p-mao') : null, av,
+    el('div', { class: 'te-p-txt' }, el('strong', { class: 'te-p-nome', text: p.nome }),
+      el('span', { class: 'te-p-linha' }, el('b', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }), ' · ' + (p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda'))),
+    el('span', { class: 'te-p-barra' }, cheio));
+}
+function encherDe0(b, dur, atraso) {
+  const alvo = b.style.width;
+  b.style.transition = 'none'; b.style.width = '0%'; void b.offsetWidth;
+  b.style.transition = 'width ' + dur + 'ms cubic-bezier(.2,.8,.2,1) ' + atraso + 'ms'; b.style.width = alvo;
+  setTimeout(() => { b.style.transition = ''; }, dur + atraso + 100);
+}
+function entrarEquipe() {
+  const t = $('te-corpo'), ease = 'cubic-bezier(.2,.8,.2,1)', mola = 'cubic-bezier(.34,1.5,.6,1)';
+  const anel = t.querySelector('.te-anel');
+  if (anel) {
+    anel.animate([{ transform: 'scale(.35) rotate(-40deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 950, delay: 150, easing: mola, fill: 'backwards' });
+    const p = anel.style.getPropertyValue('--p');
+    anel.style.transition = 'none'; anel.style.setProperty('--p', 0); void anel.offsetWidth;
+    anel.style.transition = '--p 1.9s cubic-bezier(.2,.8,.2,1) .7s'; anel.style.setProperty('--p', p);
+  }
+  t.querySelectorAll('.te-o').forEach((m, i) => setTimeout(() => maoVai(m), 500 + i * 160));
+  t.querySelectorAll('.te-pos-mao, .te-p-mao').forEach((m, i) => setTimeout(() => maoVai(m), 400 + i * 600));
+  const nome = t.querySelector('.te-nome');
+  if (nome) nome.animate([{ clipPath: 'inset(-10% 100% -10% 0)', transform: 'translateX(-3%)' }, { clipPath: 'inset(-10% 0 -10% 0)', transform: 'none' }], { duration: 850, delay: 260, easing: ease, fill: 'backwards' });
+  const tot = t.querySelector('.te-total-v');
+  if (tot) { tot.textContent = '0'; setTimeout(() => contar(tot, 0, tot._alvo, v => nf.format(Math.round(v))), 420); }
+  const regua = t.querySelector('.te-regua .barra-cheio'); if (regua) encherDe0(regua, 1600, 520);
+  t.querySelectorAll('.te-fatos .fato').forEach((f, i) => f.animate([{ opacity: 0, transform: 'translateY(.8rem)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 560 + i * 90, easing: ease, fill: 'backwards' }));
+  t.querySelectorAll('.te-p').forEach((p, i) => {
+    p.animate([{ opacity: 0, transform: 'translateY(1.2rem) scale(.95)' }, { opacity: 1, transform: 'none' }], { duration: 650, delay: 760 + i * 75, easing: ease, fill: 'backwards' });
+    const b = p.querySelector('.te-p-barra i'); if (b) encherDe0(b, 1200, 1000 + i * 75);
+  });
+}
+
+/* ---------- tela: mural ----------
+   Frase grande que troca (slogans e números do momento) e duas faixas de fotos andando em sentidos opostos,
+   com cartões de palavras no meio. */
+let muralAss = '', giroMural = 0;
+function frasesMural(r) {
+  const c = state.config;
+  return ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Franquia ' + c.unidade, ...mensagens(r)].filter(f => f.length <= 84);
+}
+function girarMural(r) {
+  const f = frasesMural(r || calcular());
+  if (f.length && trocar($('mu-frase'), f[giroMural++ % f.length])) maoVai($('mu-mao'));
+}
+function montarMural(r, forcar) {
+  const c = state.config, sups = [...state.supervisores.values()];
+  $('mu-rot').textContent = 'Franquia ' + c.unidade + (c.ciclo ? ' · ' + c.ciclo : '');
+  const ass = JSON.stringify([r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
+  if (!forcar && ass === muralAss) return;
+  muralAss = ass;
+  const box = $('mu-linhas'); box.textContent = '';
+  const palavras = ['Porque sonhar não tem limites', 'Franquia ' + c.unidade, 'Meta de ' + curto(c.meta), 'Quem faz conta, faz consórcio', ...equipesValidas(r).map(e => e.nome), ...(c.ciclo ? [c.ciclo] : [])];
+  const metade = Math.ceil(r.pessoas.length / 2);
+  const a = intercalar(r.pessoas.slice(0, metade).map(cartaoPessoa), palavras.filter((_, i) => i % 2 === 0));
+  const b = intercalar([...sups.map(cartaoSup), ...r.pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
+  for (const [itens, dir] of [[a, 'esq'], [b, 'dir']]) {
+    if (!itens.length) continue;
+    const grupo = el('div', { class: 'mu-grupo' }, ...itens), trilho = el('div', { class: 'mu-trilho' }, grupo);
+    box.append(el('div', { class: 'mu-linha mu-' + dir }, trilho));
+    /* o grupo precisa ser mais largo que a tela para o laço não deixar buraco */
+    const base = grupo.offsetWidth || 1;
+    for (let w = base; w < box.clientWidth + 60 && w < 30000; w += base) itens.forEach(n => grupo.append(n.cloneNode(true)));
+    trilho.append(grupo.cloneNode(true));
+    trilho.style.setProperty('--dur', Math.max(grupo.offsetWidth / 42, 18).toFixed(1) + 's');   // ~42 px por segundo
+  }
+}
+function intercalar(cartas, palavras) {
+  const out = [];
+  cartas.forEach((c, i) => { out.push(c); if (i % 3 === 1 && palavras.length) out.push(cartaoPalavra(palavras[Math.floor(i / 3) % palavras.length])); });
+  if (cartas.length < 2 && palavras.length) out.push(cartaoPalavra(palavras[0]));
+  return out;
+}
+function fotoMural(nome, foto) {
+  return foto && !fotosRuins.has(foto) ? el('img', { src: foto, alt: '', decoding: 'async', width: 200, height: 200 }) : el('span', { class: 'mu-ini', text: iniciais(nome) });
+}
+function cartaoPessoa(p) {
+  return el('figure', { class: 'mu-card' + (p.valor > 0 ? ' vendeu' : '') },
+    el('div', { class: 'mu-foto' }, fotoMural(p.nome, p.foto), p.valor > 0 ? el('b', { class: 'mu-selo' }, maoEl('mu-selo-mao'), curto(p.valor)) : null),
+    el('figcaption', {}, el('strong', { text: p.nome }), el('span', { text: p.equipe || '' })));
+}
+function cartaoSup(s) {
+  return el('figure', { class: 'mu-card sup' },
+    el('div', { class: 'mu-foto' }, fotoMural(s.nome, s.foto), el('b', { class: 'mu-selo' }, maoEl('mu-selo-mao'), 'Supervisão')),
+    el('figcaption', {}, el('strong', { text: s.nome }), el('span', { text: s.equipe })));
+}
+const cartaoPalavra = txt => el('div', { class: 'mu-palavra' }, maoEl('mu-palavra-mao'), el('span', { text: txt }));
+function entrarMural() {
+  const f = $('mu-frase'); f._texto = null; f.textContent = '';
+  giroMural = 0; girarMural();
+  document.querySelectorAll('#mu-linhas .mu-linha').forEach((l, i) => l.animate([{ opacity: 0, transform: 'translateX(' + (i ? '-' : '') + '6rem)' }, { opacity: 1, transform: 'none' }], { duration: 1000, delay: 250 + i * 180, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+}
+let muralT = 0;
+addEventListener('resize', () => { clearTimeout(muralT); muralT = setTimeout(() => { if (telaAtual === 'mural' && state.modo !== 'carregando') montarMural(calcular(), true); }, 300); });
+
+/* ---------- telão: as telas giram sozinhas ----------
+   Cada tela para no topo; se for mais alta que a TV, desce devagar até o fim, arrancando e
+   freando suave, espera, volta ao topo numa subida com aceleração e a mão do logo acena.
+   Depois a cortina com a mão da Embracon passa e entra a próxima tela. Tela que cabe inteira
+   fica parada o tempo dela. Qualquer toque, rolagem ou tecla pausa por 20 s. */
+const TEMPOS = {
+  ranking: { espera: 9000, fundo: 6000, fixa: 30000 },
+  podio: { espera: 9000, fundo: 4000, fixa: 20000 },
+  equipes: { espera: 8000, fundo: 4000, fixa: 16000 },
+  mural: { espera: 10000, fundo: 4000, fixa: 26000 }
+};
+const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0, ini: 0, de: 0, dur: 0, telaIni: 0, total: 1 };
 const suave = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 function acenar() {
   if (semMovimento) return;
@@ -1132,24 +1504,35 @@ function acenar() {
 }
 function passoRolagem(t) {
   requestAnimationFrame(passoRolagem);
-  if (!raiz.classList.contains('tv') || state.modo === 'carregando' || document.querySelector('dialog[open]') || t < rolagem.pausaAte) { rolagem.fase = 'parado'; return; }
-  const max = document.documentElement.scrollHeight - innerHeight;
-  if (max < 40) return;
-  if (rolagem.fase === 'parado') { rolagem.fase = 'espera'; rolagem.ate = t + 9000; }
-  else if (rolagem.fase === 'espera' && t >= rolagem.ate) { rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; rolagem.ini = t; }
-  else if (rolagem.fase === 'desce') {
+  if (!raiz.classList.contains('tv') || state.modo === 'carregando' || document.querySelector('dialog[open]') || t < rolagem.pausaAte || trocando) {
+    if (!trocando) { rolagem.fase = 'parado'; progressoAba(0); }
+    return;
+  }
+  const max = document.documentElement.scrollHeight - innerHeight, tempo = TEMPOS[telaAtual] || TEMPOS.ranking;
+  if (rolagem.fase === 'parado') {
+    rolagem.fase = 'espera'; rolagem.telaIni = t;
+    if (max < 40) { rolagem.ate = t + tempo.fixa; rolagem.total = tempo.fixa; }
+    else {
+      rolagem.ate = t + tempo.espera;
+      rolagem.total = tempo.espera + max / .045 * 1.08 + 1200 + tempo.fundo + Math.min(2600, Math.max(1300, max * .8)) + 1400;
+    }
+  } else if (rolagem.fase === 'espera' && t >= rolagem.ate) {
+    if (max < 40) { rolagem.fase = 'fim'; proximaTela(); return; }
+    rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; rolagem.ini = t;
+  } else if (rolagem.fase === 'desce') {
     // ~45 px por segundo, ganhando velocidade no primeiro 1,5 s e freando nos últimos 160 px
     const ritmo = Math.max(.12, Math.min(1, (t - rolagem.ini) / 1500, (max - rolagem.y) / 160));
     rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045 * ritmo, max); rolagem.ult = t;
     scrollTo(0, rolagem.y);
-    if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + 7000; }
+    if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + tempo.fundo; }
   } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) {
     rolagem.fase = 'sobe'; rolagem.ini = t; rolagem.de = scrollY; rolagem.dur = semMovimento ? 0 : Math.min(2600, Math.max(1300, scrollY * .8));
   } else if (rolagem.fase === 'sobe') {
     const k = rolagem.dur ? Math.min((t - rolagem.ini) / rolagem.dur, 1) : 1;
     scrollTo(0, Math.round(rolagem.de * (1 - suave(k))));
-    if (k >= 1) { rolagem.fase = 'espera'; rolagem.ate = t + 9000; acenar(); }
-  }
+    if (k >= 1) { rolagem.fase = 'acena'; rolagem.ate = t + 1400; acenar(); }
+  } else if (rolagem.fase === 'acena' && t >= rolagem.ate) { rolagem.fase = 'fim'; proximaTela(); return; }
+  progressoAba(Math.min((t - rolagem.telaIni) / rolagem.total, 1));
 }
 ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { rolagem.pausaAte = performance.now() + 20000; }, { passive: true }));
 requestAnimationFrame(passoRolagem);
@@ -1159,6 +1542,7 @@ function marcarTelao(ligar) {
   raiz.classList.toggle('tv', ligar);
   $('btn-tv').textContent = ligar ? 'Sair do telão' : 'Modo telão';
   rolagem.fase = 'parado';
+  pintarNav();
 }
 /* endereço com #telao abre direto no modo telão (sem tela cheia, que exige um clique) */
 if (location.hash === '#telao') marcarTelao(true);

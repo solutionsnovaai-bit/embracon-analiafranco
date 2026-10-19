@@ -8,12 +8,15 @@ Site estático, sem build e sem dependências. Os números vêm de uma planilha 
 
 ```
 index.html                 página do painel
-assets/styles.css          estilos
+assets/styles.css          estilos do painel de ranking
+assets/telas.css           estilos das telas Pódio, Equipes e Mural, da cortina, das mãos do fundo e do confete
 assets/app.js              lógica do painel
 assets/config.js           link da planilha do Google (vazio: usa data/ranking.json)
 assets/logo-embracon.png          logo original colorido (base do logo em vetor do tema claro e ícone da aba)
 assets/logo-embracon-branco.png   logo original branco (base do logo em vetor do tema vermelho)
 assets/marca/              logo em camadas (mão em 4 traços, "Consórcio", "Embracon") para as animações
+assets/consultores/        fotos dos consultores
+assets/supervisores/       fotos da supervisão das equipes
 data/ranking.json          dados: metas, consultores (com equipe e foto), supervisão das equipes e vendas
 planilha/ranking-embracon-analia-franco.xlsx   planilha estilizada para importar no Google
 ```
@@ -127,6 +130,17 @@ Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking 
 
 Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Rafael Ferraz nos Artilheiros e Diego Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
 
+## Telas
+
+O painel tem quatro telas, na barra logo abaixo do topo:
+
+- **Ranking:** o painel de sempre (placar, ranking de consultores, equipes, últimas vendas e categorias).
+- **Pódio:** os três primeiros do ciclo com foto grande, em blocos de pódio que sobem (3º, 2º e 1º, nessa ordem), raios girando atrás do 1º, a mão da Embracon de coroa e chuva de mãozinhas e confete. Embaixo, do 4º ao 8º.
+- **Equipes:** uma tela por equipe, com a supervisão em destaque (foto num anel que enche com a meta e mãozinhas em órbita), o total da equipe, quanto falta, quem já vendeu, cotas, participação na franquia e os consultores do time com foto e valor. Os botões no alto trocam de equipe.
+- **Mural:** frase grande trocando (slogans e números do momento) e duas faixas de fotos de todo mundo andando em sentidos opostos, com cartões de palavras no meio.
+
+No **modo telão** as telas giram sozinhas: Ranking, Pódio, uma tela para cada equipe (da que está na frente para trás) e Mural, e volta ao Ranking. Tela mais alta que a TV desce até o fim e volta antes de passar. A aba ativa mostra uma barrinha enchendo até a troca e, à direita, o que vem a seguir. Toda troca passa por uma cortina vermelha com a mão da Embracon se montando, mãozinhas voando, o nome da franquia e o nome da tela. Fora do telão, as telas trocam só pelo toque.
+
 ## Temas
 
 O botão **Tema vermelho** inverte as cores: a página assume o vermelho da marca, os detalhes ficam brancos e o logo troca para a versão branca. **Tema claro** volta ao padrão. A escolha fica guardada no navegador em que foi feita, então o telão pode ficar em um tema e o celular de cada um em outro.
@@ -146,6 +160,7 @@ O painel foi feito para ficar passando no telão, então nunca fica parado:
 - **Equipes:** a luz dá a volta na borda do cartão da equipe que está na frente, um brilho corre pelo anel de cada supervisão, a foto da supervisão da equipe líder pulsa e, a cada 16 segundos, as fotos da supervisão dão um giro de moeda, uma depois da outra.
 - **Valores contando:** quando uma venda entra, o valor do consultor e o da equipe sobem contando até o número novo.
 - **Placar:** uma luz corre na borda de cima, como sinal no ar.
+- **Mãozinhas:** mãos da Embracon flutuam no fundo da página com os dedos em onda; há mãozinhas nos títulos, uma mão d'água na linha do líder e no cartão da equipe que está na frente, e uma chuva de mãozinhas sai do aviso de venda nova.
 - **Venda nova:** quando a conferência automática encontra vendas novas, um aviso desce no topo da tela com o nome, a equipe e o valor.
 - **Onda:** a cada 45 segundos, os nomes e valores do ranking somem e voltam, de cima para baixo.
 - **Mão de fundo:** no placar, uma mão grande faz uma onda com os dedos.

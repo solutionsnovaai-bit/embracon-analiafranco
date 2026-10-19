@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400..800&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/telas.css">
 <script>try{if(localStorage.getItem("ranking-tema")==="vermelho")document.documentElement.dataset.tema="vermelho"}catch(e){}</script>
 </head>
 <body>
@@ -31,6 +32,8 @@
   </div>
   <i class="load-lamina" id="load-lamina"></i>
 </div>
+
+<div class="maos-fundo" aria-hidden="true"><span class="mao mf mf1" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf2" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf3" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf4" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf5" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf6" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf7" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span></div>
 
 <div class="app" id="app" data-modo="carregando">
   <header class="topo">
@@ -53,6 +56,17 @@
 
   <div class="aviso" id="aviso" hidden></div>
   <div class="aviso" id="aviso-rascunho" hidden></div>
+
+  <nav class="telas-nav" id="telas-nav" aria-label="Telas do painel">
+    <button class="tn" type="button" data-tela="ranking" aria-current="page"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Ranking</span><i class="tn-prog"></i></button>
+    <button class="tn" type="button" data-tela="podio"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Pódio</span><i class="tn-prog"></i></button>
+    <button class="tn" type="button" data-tela="equipes"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Equipes</span><i class="tn-prog"></i></button>
+    <button class="tn" type="button" data-tela="mural"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Mural</span><i class="tn-prog"></i></button>
+    <span class="tn-prox" id="tn-prox"></span>
+  </nav>
+
+  <div class="telas" id="telas">
+  <section class="tela tela-ranking" data-tela="ranking" id="tela-ranking" aria-label="Ranking">
 
   <section class="placar" aria-labelledby="placar-rotulo">
     <div class="mao placar-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></div>
@@ -84,7 +98,7 @@
   <div class="colunas">
     <section aria-labelledby="h-ranking">
       <div class="sec-cab">
-        <h2 id="h-ranking">Ranking de consultores</h2>
+        <h2 id="h-ranking"><span class="mao h2-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>Ranking de consultores</h2>
         <div class="filtro" role="group" aria-label="Período do ranking">
           <button type="button" data-filtro="ciclo" aria-pressed="true">Ciclo</button>
           <button type="button" data-filtro="7d" aria-pressed="false">7 dias</button>
@@ -97,11 +111,11 @@
 
     <aside class="lado">
       <section id="sec-equipes" aria-labelledby="h-equipes" hidden>
-        <div class="sec-cab"><h2 id="h-equipes">Ranking de equipes</h2></div>
+        <div class="sec-cab"><h2 id="h-equipes"><span class="mao h2-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>Ranking de equipes</h2></div>
         <ol class="equipes" id="equipes"></ol>
       </section>
       <section aria-labelledby="h-feed">
-        <div class="sec-cab"><h2 id="h-feed">Últimas vendas</h2><button class="btn texto" id="btn-todas" type="button" hidden>Ver todas</button></div>
+        <div class="sec-cab"><h2 id="h-feed"><span class="mao h2-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>Últimas vendas</h2><button class="btn texto" id="btn-todas" type="button" hidden>Ver todas</button></div>
         <ul class="feed" id="feed"></ul>
       </section>
       <section aria-labelledby="h-mix">
@@ -110,6 +124,33 @@
         <ul class="mix" id="mix"></ul>
       </section>
     </aside>
+  </div>
+  </section>
+
+  <section class="tela tela-podio" data-tela="podio" id="tela-podio" aria-labelledby="pd-tit" hidden>
+    <span class="mao tela-mao-fundo" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+    <header class="tl-cab">
+      <span class="mao tl-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+      <div class="tl-cab-txt"><span class="rotulo" id="pd-rot">Pódio do ciclo</span><h2 class="tl-tit" id="pd-tit">Quem está no topo</h2></div>
+      <div class="tl-cab-num" id="pd-num"></div>
+    </header>
+    <div class="pd-palco" id="pd-palco"></div>
+    <div class="pd-cola" id="pd-cola-sec"><span class="rotulo">Na cola do pódio</span><ol class="pd-cola-lista" id="pd-cola"></ol></div>
+  </section>
+
+  <section class="tela tela-equipe" data-tela="equipes" id="tela-equipe" aria-labelledby="te-nome" hidden>
+    <span class="mao tela-mao-fundo" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+    <div class="te-chips" id="te-chips" role="group" aria-label="Escolher equipe"></div>
+    <div class="te-corpo" id="te-corpo"></div>
+  </section>
+
+  <section class="tela tela-mural" data-tela="mural" id="tela-mural" aria-label="Mural da franquia" hidden>
+    <div class="mu-palavras">
+      <span class="mao mu-mao" id="mu-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+      <div class="mu-txt"><span class="rotulo" id="mu-rot">Franquia Anália Franco</span><p class="mu-frase troca" id="mu-frase"></p></div>
+    </div>
+    <div class="mu-linhas" id="mu-linhas"></div>
+  </section>
   </div>
 </div>
 
@@ -172,6 +213,16 @@
     <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn principal" type="submit">Salvar ajustes</button></div>
   </form>
 </dialog>
+
+<div class="cortina" id="cortina" aria-hidden="true" hidden>
+  <span class="mao cortina-voo cv1" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao cortina-voo cv2" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao cortina-voo cv3" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao cortina-voo cv4" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao cortina-voo cv5" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+  <div class="cortina-in" id="cortina-in">
+    <div class="cortina-marca"><span class="mao cortina-mao" id="cortina-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><b class="cortina-anel" id="cortina-anel"></b></div>
+    <div class="cortina-txt"><span class="cortina-rot" id="cortina-rot">Franquia Anália Franco</span><strong class="cortina-tit troca" id="cortina-tit"></strong></div>
+  </div>
+</div>
+
+<div class="chuva" id="chuva" aria-hidden="true"></div>
 
 <div class="faixa" id="faixa" aria-hidden="true">
   <span class="faixa-selo"><i></i>Ao vivo<span class="faixa-eq"><b></b><b></b><b></b><b></b></span><b class="faixa-hora" id="faixa-hora"><span>00</span><i>:</i><span>00</span></b></span>
