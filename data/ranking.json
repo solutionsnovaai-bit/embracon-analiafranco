@@ -29,7 +29,7 @@
     {"id":"gabriel-caseri","nome":"Gabriel Caseri","equipe":"Lekos","foto":"assets/consultores/gabriel-caseri.jpg"},
     {"id":"juliana-delgado","nome":"Juliana Delgado","equipe":"Lekos","foto":"assets/consultores/juliana-delgado.jpg"},
     {"id":"fernando","nome":"Fernando Kasemodel","equipe":"Lekos","foto":"assets/consultores/fernando.jpg"},
-    {"id":"stephanie-martins","nome":"Stephanie Martins","equipe":"Lekos"}
+    {"id":"stephanie-martins","nome":"Stephanie Martins","equipe":"Lekos","foto":"assets/consultores/stephanie-martins.jpg"}
   ],
   "supervisores": [
     {"equipe":"Esquadrão Alpha","nome":"Enaila Rocha","cargo":"Supervisora","foto":"assets/supervisores/enaila-rocha.jpg"},
