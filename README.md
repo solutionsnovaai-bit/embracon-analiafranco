@@ -55,7 +55,7 @@ Com a planilha ligada:
 - O telão confere a planilha a cada 8 segundos. Cada casinha nova vira uma venda: aparece o aviso de **venda nova**, o ranking se reordena e a venda entra nas últimas vendas.
 - A planilha não guarda o dia de cada venda, então o painel anota o dia em que viu cada casinha nova (fica guardado no navegador da TV). As vendas que já estavam lá quando a TV abriu o painel pela primeira vez ficam sem data.
 - Cada casinha conta como 1 cota. Uma venda de várias cotas pode ir em várias casinhas.
-- Unidade, nome do ciclo e fotos continuam vindo do `data/ranking.json` (relido a cada 5 minutos). A foto é ligada pelo nome, então escreva o nome do consultor igual nos dois lugares. Nome novo na planilha entra no ranking com as iniciais na bolinha.
+- Unidade, nome do ciclo e fotos continuam vindo do `data/ranking.json` (relido a cada minuto). A foto é ligada pelo nome, então escreva o nome do consultor igual nos dois lugares. Nome novo na planilha entra no ranking com as iniciais na bolinha.
 - Os botões de edição do `#editar` somem, porque quem manda é a planilha.
 - Se a planilha não responder (sem internet, compartilhamento desligado), o painel abre com o `data/ranking.json` e tenta a planilha de novo a cada 8 segundos.
 
@@ -91,6 +91,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 
 | Campo | O que é |
 | --- | --- |
+| `recarregar` | Comando para recarregar a TV de longe (opcional). Mudou o valor e publicou, a TV recarrega a página em até 1 minuto. Veja "Recarregar a TV de longe". |
 | `config.meta` | Meta da franquia no ciclo, em reais, sem pontos nem centavos. |
 | `config.metaEquipe` | Meta de cada equipe na ATA. Aparece no ranking de equipes com o quanto falta. |
 | `config.ciclo` | Nome do ciclo exibido no placar (opcional). |
@@ -176,6 +177,15 @@ No modo telão a página rola sozinha para mostrar o ranking inteiro: fica 9 seg
 O logo do topo é desenhado em vetor, dentro do próprio `index.html`, a partir dos dois PNGs originais. Por isso aparece na hora, junto com o texto, mesmo em TVs com navegador mais lento: não depende de carregar nem de decodificar imagem quando a página volta ao topo.
 
 Para a TV já abrir no modo telão, use o endereço com `#telao` no fim (por exemplo `https://seu-endereco/#telao`). A tela cheia continua pedindo um clique no botão ou a tecla F11.
+
+### Recarregar a TV de longe
+
+Vendas, fotos e nomes entram sozinhos na TV, sem recarregar. Quando sai uma versão nova do site (visual, telas, textos), a TV precisa recarregar a página para pegar. Dá para mandar isso de longe, sem ninguém mexer na TV:
+
+- **Pela planilha (em segundos):** na aba **Telão**, escreva `Recarregar` na primeira linha de uma coluna vazia (por exemplo AM1). Para recarregar a TV, escreva qualquer coisa diferente na casinha logo abaixo (AM2): 1, depois 2, depois 3... Em até 8 segundos a TV recarrega.
+- **Pelo arquivo (em até 1 minuto depois de publicar):** mude o valor de `"recarregar"` no `data/ranking.json` (por exemplo a data e a hora de agora) e publique.
+
+O painel guarda o valor que viu ao abrir e só recarrega quando ele muda. Depois de recarregar, volta sozinho no modo telão. A tela cheia do botão **Modo telão** não sobrevive a uma recarga (o navegador exige um clique), então na TV prefira a tela cheia do próprio navegador (F11), que continua depois de recarregar.
 
 ## Observações
 

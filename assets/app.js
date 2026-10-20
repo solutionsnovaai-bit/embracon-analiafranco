@@ -11,7 +11,7 @@ const CHAVE = 'ranking-rascunho-v1';
 const PLANILHA = (window.RANKING_CONFIG && String(window.RANKING_CONFIG.planilha || '').trim()) || '';
 /* com a planilha, o painel confere a cada 8 s (lançou, a TV mostra em segundos); com o arquivo, a cada 60 s */
 const INTERVALO = PLANILHA ? 8000 : 60000;
-const INTERVALO_CADASTRO = 300000;   // com a planilha, fotos e nome do ciclo (data/ranking.json) são relidos a cada 5 min
+const INTERVALO_CADASTRO = 60000;    // com a planilha, fotos e nome do ciclo (data/ranking.json) são relidos a cada minuto
 const FONTES_PLANILHA = PLANILHA ? fontesPlanilha(PLANILHA) : [];
 
 /* aceita o link normal da planilha (o da barra de endereço ou o de "Compartilhar") e lê a aba Telão em CSV */
@@ -722,6 +722,30 @@ async function buscar(url) {
 }
 const lerArquivo = () => buscar(ARQUIVO);
 
+/* ---------- recarregar a TV de longe ----------
+   O painel guarda o "sinal" que viu ao abrir e recarrega a página inteira quando ele muda:
+   - planilha: a casinha embaixo do título "Recarregar" na aba Telão (conferida a cada 8 s);
+   - arquivo: o campo "recarregar" do data/ranking.json (conferido a cada minuto).
+   Serve para a TV pegar na hora uma versão nova do site, sem ninguém mexer nela. */
+const sinais = new Map();
+const VOLTA_TELAO = 'ranking-volta-telao';
+let recarregando = false;
+function sinal(origem, valor) {
+  const v = valor == null ? '' : String(valor).trim().slice(0, 120);
+  if (!sinais.has(origem)) { sinais.set(origem, v); return; }
+  if (sinais.get(origem) !== v) recarregarTela();
+}
+function sinalDoArquivo(texto) {
+  try { const o = JSON.parse(texto); sinal('arquivo', o && o.recarregar); } catch (e) { /* arquivo no meio de uma publicação: confere na próxima */ }
+}
+function recarregarTela() {
+  if (recarregando) return;
+  recarregando = true;
+  /* volta no modo telão depois de recarregar */
+  try { if (document.documentElement.classList.contains('tv')) sessionStorage.setItem(VOLTA_TELAO, '1'); } catch (e) { /* sem armazenamento: volta pelo #telao do endereço */ }
+  location.reload();
+}
+
 /* ---------- planilha do Google ---------- */
 let base = null, baseTexto = '', baseLidaEm = 0, fonteBoa = 0, ultimoCsv = '', ultimaMudanca = '';
 function lerCsv(t) {
@@ -762,7 +786,8 @@ const normNome = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-
 function dadosDaPlanilha(texto, cadastro) {
   const linhas = lerCsv(texto).filter(l => l.some(c => c.trim()));
   const CAB = { nome: /^(consultor|consultora|nome|vendedor)/, equipe: /^(equipe|time)/, valor: /^(vendido|total|valor)/,
-    meta: /^meta da franquia/, metaEquipe: /^meta (por|de cada|da) equipe/, inicio: /^inicio/, prazo: /^fim/ };
+    meta: /^meta da franquia/, metaEquipe: /^meta (por|de cada|da) equipe/, inicio: /^inicio/, prazo: /^fim/,
+    recarregar: /^(recarregar|atualizar (a )?(tv|tela|telao))/ };
   let ini = -1, col = null, colVendas = [];
   for (let i = 0; i < Math.min(linhas.length, 5) && !col; i++) {
     const achou = {}, vs = [];
@@ -791,7 +816,9 @@ function dadosDaPlanilha(texto, cadastro) {
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
   /* a supervisão de cada equipe também vem do cadastro */
-  return { config: { ...cfg, exemplo: false }, consultores, supervisores: Array.isArray(b.supervisores) ? b.supervisores : [], vendas };
+  /* casinha embaixo do título "Recarregar": mudou o que está escrito nela, a TV recarrega o painel */
+  const sinal = col.recarregar !== undefined ? String(primeira[col.recarregar] || '').trim() : '';
+  return { config: { ...cfg, exemplo: false }, consultores, supervisores: Array.isArray(b.supervisores) ? b.supervisores : [], vendas, sinal };
 }
 /* A planilha não guarda o dia de cada venda: o painel anota o dia em que viu cada casinha nova pela
    primeira vez (guardado neste navegador). O que já estava lá na primeira leitura fica sem data. */
@@ -834,10 +861,10 @@ function guardarCadastro(json) {
   baseLidaEm = Date.now();
 }
 async function lerTudo() {
-  if (!PLANILHA) { const t = await lerArquivo(); return { marca: t, dados: () => JSON.parse(t) }; }
+  if (!PLANILHA) { const t = await lerArquivo(); sinalDoArquivo(t); return { marca: t, dados: () => JSON.parse(t) }; }
   const reler = Date.now() - baseLidaEm > INTERVALO_CADASTRO;
   const [csv, json] = await Promise.all([lerPlanilha(), reler ? lerArquivo().catch(() => '') : '']);
-  if (json) guardarCadastro(json);
+  if (json) { guardarCadastro(json); sinalDoArquivo(json); }
   return { marca: csv + '\u0000' + baseTexto, dados: () => dePlanilha(csv) };
 }
 function carregarDemo() {
@@ -854,6 +881,7 @@ async function conferir() {
     if (l.marca === textoArquivo) { render(); return; }
     const d = l.dados(), antes = state.vendas;
     if (!d) return;
+    if (PLANILHA) { sinal('planilha', d.sinal); if (recarregando) return; }
     textoArquivo = l.marca; aplicar(d); render();
     vendasNovas(antes, state.vendas).slice(-3).forEach(anunciar);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
@@ -924,11 +952,11 @@ async function iniciar() {
   const espera = new Promise(r => setTimeout(r, Math.max(minimo - performance.now(), 0)));
   const demora = setTimeout(() => { if (telaLoad) { telaLoad.classList.add('espera'); $('load-pct').hidden = true; } }, 3400);
   let texto = '', dados = null;
-  try { texto = await lerArquivo(); dados = JSON.parse(texto); } catch (e) { dados = null; }
+  try { texto = await lerArquivo(); sinalDoArquivo(texto); dados = JSON.parse(texto); } catch (e) { dados = null; }
   if (PLANILHA) {
     /* a planilha manda; se ela não responder agora, abre com o data/ranking.json e tenta de novo a cada minuto */
     if (dados) guardarCadastro(texto);   // sem o cadastro agora, ele é relido na próxima conferência
-    try { const csv = await lerPlanilha(); const d = dePlanilha(csv); if (d) { texto = csv + '\u0000' + baseTexto; dados = d; } }
+    try { const csv = await lerPlanilha(); const d = dePlanilha(csv); if (d) { sinal('planilha', d.sinal); texto = csv + '\u0000' + baseTexto; dados = d; } }
     catch (e) { console.warn('Planilha não lida, usando data/ranking.json:', e.message); }
   }
   await espera;
@@ -1562,6 +1590,14 @@ function marcarTelao(ligar) {
 }
 /* endereço com #telao abre direto no modo telão (sem tela cheia, que exige um clique) */
 if (location.hash === '#telao') marcarTelao(true);
+/* recarregada de longe (planilha ou ranking.json): volta no modo telão e tenta manter a tela ligada */
+try {
+  if (sessionStorage.getItem(VOLTA_TELAO)) {
+    sessionStorage.removeItem(VOLTA_TELAO);
+    marcarTelao(true);
+    if (navigator.wakeLock) navigator.wakeLock.request('screen').then(t => { trava = t; }).catch(() => {});
+  }
+} catch (e) { /* sem armazenamento: segue normal */ }
 $('btn-tv').addEventListener('click', async () => {
   const ligar = !raiz.classList.contains('tv');
   marcarTelao(ligar);
