@@ -126,6 +126,9 @@ function normConfig(d) {
 }
 /* foto do consultor: só caminhos de arquivo do próprio site (ex.: assets/consultores/nome.jpg) */
 const fotoValida = s => typeof s === 'string' && /^[\w\-/.]+\.(jpe?g|png|webp)$/i.test(s) && !s.includes('..') ? s : '';
+/* cargo opcional do consultor (ex.: CEO): aparece embaixo do nome no lugar da equipe */
+const limparCargo = s => typeof s === 'string' ? s.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
+const rotulo = p => (p && (p.cargo || p.equipe)) || '';
 const limparEquipe = s => typeof s === 'string' ? s.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
 /* equipes na ordem em que aparecem no cadastro (a do arquivo), usada como desempate e nos menus */
 function ordemEquipes() {
@@ -150,7 +153,7 @@ function aplicar(dados) {
     const nome = String(p.nome || '').trim().slice(0, 60);
     if (!nome) continue;
     const id = String(p.id || slug(nome));
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), foto: fotoValida(p.foto) });
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo: limparCargo(p.cargo), foto: fotoValida(p.foto) });
   }
   /* supervisão de cada equipe: aparece com foto no cartão da equipe e na faixa ao vivo */
   state.supervisores = new Map();
@@ -168,7 +171,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
+    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
     supervisores: [...state.supervisores.values()].map(s => ({ equipe: s.equipe, nome: s.nome, ...(s.cargo ? { cargo: s.cargo } : {}), ...(s.foto ? { foto: s.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
@@ -213,7 +216,7 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
+  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
   const porId = new Map(linhas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -245,7 +248,7 @@ function calcular() {
   /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
   const cotasPor = new Map();
   for (const v of ciclo) cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
-  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0 }))
+  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0 }))
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
@@ -523,7 +526,7 @@ function pintarLista(r, editar, carregando) {
     pintarAvatar(p.av, l);
     p.nome.textContent = l.nome;
     p.sub.textContent = '';
-    if (l.equipe) p.sub.append(el('b', { class: 'eq', text: l.equipe }), ' · ');
+    if (rotulo(l)) p.sub.append(el('b', { class: 'eq', text: rotulo(l) }), ' · ');
     p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
     p.cheio.style.width = (l.valor / escala * 100) + '%';
     p.marca.hidden = true;
@@ -695,7 +698,7 @@ function proximoAviso() {
   avisando = true;
   const f = $('flash');
   $('flash-nome').textContent = p.nome;
-  $('flash-info').textContent = [v.categoria !== 'outros' ? CATS[v.categoria] : '', p.equipe].filter(Boolean).join(' · ');
+  $('flash-info').textContent = [v.categoria !== 'outros' ? CATS[v.categoria] : '', rotulo(p)].filter(Boolean).join(' · ');
   $('flash-valor').textContent = brl(v.valor);
   f.getAnimations().forEach(a => a.cancel());
   f.hidden = false;
@@ -811,7 +814,7 @@ function dadosDaPlanilha(texto, cadastro) {
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
-    consultores.push({ id, nome, equipe, ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
@@ -1323,7 +1326,7 @@ function montarPodio(r, forcar) {
   top.slice(3, 8).forEach((p, k) => {
     const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }); pintarAvatar(av, p);
     cola.append(el('li', { class: 'pd-chip' }, el('b', { class: 'pd-chip-pos', text: (k + 4) + 'º' }), av,
-      el('span', { class: 'pd-chip-txt' }, el('strong', { text: p.nome }), el('span', { text: p.equipe || cotasTxt(p.cotas) })),
+      el('span', { class: 'pd-chip-txt' }, el('strong', { text: p.nome }), el('span', { text: rotulo(p) || cotasTxt(p.cotas) })),
       el('strong', { class: 'pd-chip-v', text: curto(p.valor) })));
   });
   $('pd-cola-sec').hidden = top.length <= 3;
@@ -1338,7 +1341,7 @@ function lugarPodio(p, n) {
       n === 1 ? maoEl('pd-coroa') : null,
       el('div', { class: 'pd-foto' }, av),
       el('strong', { class: 'pd-nome', text: p ? p.nome : 'Vaga aberta' }),
-      el('span', { class: 'pd-eq', text: p ? [p.equipe, cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }),
+      el('span', { class: 'pd-eq', text: p ? [rotulo(p), cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }),
       val),
     el('div', { class: 'pd-bloco' }, maoEl('pd-bloco-mao'), el('span', { class: 'pd-pos', text: n + 'º' })));
 }
@@ -1509,7 +1512,7 @@ function cartaoPessoa(p) {
   return el('figure', { class: 'mu-card' + (p.valor > 0 ? ' vendeu' : '') },
     fotoMural(p.nome, p.foto),
     p.valor > 0 ? el('b', { class: 'mu-valor' }, maoEl('mu-valor-mao'), curto(p.valor)) : null,
-    el('figcaption', {}, el('strong', { text: p.nome }), el('span', { text: p.equipe || '' })));
+    el('figcaption', {}, el('strong', { text: p.nome }), el('span', { text: rotulo(p) })));
 }
 function cartaoSup(s) {
   return el('figure', { class: 'mu-card sup' },

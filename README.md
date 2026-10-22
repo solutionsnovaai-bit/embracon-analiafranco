@@ -100,6 +100,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `consultores[].id` | Identificador curto, sem espaços nem acentos. É o que liga a venda ao consultor. |
 | `consultores[].foto` | Foto da bolinha do consultor (opcional), por exemplo `assets/consultores/juliana-delgado.jpg`. Quadrada, de preferência 320 × 320. Sem foto, a bolinha mostra as iniciais. |
 | `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. |
+| `consultores[].cargo` | Opcional. Texto que aparece embaixo do nome no lugar da equipe (ex.: `CEO Embracon Anália Franco`). As vendas continuam somando para a equipe dele. |
 | `supervisores[]` | Quem supervisiona cada equipe: `equipe` (escrita igual à dos consultores), `nome`, `cargo` (ex.: Supervisora, CEO) e `foto` (quadrada, em `assets/supervisores/`). Aparece com foto no cartão da equipe, nos destaques e na faixa ao vivo. Com a planilha do Google ligada, a supervisão continua vindo daqui. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
