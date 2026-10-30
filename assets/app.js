@@ -236,7 +236,8 @@ function calcular() {
     e.membros++; e.valor += vendido;
   }
   for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
-  const equipes = ordemEq.length ? [...porEquipe.values()].sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
+  /* quem está sem equipe (a proprietária, por exemplo) soma no total da franquia, mas não aparece como equipe */
+  const equipes = ordemEq.length ? [...porEquipe.values()].filter(e => e.nome !== SEM_EQUIPE).sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
   for (const e of equipes) e.sup = state.supervisores.get(normNome(e.nome)) || null;
 
   let ideal = null, restantes = null;
@@ -461,7 +462,7 @@ function pintarAvisos(editar) {
   b.hidden = !state.rascunho;
 }
 
-const linhasDom = new Map(), valorAntes = new Map();
+const linhasDom = new Map(), valorAntes = new Map(), posAntes = new Map();
 function criarLinha() {
   const pos = el('span', { class: 'pos' }), av = el('span', { class: 'avatar', 'aria-hidden': 'true' });
   const nome = el('strong', { class: 'nome' }), sub = el('span', { class: 'sub' });
@@ -501,7 +502,7 @@ function pintarLista(r, editar, carregando) {
 
   if (!r.linhas.length) {
     for (const n of linhasDom.values()) n.remove();
-    linhasDom.clear(); valorAntes.clear();
+    linhasDom.clear(); valorAntes.clear(); posAntes.clear();
     const v = el('li', { class: 'vazio' });
     if (carregando) v.append(el('strong', { text: 'Carregando o ranking' }));
     else {
@@ -526,7 +527,7 @@ function pintarLista(r, editar, carregando) {
     n.className = 'linha' + (i < 3 && l.valor > 0 ? ' top' : '') + (lider ? ' lider' : '');
     p.pos.textContent = l.valor > 0 ? i + 1 : '–';
     pintarAvatar(p.av, l);
-    p.nome.textContent = l.nome;
+    if (p.nome._t !== l.nome + '|' + !!l.cargo) { p.nome._t = l.nome + '|' + !!l.cargo; p.nome.textContent = l.nome; const s = seloVip(l); if (s) p.nome.append(s); }
     p.sub.textContent = '';
     if (rotulo(l)) p.sub.append(el('b', { class: 'eq', text: rotulo(l) }), ' · ');
     p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
@@ -536,11 +537,13 @@ function pintarLista(r, editar, carregando) {
     p.nota.className = '';
     p.nota.textContent = !noCiclo && r.somaFiltro ? pctTxt(Math.round(l.valor / r.somaFiltro * 100)) + ' do período' : '';
     lista.append(n);
-    const antes = valorAntes.get(l.id);
+    const antes = valorAntes.get(l.id), posAnt = posAntes.get(l.id);
     if (noCiclo && antes != null && l.valor > antes && !semMovimento) { n.classList.remove('pulsa'); void n.offsetWidth; n.classList.add('pulsa'); }
-    if (noCiclo) valorAntes.set(l.id, l.valor);
+    /* subiu de posição com venda nova: selo verde com quantas posições ganhou */
+    if (noCiclo && antes != null && l.valor > antes && posAnt != null && i < posAnt) seloSobe(n, posAnt - i);
+    if (noCiclo) { valorAntes.set(l.id, l.valor); posAntes.set(l.id, i); }
   });
-  for (const [id, n] of linhasDom) if (!vivos.has(id)) { n.remove(); linhasDom.delete(id); valorAntes.delete(id); }
+  for (const [id, n] of linhasDom) if (!vivos.has(id)) { n.remove(); linhasDom.delete(id); valorAntes.delete(id); posAntes.delete(id); }
 
   if (!semMovimento) for (const [id, n] of linhasDom) {
     const a = topo.get(id); if (a == null) continue;
@@ -887,8 +890,11 @@ async function conferir() {
     const d = l.dados(), antes = state.vendas;
     if (!d) return;
     if (PLANILHA) { sinal('planilha', d.sinal); if (recarregando) return; }
+    const liderAntes = (calcular().lideres[0] || {}).id;
     textoArquivo = l.marca; aplicar(d); render();
-    vendasNovas(antes, state.vendas).slice(-3).forEach(anunciar);
+    const novas = vendasNovas(antes, state.vendas);
+    novas.slice(-3).forEach(anunciar);
+    checarLider(liderAntes, novas.length);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
   finally { conferindo = false; }
 }
@@ -1139,6 +1145,9 @@ function iniciarGiros() {
   /* mural: a frase grande troca a cada 4,2 s; pódio: uma chuvinha de mãozinhas sobre o 1º a cada 5 s */
   setInterval(() => { if (telaAtual === 'mural' && !trocando && !document.hidden) girarMural(); }, 4200);
   setInterval(() => { if (telaAtual === 'podio' && !trocando) confetePodio(.3); }, 5200);
+  /* tarja de destaque: a primeira entra 14 s depois de abrir, as outras a cada ~26 s */
+  tarja.proxima = performance.now() + TARJA.primeira;
+  setInterval(tarjaTic, 1000);
 }
 relogio();
 setInterval(relogio, 1000);
@@ -1158,8 +1167,9 @@ function giroSupervisao() {
 function relogio() {
   const h = $('faixa-hora'); if (!h) return;
   const d = new Date();
-  h.firstChild.textContent = doisDig(d.getHours());
-  h.lastChild.textContent = doisDig(d.getMinutes());
+  rolar(h.firstChild, doisDig(d.getHours()));
+  rolar(h.lastChild, doisDig(d.getMinutes()));
+  contagem();
 }
 
 /* ==========================================================================
@@ -1221,6 +1231,7 @@ function mostrarTela(tela, equipe) {
   pintarTela(calcular(), true);
 }
 function pintarTela(r, forcar) {
+  pintarPlacarzinho(r);
   if (telaAtual === 'podio') montarPodio(r, forcar);
   else if (telaAtual === 'equipes') montarEquipe(r, forcar);
   else if (telaAtual === 'mural') montarMural(r, forcar);
@@ -1342,7 +1353,7 @@ function lugarPodio(p, n) {
     el('div', { class: 'pd-pessoa' },
       n === 1 ? maoEl('pd-coroa') : null,
       el('div', { class: 'pd-foto' }, av),
-      el('strong', { class: 'pd-nome', text: p ? p.nome : 'Vaga aberta' }),
+      el('strong', { class: 'pd-nome' }, p ? p.nome : 'Vaga aberta', seloVip(p)),
       el('span', { class: 'pd-eq', text: p ? [rotulo(p), cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }),
       val),
     el('div', { class: 'pd-bloco' }, maoEl('pd-bloco-mao'), el('span', { class: 'pd-pos', text: n + 'º' })));
@@ -1428,7 +1439,7 @@ function pessoaEquipe(p, k, maior) {
   return el('li', { class: 'te-p' + (destaque ? ' destaque' : '') + (p.valor > 0 ? '' : ' zerado') },
     el('span', { class: 'te-p-pos', text: p.valor > 0 ? k + 1 : '–' }), av,
     el('div', { class: 'te-p-txt' },
-      el('strong', { class: 'te-p-nome' }, el('span', { text: p.nome }), destaque ? maoEl('te-p-mao') : null),
+      el('strong', { class: 'te-p-nome' }, el('span', { text: p.nome }), seloVip(p), destaque ? maoEl('te-p-mao') : null),
       el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda no ciclo' })),
     el('strong', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }),
     el('span', { class: 'te-p-barra' }, cheio));
@@ -1514,7 +1525,7 @@ function cartaoPessoa(p) {
   return el('figure', { class: 'mu-card' + (p.valor > 0 ? ' vendeu' : '') },
     fotoMural(p.nome, p.foto),
     p.valor > 0 ? el('b', { class: 'mu-valor' }, maoEl('mu-valor-mao'), curto(p.valor)) : null,
-    el('figcaption', {}, el('strong', { text: p.nome }), el('span', { text: rotulo(p) })));
+    el('figcaption', {}, el('strong', {}, p.nome, seloVip(p)), el('span', { text: rotulo(p) })));
 }
 function cartaoSup(s) {
   return el('figure', { class: 'mu-card sup' },
@@ -1612,6 +1623,169 @@ $('btn-tv').addEventListener('click', async () => {
   } catch (e) { /* tela cheia e bloqueio de tela são opcionais */ }
   posicionarRitmo();
 });
+
+/* ==========================================================================
+   Apetrechos de transmissão: dígitos que rolam, contagem regressiva do ciclo,
+   tarja de destaque no canto (estilo TV), placar fixo e selo de quem subiu.
+   ========================================================================== */
+
+/* dígitos que rolam: cada caractere fica numa casinha; o que mudou sai por cima e o novo entra por baixo */
+function rolar(caixa, texto) {
+  if (!caixa || caixa._txt === texto) return;
+  const antes = caixa._txt;
+  caixa._txt = texto;
+  if (antes == null || antes.length !== texto.length) {
+    caixa.textContent = '';
+    for (const ch of texto) caixa.append(el('span', { class: 'rl' + (/\d/.test(ch) ? '' : ' rl-sep') }, el('span', { class: 'rl-d', text: ch })));
+    return;
+  }
+  for (let i = 0; i < texto.length; i++) {
+    if (antes[i] === texto[i]) continue;
+    const casa = caixa.children[i];
+    while (casa.children.length > 1) casa.firstElementChild.remove();   // sobra de um giro que não terminou
+    const velho = casa.firstElementChild, novo = el('span', { class: 'rl-d', text: texto[i] });
+    casa.append(novo);
+    if (semMovimento || document.hidden || !novo.animate) { if (velho) velho.remove(); continue; }
+    if (velho) velho.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-105%)', opacity: 0 }], { duration: 460, easing: 'cubic-bezier(.6,0,.3,1)', fill: 'forwards' }).onfinish = () => velho.remove();
+    novo.animate([{ transform: 'translateY(105%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 480, delay: 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+  }
+}
+
+/* ---------- contagem regressiva até o fim do ciclo (23:59:59 do último dia) ---------- */
+function contagem() {
+  const caixa = $('faixa-conta'), c = state.config;
+  if (!caixa) return;
+  const fim = ehData(c.prazo) ? new Date(c.prazo + 'T23:59:59') : null;
+  const resta = fim ? fim - Date.now() : -1;
+  if (state.modo === 'carregando' || !(resta > 0)) { caixa.hidden = true; return; }
+  if (caixa.hidden) { caixa.hidden = false; if (!semMovimento) { caixa.classList.remove('entra'); void caixa.offsetWidth; caixa.classList.add('entra'); } }
+  const s = Math.floor(resta / 1000), d = Math.floor(s / 86400);
+  const ultimo = c.prazo === hojeISO();
+  const rot = ultimo ? (resta < 3600e3 ? 'Reta final' : 'Último dia') : 'Fim do ciclo';
+  if ($('fc-rot').textContent !== rot) $('fc-rot').textContent = rot;
+  caixa.classList.toggle('urgente', ultimo);
+  rolar($('fc-num'), (d ? d + 'd ' : '') + doisDig(Math.floor(s % 86400 / 3600)) + ':' + doisDig(Math.floor(s % 3600 / 60)) + ':' + doisDig(s % 60));
+}
+
+/* ---------- placar fixo: aparece no alto quando o placar grande sai da tela ---------- */
+let placarNaTela = true;
+if ('IntersectionObserver' in window) new IntersectionObserver(es => { placarNaTela = es[es.length - 1].isIntersecting; pintarPlacarzinho(); }, { threshold: 0, rootMargin: '-40px 0px 0px 0px' }).observe(document.querySelector('#tela-ranking .placar'));
+function pintarPlacarzinho(r) {
+  const pz = $('placarzinho'); if (!pz) return;
+  pz.classList.toggle('on', !placarNaTela && telaAtual === 'ranking' && state.modo !== 'carregando');
+  if (!r) return;
+  const c = state.config, pct = c.meta ? r.total / c.meta * 100 : 0;
+  contarValor($('pz-total'), r.total);
+  $('pz-pct').textContent = pctTxt(Math.floor(pct * 10) / 10);
+  $('pz-cheio').style.width = Math.min(pct, 100) + '%';
+}
+
+/* ---------- selo de destaque da diretoria (quem tem cargo: CEO, proprietária) ----------
+   roseta vermelha girando devagar, com a mão da Embracon no meio e um anel que pulsa */
+function seloVip(p) {
+  if (!p || !p.cargo) return null;
+  return el('span', { class: 'vip', 'aria-hidden': 'true' }, maoEl('vip-mao'));
+}
+
+/* ---------- selo de quem subiu no ranking ---------- */
+function seloSobe(li, n) {
+  if (semMovimento) return;
+  li.querySelectorAll('.sobe').forEach(s => s.remove());
+  const s = el('span', { class: 'sobe', text: n === 1 ? '1 posição' : n + ' posições' });
+  li.append(s);
+  s.animate([{ opacity: 0, transform: 'translateY(.7rem) scale(.4)' }, { opacity: 1, transform: 'scale(1.15)', offset: .6 }, { opacity: 1, transform: 'none' }], { duration: 650, delay: 450, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+  setTimeout(() => { if (!s.isConnected) return; s.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-.5rem)' }], { duration: 500, fill: 'forwards' }).onfinish = () => s.remove(); }, 15000);
+}
+
+/* ---------- tarja de destaque, estilo transmissão de TV ----------
+   1. o rótulo vermelho abre da esquerda e o painel vem atrás, com uma lâmina vermelha cruzando
+   2. a foto salta para dentro do anel, nome e informação sobem, o valor conta do zero
+   3. a linha de baixo esvazia no tempo em que a tarja fica e ela sai pelo mesmo lado
+   Gira entre: líder, quem está na cola, equipe na frente, última venda e quanto falta da meta.
+   Quando uma venda troca o líder, entra uma tarja especial de novo líder, toda vermelha. */
+const TARJA = { primeira: 14000, intervalo: 26000, fica: 7000 };
+const tarja = { fila: [], giro: 0, proxima: 0, ativa: false, calma: 0, t: 0 };
+const primeiroNome = n => String(n).trim().split(/\s+/)[0];
+function podeTarja() {
+  return !semMovimento && innerWidth > 992 && (telaAtual === 'ranking' || telaAtual === 'mural') && state.modo !== 'carregando' && !document.hidden && !trocando && !avisando
+    && !document.querySelector('dialog[open]') && !(telaLoad && telaLoad.isConnected);
+}
+function conteudosTarja(r) {
+  const c = state.config, l = r.lideres, lista = [];
+  const pessoa = (rot, p, info, extra) => ({ rot, nome: p.nome, info, valor: p.valor, foto: p.foto, vip: !!p.cargo, ...extra });
+  if (l[0]) lista.push(pessoa('Líder do ciclo', l[0], [rotulo(l[0]), cotasTxt(l[0].cotas)].filter(Boolean).join(' · ') + (l[1] ? ' · ' + curto(l[0].valor - l[1].valor) + ' à frente' : ''), { coroa: true }));
+  const voltas = Math.max(Math.min(l.length, 5) - 1, 1), k = 1 + (Math.floor(tarja.giro / 5) % voltas);
+  if (l[k]) {
+    const dif = l[k - 1].valor - l[k].valor;
+    lista.push(pessoa(k + 1 + 'º no ranking', l[k], dif > 0 ? 'faltam ' + curto(dif) + ' para passar ' + primeiroNome(l[k - 1].nome) : 'empatado com ' + primeiroNome(l[k - 1].nome)));
+  }
+  const eq = r.equipes.find(e => e.valor > 0 && e.nome !== SEM_EQUIPE);
+  if (eq) lista.push({ rot: 'Equipe na frente', nome: eq.nome, valor: eq.valor, foto: eq.sup && eq.sup.foto,
+    info: [eq.sup ? 'time de ' + eq.sup.nome : '', eq.venderam + ' de ' + eq.membros + ' já venderam'].filter(Boolean).join(' · ') });
+  const v = r.feed.find(x => x.data), pv = v && state.consultores.get(v.consultor);
+  if (pv) lista.push({ rot: 'Última venda', nome: pv.nome, valor: v.valor, foto: pv.foto, vip: !!pv.cargo, info: [v.categoria !== 'outros' ? CATS[v.categoria] : '', quando(v.data), rotulo(pv)].filter(Boolean).join(' · ') });
+  if (c.meta && r.falta > 0) lista.push({ rot: 'Meta da franquia', nome: 'Faltam ' + curto(r.falta), valorTxt: pctTxt(Math.floor(r.total / c.meta * 1000) / 10),
+    info: r.total > 0 ? curto(r.total) + ' vendidos de ' + curto(c.meta) : 'a primeira venda do ciclo abre o placar' });
+  return lista;
+}
+function checarLider(antes, novas) {
+  if (!novas || semMovimento) return;
+  const r = calcular(), l = r.lideres[0];
+  if (!l || !antes || l.id === antes) return;
+  const ant = state.consultores.get(antes);
+  tarja.fila = tarja.fila.filter(t => !t.novo);
+  tarja.fila.unshift({ rot: 'Novo líder do ciclo', nome: l.nome, valor: l.valor, foto: l.foto, vip: !!l.cargo, coroa: true, novo: true,
+    info: [rotulo(l), ant ? 'passou ' + primeiroNome(ant.nome) : ''].filter(Boolean).join(' · ') });
+}
+function tarjaTic() {
+  const agora = performance.now();
+  if (trocando) tarja.calma = agora + 3500;          // deixa a tela nova se montar antes
+  if (tarja.ativa || agora < tarja.calma || !podeTarja()) return;
+  if (!tarja.fila.length && agora < tarja.proxima) return;
+  let t = tarja.fila.shift();
+  if (!t) { const l = conteudosTarja(calcular()); t = l.length ? l[tarja.giro++ % l.length] : null; }
+  if (t) mostrarTarja(t); else tarja.proxima = agora + TARJA.intervalo;
+}
+function mostrarTarja(t) {
+  const box = $('tarja'), corpo = $('tarja-corpo'), foto = $('tarja-foto'), val = $('tarja-valor');
+  const ease = 'cubic-bezier(.2,.8,.2,1)', corte = 'cubic-bezier(.7,0,.2,1)';
+  tarja.ativa = true;
+  box.getAnimations({ subtree: true }).forEach(a => a.cancel());
+  box.classList.toggle('virou', !!t.novo);
+  $('tarja-rot').textContent = t.rot;
+  $('tarja-nome').textContent = t.nome;
+  if (t.vip) $('tarja-nome').append(seloVip({ cargo: true }));
+  $('tarja-info').textContent = t.info || '';
+  foto.textContent = '';
+  if (t.foto && !fotosRuins.has(t.foto)) foto.append(el('img', { src: t.foto, alt: '', width: 160, height: 160, decoding: 'async' }));
+  else foto.append(maoEl('tarja-foto-mao'));
+  if (t.coroa) foto.append(maoEl('tarja-coroa'));
+  cancelAnimationFrame(val._q);
+  val.textContent = t.valor != null ? brl(0) : t.valorTxt || '';
+  box.hidden = false;
+
+  $('tarja-rot-caixa').animate([{ clipPath: 'polygon(0 0,0 0,0 100%,0 100%)' }, { clipPath: 'polygon(0 0,100% 0,calc(100% - .8rem) 100%,0 100%)' }], { duration: 440, easing: corte, fill: 'both' });
+  corpo.animate([{ clipPath: 'inset(-3rem 100% -3rem -3rem)' }, { clipPath: 'inset(-3rem -3rem -3rem -3rem)' }], { duration: 640, delay: 150, easing: corte, fill: 'both' });
+  $('tarja-lamina').animate([{ transform: 'translateX(-130%) skewX(-24deg)' }, { transform: 'translateX(680%) skewX(-24deg)' }], { duration: 950, delay: 200, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'both' });
+  foto.animate([{ transform: 'scale(.2) rotate(-35deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 720, delay: 440, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'both' });
+  [$('tarja-nome'), $('tarja-info')].forEach((n, i) => n.animate([{ transform: 'translateY(1rem)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 580, delay: 540 + i * 120, easing: ease, fill: 'both' }));
+  val.animate([{ transform: 'translateX(1.25rem)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 520, delay: 620, easing: ease, fill: 'both' });
+  if (t.valor != null) setTimeout(() => contar(val, 0, t.valor, brl), 640);
+  setTimeout(() => { maoVai($('tarja-mao')); maoVai(foto.querySelector('.tarja-coroa')); maoVai(foto.querySelector('.tarja-foto-mao')); }, 120);
+  $('tarja-tempo').animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: TARJA.fica, delay: 800, easing: 'linear', fill: 'both' });
+  /* novo líder: chuva de mãozinhas saindo da foto */
+  if (t.novo) setTimeout(() => { const b = foto.getBoundingClientRect(); chuva(b.left + b.width / 2, b.top + b.height / 2, 44, 1.05); }, 760);
+  clearTimeout(tarja.t);
+  tarja.t = setTimeout(esconderTarja, 800 + TARJA.fica);
+}
+function esconderTarja() {
+  const box = $('tarja'), corte = 'cubic-bezier(.7,0,.2,1)';
+  const fim = () => { box.hidden = true; box.getAnimations({ subtree: true }).forEach(a => a.cancel()); tarja.ativa = false; tarja.proxima = performance.now() + TARJA.intervalo; };
+  if (document.hidden || !box.animate) { fim(); return; }
+  [$('tarja-nome'), $('tarja-info'), $('tarja-valor'), $('tarja-foto')].forEach(n => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in', fill: 'forwards' }));
+  $('tarja-corpo').animate([{ clipPath: 'inset(-3rem -3rem -3rem -3rem)' }, { clipPath: 'inset(-3rem 100% -3rem -3rem)' }], { duration: 520, delay: 120, easing: corte, fill: 'forwards' });
+  $('tarja-rot-caixa').animate([{ clipPath: 'polygon(0 0,100% 0,calc(100% - .8rem) 100%,0 100%)' }, { clipPath: 'polygon(0 0,0 0,0 100%,0 100%)' }], { duration: 400, delay: 360, easing: corte, fill: 'forwards' }).onfinish = fim;
+}
 
 iniciar();
 })();

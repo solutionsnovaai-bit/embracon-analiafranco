@@ -99,8 +99,8 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `config.exemplo` | `true` exibe a faixa avisando que os dados são de exemplo. Use `false` com os dados reais. |
 | `consultores[].id` | Identificador curto, sem espaços nem acentos. É o que liga a venda ao consultor. |
 | `consultores[].foto` | Foto da bolinha do consultor (opcional), por exemplo `assets/consultores/juliana-delgado.jpg`. Quadrada, de preferência 320 × 320. Sem foto, a bolinha mostra as iniciais. |
-| `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. |
-| `consultores[].cargo` | Opcional. Texto que aparece embaixo do nome no lugar da equipe (ex.: `CEO Embracon Anália Franco`). As vendas continuam somando para a equipe dele. |
+| `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. Sem equipe (ex.: a proprietária), as vendas somam no total da franquia e no ranking de consultores, mas em nenhuma equipe; na planilha, deixe a coluna EQUIPE vazia. |
+| `consultores[].cargo` | Opcional. Texto que aparece embaixo do nome no lugar da equipe (ex.: `CEO Embracon Anália Franco`, `Proprietária Embracon Anália Franco`). Quem tem cargo ganha o selo de destaque (roseta vermelha com a mão) ao lado do nome. As vendas continuam somando para a equipe da pessoa, se ela tiver uma. |
 | `supervisores[]` | Quem supervisiona cada equipe: `equipe` (escrita igual à dos consultores), `nome`, `cargo` (ex.: Supervisora, CEO) e `foto` (quadrada, em `assets/supervisores/`). Aparece com foto no cartão da equipe, nos destaques e na faixa ao vivo. Com a planilha do Google ligada, a supervisão continua vindo daqui. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
@@ -191,4 +191,12 @@ O painel guarda o valor que viu ao abrir e só recarrega quando ele muda. Depois
 ## Observações
 
 - A página pede aos buscadores que não a indexem (`noindex`), mas o endereço publicado é público para quem tiver o link. Para restringir o acesso, use a proteção por senha da hospedagem.
-- O repositório vem com os 23 consultores cadastrados nas três equipes e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.
+- O repositório vem com os 24 consultores cadastrados nas três equipes e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.
+
+## Apetrechos de transmissão
+
+- **Contagem regressiva** no selo AO VIVO, até as 23:59:59 do último dia do ciclo (data de fim da planilha ou do `ranking.json`). No último dia vira "Último dia" e o cronômetro bate; na última hora, "Reta final". Sem data de fim, ou com o ciclo encerrado, o chip some.
+- **Tarja de destaque** no canto de baixo (telas Ranking e Mural, em telas a partir de 992 px): gira entre líder, quem está na cola, equipe na frente, última venda e quanto falta da meta. Quando uma venda troca o líder, entra a tarja vermelha de **novo líder** com chuva de mãozinhas.
+- **Placar fixo** no alto à direita quando o placar grande sai da tela (no telão, enquanto a lista rola).
+- **Selo de subida**: quem passa outros consultores com uma venda nova ganha um selo verde com quantas posições subiu, por 15 segundos.
+- **Relógio** da faixa com dígitos que rolam.

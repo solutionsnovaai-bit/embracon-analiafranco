@@ -27,6 +27,7 @@
     {"id":"tamyres-reis","nome":"Tamyres Reis","equipe":"Artilheiros","foto":"assets/consultores/tamyres-reis.jpg"},
     {"id":"isabella-oliveira","nome":"Isabella Oliveira","equipe":"Artilheiros","foto":"assets/consultores/isabella-oliveira.jpg"},
     {"id":"rafael-ferraz","nome":"Rafael Ferraz","equipe":"Artilheiros","cargo":"CEO Embracon Anália Franco","foto":"assets/supervisores/rafael-ferraz.jpg"},
+    {"id":"camila-casco","nome":"Camila Casco","cargo":"Proprietária Embracon Anália Franco","foto":"assets/consultores/camila-casco.jpg"},
     {"id":"bruno-marques","nome":"Bruno Marques","equipe":"Lekos","foto":"assets/consultores/bruno-marques.jpg"},
     {"id":"matheus-detilio","nome":"Matheus Detilio","equipe":"Lekos","foto":"assets/consultores/matheus-detilio.jpg"},
     {"id":"lais-berloni","nome":"Lais Berloni","equipe":"Lekos","foto":"assets/consultores/lais-berloni.jpg"},

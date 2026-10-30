@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400..800&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <link rel="stylesheet" href="assets/telas.css">
+<link rel="stylesheet" href="assets/apetrechos.css">
 <script>try{if(localStorage.getItem("ranking-tema")==="vermelho")document.documentElement.dataset.tema="vermelho"}catch(e){}</script>
 </head>
 <body>
@@ -227,7 +228,31 @@
 
 <div class="faixa" id="faixa" aria-hidden="true">
   <span class="faixa-selo"><i></i>Ao vivo<span class="faixa-eq"><b></b><b></b><b></b><b></b></span><b class="faixa-hora" id="faixa-hora"><span>00</span><i>:</i><span>00</span></b></span>
+  <!-- contagem regressiva até o fim do ciclo: só aparece com a data de fim preenchida -->
+  <span class="faixa-conta" id="faixa-conta" hidden>
+    <svg class="fc-crono" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 1.8h4M12 1.8v2.6M18.6 6.2l1.5-1.5"/><circle cx="12" cy="14" r="8"/><path class="fc-ponteiro" d="M12 14V8.6"/></svg>
+    <span class="fc-rot" id="fc-rot">Fim do ciclo</span><b class="fc-num" id="fc-num"></b>
+  </span>
   <div class="faixa-janela"><div class="faixa-trilho" id="faixa-trilho"></div></div>
+</div>
+
+<!-- tarja de destaque, no estilo das transmissões de TV: entra no canto de tempos em tempos -->
+<div class="tarja" id="tarja" aria-hidden="true" hidden>
+  <div class="tarja-rot" id="tarja-rot-caixa"><span class="mao tarja-mao" id="tarja-mao"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span id="tarja-rot"></span></div>
+  <div class="tarja-corpo" id="tarja-corpo">
+    <i class="tarja-corte"><i class="tarja-lamina" id="tarja-lamina"></i></i>
+    <span class="tarja-foto" id="tarja-foto"></span>
+    <div class="tarja-txt"><strong id="tarja-nome"></strong><span id="tarja-info"></span></div>
+    <strong class="tarja-valor" id="tarja-valor"></strong>
+    <i class="tarja-tempo" id="tarja-tempo"></i>
+  </div>
+</div>
+
+<!-- placar fixo: desce no canto quando o placar grande sai da tela -->
+<div class="placarzinho" id="placarzinho" aria-hidden="true">
+  <i class="pz-vivo"></i>
+  <div class="pz-txt"><span class="pz-rot">Crédito vendido</span><strong id="pz-total">R$ 0</strong></div>
+  <div class="pz-meta"><b id="pz-pct">0%</b><span class="pz-trilho"><i id="pz-cheio"></i></span></div>
 </div>
 
 <div class="flash" id="flash" role="status" hidden>
