@@ -36,6 +36,7 @@ const DEMO = {
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
     ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
     ['ricardo-neves', 'Ricardo Neves', 'Artilheiros'], ['tamyres-reis', 'Tamyres Reis', 'Artilheiros'],
+    ['isabella-oliveira', 'Isabella Oliveira', 'Artilheiros'],
     ['bruno-marques', 'Bruno Marques', 'Lekos'], ['matheus-detilio', 'Matheus Detilio', 'Lekos'],
     ['lais-berloni', 'Lais Berloni', 'Lekos'], ['mateus-sales', 'Mateus Sales', 'Lekos'],
     ['gabriel-caseri', 'Gabriel Caseri', 'Lekos'], ['juliana-delgado', 'Juliana Delgado', 'Lekos'],
