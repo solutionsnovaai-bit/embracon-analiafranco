@@ -6,7 +6,7 @@
    Tudo anda só com transform e opacity, para rodar leve na TV.
    ========================================================================== */
 
-.bf-selo,.bf-load,.bf-fita,.bf-marca{display:none}
+.bf-selo,.bf-load,.bf-marca{display:none}
 .cotas-tipo{display:inline-flex;flex-wrap:wrap;gap:.3rem;margin-inline-start:.45rem;vertical-align:middle}
 
 /* ---------- chips do tipo de cota (valem com ou sem campanha) ---------- */
@@ -32,16 +32,10 @@
   --red:var(--bf-red);--red-deep:#B70E17;--red-wash:rgba(237,28,36,.18);--on-red:#FFFFFF;--on-red-2:#FFD9DA;
   --listra:rgba(255,255,255,.17);--brilho:rgba(255,255,255,.55);--varre:rgba(237,28,36,.32);
   --reluz:#FF4D54;--reluz-pct:#FF9EA2;--mao-fundo:.2;--selo-bg:rgba(237,28,36,.2);--selo-fg:#FF9EA2;--ok:#FFFFFF;
-  background:var(--paper);color:var(--ink);border-color:var(--bf)}
+  background:var(--paper);color:var(--ink);border-color:var(--bf-borda,var(--bf))}
 
-/* placar: cartão preto com a fita da Black no canto e "BLACK" vazado ao fundo */
+/* placar: cartão preto com "BLACK" vazado ao fundo */
 :root[data-campanha="black-friday"] .placar{box-shadow:0 1.4rem 3rem -1rem rgba(13,10,11,.45)}
-:root[data-campanha="black-friday"] .placar>.bf-fita{display:block;position:absolute;z-index:3;top:3.4rem;right:-3.8rem;width:15rem;transform:rotate(45deg);
-  background:var(--bf-red);color:#FFFFFF;overflow:hidden;box-shadow:0 .4rem 1rem rgba(0,0,0,.35);pointer-events:none}
-.bf-fita-trilho{display:flex;width:max-content;animation:bf-corre 9s linear infinite}
-.bf-fita-trilho span{padding:.42rem .9rem;font:900 .78rem/1 var(--display);font-stretch:88%;letter-spacing:.16em;white-space:nowrap}
-.bf-fita-trilho span::after{content:"✦";margin-inline-start:1.1rem;opacity:.75}
-@keyframes bf-corre{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 :root[data-campanha="black-friday"] .placar>.bf-marca{display:block;position:absolute;z-index:0;right:3%;bottom:-.18em;font:900 clamp(6rem,15vw,13rem)/1 var(--display);font-stretch:70%;
   letter-spacing:.02em;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.06);pointer-events:none;user-select:none;
   -webkit-mask:linear-gradient(100deg,#000 35%,rgba(0,0,0,.35) 50%,#000 65%) 0 0/300% 100%;mask:linear-gradient(100deg,#000 35%,rgba(0,0,0,.35) 50%,#000 65%) 0 0/300% 100%;
@@ -52,27 +46,27 @@
 /* líder do ranking: linha preta com filete vermelho que pulsa */
 :root[data-campanha="black-friday"] .linha.lider{--l-fg:#FFFFFF;--l-sub:#C9BFC0;--l-trilho:var(--bf-3);--l-cheio:var(--bf-red);--l-meta:#FFFFFF;--l-av:var(--bf-3);
   --l-listra:rgba(255,255,255,.17);--l-brilho:rgba(255,255,255,.55);--l-selo-bg:var(--bf-red);--l-selo-fg:#FFFFFF;--on-red:#FFFFFF;
-  background:var(--bf);border-color:var(--bf);box-shadow:inset .4rem 0 0 var(--bf-red),0 .9rem 2rem -1rem rgba(13,10,11,.5)}
+  background:var(--bf);border-color:var(--bf-borda,var(--bf));box-shadow:inset .4rem 0 0 var(--bf-red),0 .9rem 2rem -1rem rgba(13,10,11,.5)}
 :root[data-campanha="black-friday"] .linha.lider .pos{color:var(--bf-red)}
 /* top 3: filete preto à esquerda */
 :root[data-campanha="black-friday"] .linha.top:not(.lider){box-shadow:inset .3rem 0 0 var(--bf)}
 
 /* tarja de novo líder continua toda vermelha */
-:root[data-campanha="black-friday"] .tarja.virou .tarja-corpo{background:var(--bf-red);color:#FFFFFF;border-inline-start-color:var(--bf)}
+:root[data-campanha="black-friday"] .tarja.virou .tarja-corpo{background:var(--bf-red);color:#FFFFFF;border-inline-start-color:var(--bf-borda,var(--bf))}
 
 /* equipe na frente: cartão preto, a luz da borda continua girando em vermelho */
-:root[data-campanha="black-friday"] .eq-linha.lider{border-color:var(--bf)}
+:root[data-campanha="black-friday"] .eq-linha.lider{border-color:var(--bf-borda,var(--bf))}
 
 /* ---------- mais preto: top 3, todas as equipes, pódio, tela da equipe, abas, botões, filtro ---------- */
-:root[data-campanha="black-friday"] .linha.top:not(.lider){box-shadow:inset .3rem 0 0 var(--bf-red);border-color:var(--bf)}
+:root[data-campanha="black-friday"] .linha.top:not(.lider){box-shadow:inset .3rem 0 0 var(--bf-red);border-color:var(--bf-borda,var(--bf))}
 :root[data-campanha="black-friday"] .linha.top .pos{color:var(--bf-red)}
-:root[data-campanha="black-friday"] .eq-linha:not(.lider){border-color:var(--bf)}
-:root[data-campanha="black-friday"] .pd-palco{--pd1-bg:#ED1C24;--pd1-fg:#FFFFFF;--pd2-bg:#FFFFFF;--pd2-fg:#0D0A0B;--pd3-bg:#2A2224;--pd3-fg:#FFFFFF;--pd3-borda:transparent;--pd3-anel:#6B5D5F;border-color:var(--bf)}
-:root[data-campanha="black-friday"] .pd-chip{border-color:var(--bf)}
-:root[data-campanha="black-friday"] :is(.te-sup,.te-dados){border-color:var(--bf)}
+:root[data-campanha="black-friday"] .eq-linha:not(.lider){border-color:var(--bf-borda,var(--bf))}
+:root[data-campanha="black-friday"] .pd-palco{--pd1-bg:#ED1C24;--pd1-fg:#FFFFFF;--pd2-bg:#FFFFFF;--pd2-fg:#0D0A0B;--pd3-bg:#2A2224;--pd3-fg:#FFFFFF;--pd3-borda:transparent;--pd3-anel:#6B5D5F;border-color:var(--bf-borda,var(--bf))}
+:root[data-campanha="black-friday"] .pd-chip{border-color:var(--bf-borda,var(--bf))}
+:root[data-campanha="black-friday"] :is(.te-sup,.te-dados){border-color:var(--bf-borda,var(--bf))}
 :root[data-campanha="black-friday"] .te-fato{background:var(--bf-2)}
-:root[data-campanha="black-friday"] .tn[aria-current="page"]{border-color:var(--bf);box-shadow:0 .4rem 1rem -.4rem rgba(13,10,11,.5)}
-:root[data-campanha="black-friday"] .acoes .btn{border-color:var(--bf)}
+:root[data-campanha="black-friday"] .tn[aria-current="page"]{border-color:var(--bf-borda,var(--bf));box-shadow:0 .4rem 1rem -.4rem rgba(13,10,11,.5)}
+:root[data-campanha="black-friday"] .acoes .btn{border-color:var(--bf-borda,var(--bf))}
 :root[data-campanha="black-friday"] .filtro button[aria-pressed="true"]{background:var(--bf);color:#FFFFFF}
 
 /* ---------- abertura também preta: logo branco, mão e lâmina vermelhas ---------- */
@@ -143,9 +137,56 @@
 @media (max-width:46rem){
   .linha.lider .nome{font-size:1rem}
   .linha.lider .valor strong{font-size:1.125rem}
-  :root[data-campanha="black-friday"] .placar>.bf-fita{top:2.3rem;right:-4.6rem;width:14rem}
   .ct-txt{display:none}
 }
 @media (prefers-reduced-motion:reduce){
-  .bf-fita-trilho,.bf-brilho,:root[data-campanha="black-friday"] .bf-selo,:root[data-campanha="black-friday"] .placar>.bf-marca{animation:none!important}
+  .bf-brilho,:root[data-campanha="black-friday"] .bf-selo,:root[data-campanha="black-friday"] .placar>.bf-marca{animation:none!important}
+}
+
+/* ==========================================================================
+   MODO BLACK: durante a campanha o tema vermelho vira o modo black (página toda preta).
+   Quando a campanha sair do ranking.json, o tema vermelho volta a ser o vermelho de sempre.
+   ========================================================================== */
+:root[data-campanha="black-friday"][data-tema="vermelho"]{
+  --bf:#131011; --bf-2:#1D1819; --bf-3:#272122; --bf-borda:rgba(255,255,255,.085);
+  --ground:#070506;--paper:#131011;--ink:#FFFFFF;--ink-2:#A89D9E;--line:rgba(255,255,255,.085);--track:#262021;
+  --red:#ED1C24;--red-deep:#B70E17;--red-wash:rgba(237,28,36,.14);--on-red:#FFFFFF;--on-red-2:#FFD9DA;--ok:#FFFFFF;
+  --selo-bg:rgba(237,28,36,.18);--selo-fg:#FF9EA2;--selo-bg-lider:#ED1C24;--selo-fg-lider:#FFFFFF;--seg-bg:#FFFFFF;--seg-fg:#070506;
+  --cat-1:#ED1C24;--cat-2:#FFFFFF;--cat-3:#8E8586;--cat-4:#F0A3A6;--cat-5:#4A4243;--shade:rgba(0,0,0,.7);--load-bg:#070506;
+  --listra:rgba(255,255,255,.17);--brilho:rgba(255,255,255,.55);--listra-inv:rgba(237,28,36,.12);--brilho-inv:rgba(237,28,36,.3);
+  --varre:rgba(237,28,36,.26);--reluz:#FF4D54;--reluz-pct:#FF9EA2;--mao-fundo:.16;--selo-faixa:#000000;
+  --cf-1:#ED1C24;--cf-2:#FFFFFF;--cf-3:#4A4243;--mf-op:.085;--voo-cor:rgba(237,28,36,.22);--raio:rgba(237,28,36,.09);
+  color-scheme:dark}
+/* fundo: preto profundo com brilho vermelho no alto, granulado fino e trilho vermelho onde a etiqueta pendura */
+:root[data-campanha="black-friday"][data-tema="vermelho"] body{
+  background:radial-gradient(75rem 34rem at 80% -10%,rgba(237,28,36,.17),transparent 62%),radial-gradient(60rem 30rem at -5% 110%,rgba(237,28,36,.09),transparent 60%),var(--ground);background-attachment:fixed}
+:root[data-campanha="black-friday"][data-tema="vermelho"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.07;mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root[data-campanha="black-friday"][data-tema="vermelho"] body::after{content:"";position:fixed;z-index:9;left:0;right:0;top:0;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,#ED1C24 18%,#FF4D54 50%,#ED1C24 82%,transparent)}
+/* logo: palavras brancas e a mão vermelha */
+:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-branco{display:none}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor{display:block}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor :is(.lv-consorcio,.lv-embracon){fill:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor .lv-assinatura{fill:#A89D9E}
+/* cartões: preto um tom acima da página, filete claro e reflexo fino no alto */
+:root[data-campanha="black-friday"][data-tema="vermelho"] :is(.placar,.eq-linha,.pd-palco,.te-sup,.te-dados,.mu-palavra,.mu-cab,.tarja-corpo,.placarzinho,.flash,.pd-chip){
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1.6rem 3rem -1.4rem rgba(0,0,0,.9)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .linha.lider{box-shadow:inset .4rem 0 0 var(--bf-red),0 0 0 1px rgba(237,28,36,.4),0 0 2.6rem -.6rem rgba(237,28,36,.45)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .linha:not(.top){border-bottom-color:rgba(255,255,255,.06)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .tarja-corpo{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(255,255,255,.08),0 1.4rem 3rem rgba(0,0,0,.8)}
+/* etiqueta branca, como etiqueta de loja chique: "BLACK" preto e "EMBRACON" vermelho */
+:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-etiqueta{background:#FFFFFF;color:#070506;filter:drop-shadow(0 .9rem 1.2rem rgba(0,0,0,.6))}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-etiqueta em{color:#6D6E70}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-furo{background:#070506;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.25)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-fio{background:linear-gradient(#ED1C24,#FFFFFF)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-brilho{background:linear-gradient(105deg,transparent 35%,rgba(237,28,36,.16) 50%,transparent 65%)}
+/* cortina e abertura: preto puro */
+:root[data-campanha="black-friday"][data-tema="vermelho"] .cortina{background:#000000}
+/* filtro e abas no preto */
+:root[data-campanha="black-friday"][data-tema="vermelho"] .filtro{background:var(--bf-2)}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .filtro button[aria-pressed="true"]{background:#FFFFFF;color:#070506}
+:root[data-campanha="black-friday"][data-tema="vermelho"] .btn-tema i{background:#FFFFFF}
+@media (prefers-reduced-motion:reduce){
+  :root[data-campanha="black-friday"][data-tema="vermelho"] body::before{display:none}
 }

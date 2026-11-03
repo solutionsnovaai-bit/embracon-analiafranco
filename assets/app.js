@@ -1158,9 +1158,11 @@ const raiz = document.documentElement;
 function aplicarTema(tema, guardar) {
   const vermelho = tema === 'vermelho';
   if (vermelho) raiz.dataset.tema = 'vermelho'; else delete raiz.dataset.tema;
-  $('btn-tema-txt').textContent = vermelho ? 'Tema claro' : 'Tema vermelho';
+  /* durante a Black Embracon o tema vermelho vira o modo black */
+  const black = raiz.dataset.campanha === 'black-friday';
+  $('btn-tema-txt').textContent = vermelho ? 'Tema claro' : black ? 'Tema black' : 'Tema vermelho';
   $('btn-tema').setAttribute('aria-pressed', String(vermelho));
-  $('cor-tema').setAttribute('content', vermelho ? '#ED1C24' : '#F5F3F3');
+  $('cor-tema').setAttribute('content', vermelho ? (black ? '#070506' : '#ED1C24') : '#F5F3F3');
   if (guardar) { try { localStorage.setItem('ranking-tema', vermelho ? 'vermelho' : 'claro'); } catch (e) { /* sem armazenamento local: vale só nesta visita */ } }
   posicionarRitmo();
 }
@@ -1695,6 +1697,7 @@ function aplicarCampanha() {
   if (state.modo === 'carregando') return;   // até os dados chegarem vale o que ficou guardado da última visita
   const c = state.config.campanha || '';
   if (c) raiz.dataset.campanha = c; else delete raiz.dataset.campanha;
+  if (aplicarCampanha.ultima !== c) { aplicarCampanha.ultima = c; aplicarTema(raiz.dataset.tema === 'vermelho' ? 'vermelho' : 'claro', false); }
   if (c && aplicarCampanha.feita !== innerWidth) { aplicarCampanha.feita = innerWidth; requestAnimationFrame(posicionarEtiqueta); }
   try { if (c) localStorage.setItem('ranking-campanha', c); else localStorage.removeItem('ranking-campanha'); } catch (e) { /* vale só nesta visita */ }
 }
