@@ -81,7 +81,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
     { "id": "nome-do-consultor", "nome": "Nome do Consultor", "equipe": "Artilheiros" }
   ],
   "supervisores": [
-    { "equipe": "Artilheiros", "nome": "Rafael Ferraz", "cargo": "CEO", "foto": "assets/supervisores/rafael-ferraz.jpg" }
+    { "equipe": "Artilheiros", "nome": "Mateus Sales", "cargo": "Supervisor", "foto": "assets/supervisores/mateus-sales.jpg" }
   ],
   "vendas": [
     { "consultor": "nome-do-consultor", "valor": 300000, "categoria": "imovel", "data": "2026-10-02" }
@@ -101,6 +101,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `consultores[].foto` | Foto da bolinha do consultor (opcional), por exemplo `assets/consultores/juliana-delgado.jpg`. Quadrada, de preferência 320 × 320. Sem foto, a bolinha mostra as iniciais. |
 | `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. Sem equipe (ex.: a proprietária), as vendas somam no total da franquia e no ranking de consultores, mas em nenhuma equipe; na planilha, deixe a coluna EQUIPE vazia. |
 | `consultores[].cargo` | Opcional. Texto que aparece embaixo do nome no lugar da equipe (ex.: `CEO Embracon Anália Franco`, `Proprietária Embracon Anália Franco`). Quem tem cargo ganha o selo de destaque (roseta vermelha com a mão) ao lado do nome. As vendas continuam somando para a equipe da pessoa, se ela tiver uma. |
+| Diretoria e supervisão | Quem tem `cargo` (CEO, proprietária) e quem está em `supervisores[]` também pode vender, mas só aparece na lista de consultores, no pódio, no mural, na tela da equipe e nas contagens "X de Y" quando tem venda. Para um supervisor vender, basta uma linha com o nome dele na planilha: o painel usa a foto da supervisão e mostra o cargo (ex.: Supervisor Artilheiros) com o selo de destaque. |
 | `supervisores[]` | Quem supervisiona cada equipe: `equipe` (escrita igual à dos consultores), `nome`, `cargo` (ex.: Supervisora, CEO) e `foto` (quadrada, em `assets/supervisores/`). Aparece com foto no cartão da equipe, nos destaques e na faixa ao vivo. Com a planilha do Google ligada, a supervisão continua vindo daqui. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
@@ -130,7 +131,7 @@ O `PUT` recebe o conteúdo novo em Base64, a mensagem do commit e o `sha` devolv
 
 Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e quanto falta para a meta da equipe.
 
-Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Rafael Ferraz nos Artilheiros e Diego Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
+Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Mateus Sales nos Artilheiros e Diego Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
 
 ## Telas
 

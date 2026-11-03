@@ -149,21 +149,29 @@ function normVenda(d) {
 function aplicar(dados) {
   const d = dados && typeof dados === 'object' ? dados : {};
   state.config = normConfig(d.config && typeof d.config === 'object' ? d.config : {});
+  /* supervisão de cada equipe: aparece com foto no cartão da equipe e na faixa ao vivo */
+  state.supervisores = new Map();
+  const supPorNome = new Map();
+  for (const s of Array.isArray(d.supervisores) ? d.supervisores : []) {
+    if (!s || typeof s !== 'object') continue;
+    const equipe = limparEquipe(s.equipe), nome = String(s.nome || '').trim().slice(0, 60);
+    if (!equipe || !nome) continue;
+    const sup = { equipe, nome, cargo: String(s.cargo || '').trim().slice(0, 30), foto: fotoValida(s.foto) };
+    state.supervisores.set(normNome(equipe), sup);
+    supPorNome.set(normNome(nome), sup);
+  }
+  /* diretoria e supervisão também podem vender: quem tem cargo (CEO, proprietária) ou é supervisor de equipe
+     fica fora da lista de consultores até ter venda (ver calcular). O supervisor ganha o cargo e a foto da supervisão. */
   state.consultores = new Map();
   for (const p of Array.isArray(d.consultores) ? d.consultores : []) {
     if (!p || typeof p !== 'object') continue;
     const nome = String(p.nome || '').trim().slice(0, 60);
     if (!nome) continue;
-    const id = String(p.id || slug(nome));
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo: limparCargo(p.cargo), foto: fotoValida(p.foto) });
-  }
-  /* supervisão de cada equipe: aparece com foto no cartão da equipe e na faixa ao vivo */
-  state.supervisores = new Map();
-  for (const s of Array.isArray(d.supervisores) ? d.supervisores : []) {
-    if (!s || typeof s !== 'object') continue;
-    const equipe = limparEquipe(s.equipe), nome = String(s.nome || '').trim().slice(0, 60);
-    if (!equipe || !nome) continue;
-    state.supervisores.set(normNome(equipe), { equipe, nome, cargo: String(s.cargo || '').trim().slice(0, 30), foto: fotoValida(s.foto) });
+    const id = String(p.id || slug(nome)), sup = supPorNome.get(normNome(nome));
+    let cargo = limparCargo(p.cargo), foto = fotoValida(p.foto);
+    if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
+    if (sup && sup.foto) foto = sup.foto;
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -218,13 +226,19 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const linhas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
-  const porId = new Map(linhas.map(l => [l.id, l]));
+  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
+  const porId = new Map(todas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
+  /* quem tem cargo (diretoria e supervisão) só entra na lista quando tem venda no período mostrado */
+  const linhas = todas.filter(l => !l.cargo || l.valor > 0);
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
 
-  let venderam = 0;
-  for (const p of state.consultores.keys()) if ((cicloPor.get(p) || 0) > 0) venderam++;
+  let venderam = 0, quadro = 0;
+  for (const p of state.consultores.values()) {
+    const vendeu = (cicloPor.get(p.id) || 0) > 0;
+    if (vendeu) venderam++;
+    if (vendeu || !p.cargo) quadro++;       // diretoria e supervisão só contam no "X de Y" quando venderam
+  }
 
   /* ranking de equipes: soma do crédito do ciclo de cada equipe */
   const ordemEq = ordemEquipes(), porEquipe = new Map();
@@ -233,7 +247,8 @@ function calcular() {
     const chave = p.equipe || SEM_EQUIPE;
     if (!porEquipe.has(chave)) porEquipe.set(chave, { nome: chave, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: 1e3 });
     const e = porEquipe.get(chave), vendido = cicloPor.get(p.id) || 0;
-    e.membros++; e.valor += vendido;
+    if (!p.cargo || vendido > 0) e.membros++;
+    e.valor += vendido;
   }
   for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
   /* quem está sem equipe (a proprietária, por exemplo) soma no total da franquia, mas não aparece como equipe */
@@ -252,10 +267,11 @@ function calcular() {
   const cotasPor = new Map();
   for (const v of ciclo) cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
   const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0 }))
+    .filter(p => !p.cargo || p.valor > 0)
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
-  return { total, porCat, linhas, equipes, lideres, pessoas, venderam, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, linhas, equipes, lideres, pessoas, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -338,7 +354,7 @@ const descrever = v => state.consultores.get(v.consultor).nome + ', ' + curto(v.
 const listaNatural = l => l.length > 1 ? l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1] : l.join('');
 function mensagens(r) {
   if (state.modo === 'carregando') return [];
-  const c = state.config, n = state.consultores.size, m = [];
+  const c = state.config, n = r.quadro, m = [];
   if (r.total > 0) {
     const l = r.lideres[0];
     if (l) m.push(l.nome + ' lidera o ranking com ' + curto(l.valor));
@@ -423,7 +439,7 @@ function pintar() {
   } else if (r.restantes === 0) { $('f-ritmo').textContent = 'Ciclo encerrado'; $('f-ritmo-n').textContent = 'terminou em ' + dataCurta(c.prazo); }
   else { $('f-ritmo').textContent = 'Sem prazo'; $('f-ritmo-n').textContent = editar ? 'defina o fim do ciclo em Ajustes' : 'fim do ciclo não definido'; }
 
-  $('f-meta').textContent = r.venderam + ' de ' + state.consultores.size;
+  $('f-meta').textContent = r.venderam + ' de ' + r.quadro;
   $('f-meta-n').textContent = 'consultores com venda no ciclo';
   $('f-cotas').textContent = nf.format(r.cotas);
   $('f-cotas-n').textContent = r.cotas ? 'ticket médio de ' + curto(r.total / r.cotas) : 'nenhuma venda no ciclo';
@@ -1331,7 +1347,7 @@ function montarPodio(r, forcar) {
   if (!forcar && ass === podioAss) return;
   podioAss = ass;
   const num = $('pd-num'); num.textContent = '';
-  num.append(el('strong', { text: curto(r.total) }), el('span', { text: r.venderam + ' de ' + state.consultores.size + ' consultores já venderam' }));
+  num.append(el('strong', { text: curto(r.total) }), el('span', { text: r.venderam + ' de ' + r.quadro + ' consultores já venderam' }));
   const palco = $('pd-palco'); palco.textContent = '';
   palco.append(el('div', { class: 'pd-raios', 'aria-hidden': 'true' }));
   for (const i of [1, 0, 2]) palco.append(lugarPodio(top[i], i + 1));
@@ -1491,7 +1507,7 @@ function montarMural(r, forcar) {
   const num = $('mu-num'); num.textContent = '';
   num.append(
     el('div', {}, el('dt', { text: 'vendidos no ciclo' }), el('dd', { text: curto(r.total) })),
-    el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: r.venderam + ' de ' + state.consultores.size })));
+    el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: r.venderam + ' de ' + r.quadro })));
   const ass = JSON.stringify([r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
   if (!forcar && ass === muralAss) return;
   muralAss = ass;

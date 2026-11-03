@@ -39,7 +39,7 @@
   ],
   "supervisores": [
     {"equipe":"Esquadrão Alpha","nome":"Enaila Rocha","cargo":"Supervisora","foto":"assets/supervisores/enaila-rocha.jpg"},
-    {"equipe":"Artilheiros","nome":"Rafael Ferraz","cargo":"CEO","foto":"assets/supervisores/rafael-ferraz.jpg"},
+    {"equipe":"Artilheiros","nome":"Mateus Sales","cargo":"Supervisor","foto":"assets/supervisores/mateus-sales.jpg"},
     {"equipe":"Lekos","nome":"Diego Lins","cargo":"Supervisor","foto":"assets/supervisores/diego-lins.jpg"}
   ],
   "vendas": [
