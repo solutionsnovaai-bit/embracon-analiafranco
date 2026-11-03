@@ -192,7 +192,7 @@ O painel guarda o valor que viu ao abrir e só recarrega quando ele muda. Depois
 ## Observações
 
 - A página pede aos buscadores que não a indexem (`noindex`), mas o endereço publicado é público para quem tiver o link. Para restringir o acesso, use a proteção por senha da hospedagem.
-- O repositório vem com os 24 consultores cadastrados nas três equipes e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.
+- O repositório vem com os 23 consultores cadastrados nas três equipes e nenhuma venda lançada: o placar começa em R$ 0. O nome do ciclo e as datas de início e fim estão em branco; preencha em Ajustes ou direto no `ranking.json`.
 
 ## Apetrechos de transmissão
 
@@ -201,3 +201,12 @@ O painel guarda o valor que viu ao abrir e só recarrega quando ele muda. Depois
 - **Placar fixo** no alto à direita quando o placar grande sai da tela (no telão, enquanto a lista rola).
 - **Selo de subida**: quem passa outros consultores com uma venda nova ganha um selo verde com quantas posições subiu, por 15 segundos.
 - **Relógio** da faixa com dígitos que rolam.
+
+## Tipo da cota
+
+Na aba Ranking da planilha, escreva a letra do tipo depois do valor (em mil): `300i` imóvel, `80a` auto, `500p` pesados, `50s` serviços. Sem letra também vale (fica como "não informada"). O total da linha soma com ou sem letra, a aba Telão passa o valor e a letra, e o painel mostra os chips com ícone ao lado das cotas (lista, pódio, tela da equipe), o "Crédito por categoria" e "Cota de imóvel" no aviso de venda nova.
+
+## Campanha Black Embracon (novembro)
+
+Ligada em `data/ranking.json` com `"campanha": "black-friday"` e a data do dia da Black em `"blackFriday": "2026-11-27"`. Deixa pretos o placar (com a fita BLACK EMBRACON e "BLACK" vazado), a linha do líder, a equipe na frente, a tarja, o placar fixo, o aviso de venda nova e os cartões de frase do mural; pendura a etiqueta preta ao lado do nome da franquia (telas a partir de 1600 px), pinta a cortina de troca de tela de preto com duas fitas cruzando e troca a contagem da faixa para "Dia da Black em…" até o dia 27 (depois volta a contar o fim do ciclo). Funciona no tema claro e no vermelho. Para desligar no fim do mês, apague a linha `"campanha"` (estilos em `assets/black.css`).
+

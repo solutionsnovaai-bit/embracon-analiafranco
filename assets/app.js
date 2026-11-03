@@ -30,7 +30,6 @@ const DEMO = {
   config: { meta: 21000000, metaConsultor: 2000000, metaEquipe: 7000000, unidade: 'Anália Franco' },
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
-    ['giovana-rodrigues', 'Giovana Rodrigues', 'Esquadrão Alpha'],
     ['sula-teixeira', 'Sula Teixeira', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
     ['antonio-pimentel', 'Antônio Pimentel', 'Esquadrão Alpha'], ['diana-trindade', 'Diana Trindade', 'Esquadrão Alpha'],
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
@@ -46,7 +45,7 @@ const DEMO = {
 const SEM_EQUIPE = 'Sem equipe';
 
 const CATS = { imovel: 'Imóvel', auto: 'Automóvel', pesados: 'Pesados', servicos: 'Serviços', outros: 'Não informada' };
-const PADRAO = { meta: 21000000, metaConsultor: 2000000, metaEquipe: 0, unidade: 'Anália Franco', ciclo: '', inicio: '', prazo: '', exemplo: false };
+const PADRAO = { meta: 21000000, metaConsultor: 2000000, metaEquipe: 0, unidade: 'Anália Franco', ciclo: '', inicio: '', prazo: '', exemplo: false, campanha: '', blackFriday: '' };
 const $ = id => document.getElementById(id);
 const app = $('app');
 const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -123,6 +122,9 @@ function normConfig(d) {
   if (typeof d.ciclo === 'string') c.ciclo = d.ciclo.trim().slice(0, 40);
   if (ehData(d.inicio)) c.inicio = d.inicio;
   if (ehData(d.prazo)) c.prazo = d.prazo;
+  /* campanha visual do telão (ex.: "black-friday"); vazio volta ao visual de sempre */
+  if (typeof d.campanha === 'string') c.campanha = d.campanha.trim().toLowerCase().slice(0, 30);
+  if (ehData(d.blackFriday)) c.blackFriday = d.blackFriday;
   c.exemplo = d.exemplo === true;
   return c;
 }
@@ -226,9 +228,9 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '' }));
+  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '', tipos: {} }));
   const porId = new Map(todas.map(l => [l.id, l]));
-  for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
+  for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; l.tipos[v.categoria] = (l.tipos[v.categoria] || 0) + v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   /* quem tem cargo (diretoria e supervisão) só entra na lista quando tem venda no período mostrado */
   const linhas = todas.filter(l => !l.cargo || l.valor > 0);
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -264,9 +266,12 @@ function calcular() {
   }
   const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
   /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
-  const cotasPor = new Map();
-  for (const v of ciclo) cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
-  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0 }))
+  const cotasPor = new Map(), tiposPor = new Map();
+  for (const v of ciclo) {
+    cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
+    const tp = tiposPor.get(v.consultor) || {}; tp[v.categoria] = (tp[v.categoria] || 0) + v.cotas; tiposPor.set(v.consultor, tp);
+  }
+  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }))
     .filter(p => !p.cargo || p.valor > 0)
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
@@ -364,6 +369,7 @@ function mensagens(r) {
     if (u) m.push('Última venda: ' + descrever(u));
     m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
     m.push(r.venderam + ' de ' + n + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') + ' neste ciclo');
+    const bf = textoBlack(); if (bf) m.push('Black Embracon: ' + bf);
     if (r.restantes > 0 && r.falta > 0) m.push('Para fechar a meta: ' + curto(r.falta / r.restantes) + ' por dia até ' + dataCurta(c.prazo));
     if (fraseSupervisao(r)) m.push(fraseSupervisao(r));
   } else if (n) {
@@ -393,6 +399,7 @@ function pintar() {
   const editar = state.podeEditar && !carregando;
 
   pintarStatus();
+  aplicarCampanha();
   for (const id of ['btn-ajustes', 'btn-equipe', 'btn-venda']) $(id).hidden = !editar;
   $('unidade').textContent = c.unidade;
 
@@ -547,6 +554,7 @@ function pintarLista(r, editar, carregando) {
     p.sub.textContent = '';
     if (rotulo(l)) p.sub.append(el('b', { class: 'eq', text: rotulo(l) }), ' · ');
     p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
+    const ct = chipsCota(l.tipos); if (ct) p.sub.append(ct);
     p.cheio.style.width = (l.valor / escala * 100) + '%';
     p.marca.hidden = true;
     contarValor(p.val, l.valor);
@@ -673,6 +681,8 @@ const pecasMao = () => [1, 2, 3, 4].map(n => el('i', { class: 'm' + n }));
 let faixaAss = '';
 function itensFaixa(r) {
   const c = state.config, itens = [];
+  const bf = textoBlack();
+  if (bf) itens.push(['Black Embracon', bf]);
   if (r.total > 0) {
     itens.push(['Crédito vendido', curto(r.total) + ' de ' + curto(c.meta) + ' (' + pctTxt(Math.floor(r.total / c.meta * 1000) / 10) + ')']);
     /* equipes com a foto da supervisão; consultores e vendas com a foto de quem vendeu */
@@ -719,7 +729,7 @@ function proximoAviso() {
   avisando = true;
   const f = $('flash');
   $('flash-nome').textContent = p.nome;
-  $('flash-info').textContent = [v.categoria !== 'outros' ? CATS[v.categoria] : '', rotulo(p)].filter(Boolean).join(' · ');
+  $('flash-info').textContent = [v.categoria !== 'outros' ? 'Cota de ' + CATS[v.categoria].toLowerCase() : '', rotulo(p)].filter(Boolean).join(' · ');
   $('flash-valor').textContent = brl(v.valor);
   f.getAnimations().forEach(a => a.cancel());
   f.hidden = false;
@@ -795,6 +805,11 @@ function reais(s) {
   const v = Number(t);
   return v > 0 ? Math.round(v) : 0;
 }
+/* tipo da cota pela letra escrita depois do valor: i = imóvel, a = auto, p = pesados, s = serviços */
+function tipoCota(s) {
+  const l = String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[^a-z]/g, '').replace(/^r/, '');
+  return { i: 'imovel', a: 'auto', p: 'pesados', s: 'servicos' }[l[0]] || 'outros';
+}
 /* "01/10/2026" (planilha em português) ou "2026-10-01" */
 function dataIso(s) {
   const t = String(s == null ? '' : s).trim();
@@ -836,7 +851,7 @@ function dadosDaPlanilha(texto, cadastro) {
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
     consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
-    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|' + (k + 1) + '|' + v }); });
+    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: tipoCota(l[j]), chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
   /* a supervisão de cada equipe também vem do cadastro */
@@ -1343,7 +1358,7 @@ let podioAss = '';
 function montarPodio(r, forcar) {
   const c = state.config, top = r.lideres;
   $('pd-rot').textContent = 'Pódio do ciclo' + (c.ciclo ? ' · ' + c.ciclo : '');
-  const ass = JSON.stringify([top.slice(0, 8).map(p => [p.id, p.valor, p.cotas, p.foto, p.equipe]), r.total, r.venderam]);
+  const ass = JSON.stringify([top.slice(0, 8).map(p => [p.id, p.valor, p.cotas, p.foto, p.equipe, p.tipos]), r.total, r.venderam]);
   if (!forcar && ass === podioAss) return;
   podioAss = ass;
   const num = $('pd-num'); num.textContent = '';
@@ -1370,7 +1385,7 @@ function lugarPodio(p, n) {
       n === 1 ? maoEl('pd-coroa') : null,
       el('div', { class: 'pd-foto' }, av),
       el('strong', { class: 'pd-nome' }, p ? p.nome : 'Vaga aberta', seloVip(p)),
-      el('span', { class: 'pd-eq', text: p ? [rotulo(p), cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }),
+      el('span', { class: 'pd-eq', text: p ? [rotulo(p), cotasTxt(p.cotas)].filter(Boolean).join(' · ') : 'a próxima venda entra aqui' }, p ? chipsCota(p.tipos) : null),
       val),
     el('div', { class: 'pd-bloco' }, maoEl('pd-bloco-mao'), el('span', { class: 'pd-pos', text: n + 'º' })));
 }
@@ -1406,7 +1421,7 @@ function montarEquipe(r, forcar) {
   const e = eqs.find(x => x.nome === equipeAtual) || eqs[0];
   equipeAtual = e.nome;
   const metaEq = state.config.metaEquipe, membros = r.pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome);
-  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome)]);
+  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome)]);
   if (!forcar && ass === equipeAss) return;
   equipeAss = ass;
   chips.textContent = '';
@@ -1456,7 +1471,7 @@ function pessoaEquipe(p, k, maior) {
     el('span', { class: 'te-p-pos', text: p.valor > 0 ? k + 1 : '–' }), av,
     el('div', { class: 'te-p-txt' },
       el('strong', { class: 'te-p-nome' }, el('span', { text: p.nome }), seloVip(p), destaque ? maoEl('te-p-mao') : null),
-      el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda no ciclo' })),
+      el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda no ciclo' }, p.valor > 0 ? chipsCota(p.tipos) : null)),
     el('strong', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }),
     el('span', { class: 'te-p-barra' }, cheio));
 }
@@ -1495,7 +1510,8 @@ function entrarEquipe() {
    opostos, com algumas frases curtas no meio. */
 let muralAss = '', giroMural = 0;
 function frasesMural(r) {
-  return ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', ...mensagens(r)].filter(f => f.length <= 84);
+  const bf = ehBlack() ? ['Black Embracon', 'Novembro é Black na Anália Franco'] : [];
+  return [...bf, 'Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', ...mensagens(r)].filter(f => f.length <= 84);
 }
 function girarMural(r) {
   const f = frasesMural(r || calcular());
@@ -1512,7 +1528,9 @@ function montarMural(r, forcar) {
   if (!forcar && ass === muralAss) return;
   muralAss = ass;
   const box = $('mu-linhas'); box.textContent = '';
-  const palavras = ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Franquia ' + c.unidade];
+  const palavras = ehBlack()
+    ? ['Black Embracon', 'Porque sonhar não tem limites', 'Novembro é Black', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Black Embracon', 'Franquia ' + c.unidade]
+    : ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Franquia ' + c.unidade];
   const metade = Math.ceil(r.pessoas.length / 2);
   const a = intercalar(r.pessoas.slice(0, metade).map(cartaoPessoa), palavras.filter((_, i) => i % 2 === 0));
   const b = intercalar([...sups.map(cartaoSup), ...r.pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
@@ -1667,19 +1685,60 @@ function rolar(caixa, texto) {
   }
 }
 
+/* ---------- campanha Black Embracon (novembro) ----------
+   Ligada por config.campanha = "black-friday" no data/ranking.json. Deixa os cartões principais pretos,
+   pendura a etiqueta no topo, passa a fita no placar, pinta a cortina de preto e conta os dias até a Black. */
+function ehBlack() { return state.config.campanha === 'black-friday'; }
+function aplicarCampanha() {
+  const c = state.config.campanha || '';
+  if (c) raiz.dataset.campanha = c; else delete raiz.dataset.campanha;
+  try { if (c) localStorage.setItem('ranking-campanha', c); else localStorage.removeItem('ranking-campanha'); } catch (e) { /* vale só nesta visita */ }
+}
+function diasBlack() {
+  const c = state.config;
+  return ehBlack() && ehData(c.blackFriday) ? dias(hojeISO(), c.blackFriday) : null;
+}
+function textoBlack() {
+  const d = diasBlack();
+  if (d == null || d < 0) return '';
+  return d === 0 ? 'hoje é o dia da Black!' : d === 1 ? 'amanhã é o dia da Black, ' + dataCurta(state.config.blackFriday) : 'faltam ' + d + ' dias pro dia da Black, ' + dataCurta(state.config.blackFriday);
+}
+
+/* ---------- tipo da cota: chips com ícone (imóvel, auto, pesados, serviços) ---------- */
+const ICONE_COTA = {
+  imovel: '<svg viewBox="0 0 24 24"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.6V20h13V9.6"/><path d="M10 20v-5.5h4V20"/></svg>',
+  auto: '<svg viewBox="0 0 24 24"><path d="M3.5 16.5v-3.8l2.1-5a2 2 0 0 1 1.8-1.2h9.2a2 2 0 0 1 1.8 1.2l2.1 5v3.8z"/><path d="M3.5 12.7h17"/><circle cx="7.5" cy="16.8" r="1.9"/><circle cx="16.5" cy="16.8" r="1.9"/></svg>',
+  pesados: '<svg viewBox="0 0 24 24"><path d="M2.5 16.5V6.5h11v10"/><path d="M13.5 9.5h4.2l3.8 3.9v3.1h-8"/><circle cx="6.5" cy="17" r="1.9"/><circle cx="17" cy="17" r="1.9"/></svg>',
+  servicos: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3.8 17a1.6 1.6 0 0 0 2.3 2.3l5.6-5.5a4 4 0 0 0 5.1-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/></svg>'
+};
+const CURTO_COTA = { imovel: 'imóvel', auto: 'auto', pesados: 'pesados', servicos: 'serviços' };
+function chipsCota(tipos) {
+  const ks = Object.keys(CURTO_COTA).filter(k => tipos && tipos[k] > 0);
+  if (!ks.length) return null;
+  return el('span', { class: 'cotas-tipo' }, ...ks.map(k => {
+    const ic = el('span', { class: 'ct-ic', 'aria-hidden': 'true' }); ic.innerHTML = ICONE_COTA[k];
+    return el('span', { class: 'ct ct-' + k, title: CATS[k] }, ic, el('b', { text: String(tipos[k]) }), el('span', { class: 'ct-txt', text: CURTO_COTA[k] }));
+  }));
+}
+const tiposTxt = tipos => Object.keys(CURTO_COTA).filter(k => tipos && tipos[k] > 0).map(k => tipos[k] + ' ' + CURTO_COTA[k]).join(', ');
+
 /* ---------- contagem regressiva até o fim do ciclo (23:59:59 do último dia) ---------- */
 function contagem() {
   const caixa = $('faixa-conta'), c = state.config;
   if (!caixa) return;
-  const fim = ehData(c.prazo) ? new Date(c.prazo + 'T23:59:59') : null;
+  let fim = ehData(c.prazo) ? new Date(c.prazo + 'T23:59:59') : null, rotBf = '';
+  const bfd = diasBlack();
+  if (bfd != null && bfd > 0) { fim = new Date(c.blackFriday + 'T00:00:00'); rotBf = 'Dia da Black em'; }
+  else if (bfd === 0) { fim = new Date(c.blackFriday + 'T23:59:59'); rotBf = 'Hoje é dia da Black'; }
+  caixa.classList.toggle('bf', !!rotBf);
   const resta = fim ? fim - Date.now() : -1;
   if (state.modo === 'carregando' || !(resta > 0)) { caixa.hidden = true; return; }
   if (caixa.hidden) { caixa.hidden = false; if (!semMovimento) { caixa.classList.remove('entra'); void caixa.offsetWidth; caixa.classList.add('entra'); } }
   const s = Math.floor(resta / 1000), d = Math.floor(s / 86400);
   const ultimo = c.prazo === hojeISO();
-  const rot = ultimo ? (resta < 3600e3 ? 'Reta final' : 'Último dia') : 'Fim do ciclo';
+  const rot = rotBf || (ultimo ? (resta < 3600e3 ? 'Reta final' : 'Último dia') : 'Fim do ciclo');
   if ($('fc-rot').textContent !== rot) $('fc-rot').textContent = rot;
-  caixa.classList.toggle('urgente', ultimo);
+  caixa.classList.toggle('urgente', ultimo || bfd === 0);
   rolar($('fc-num'), (d ? d + 'd ' : '') + doisDig(Math.floor(s % 86400 / 3600)) + ':' + doisDig(Math.floor(s % 3600 / 60)) + ':' + doisDig(s % 60));
 }
 
@@ -1729,7 +1788,7 @@ function podeTarja() {
 function conteudosTarja(r) {
   const c = state.config, l = r.lideres, lista = [];
   const pessoa = (rot, p, info, extra) => ({ rot, nome: p.nome, info, valor: p.valor, foto: p.foto, vip: !!p.cargo, ...extra });
-  if (l[0]) lista.push(pessoa('Líder do ciclo', l[0], [rotulo(l[0]), cotasTxt(l[0].cotas)].filter(Boolean).join(' · ') + (l[1] ? ' · ' + curto(l[0].valor - l[1].valor) + ' à frente' : ''), { coroa: true }));
+  if (l[0]) lista.push(pessoa('Líder do ciclo', l[0], [rotulo(l[0]), tiposTxt(l[0].tipos) || cotasTxt(l[0].cotas)].filter(Boolean).join(' · ') + (l[1] ? ' · ' + curto(l[0].valor - l[1].valor) + ' à frente' : ''), { coroa: true }));
   const voltas = Math.max(Math.min(l.length, 5) - 1, 1), k = 1 + (Math.floor(tarja.giro / 5) % voltas);
   if (l[k]) {
     const dif = l[k - 1].valor - l[k].valor;
@@ -1740,6 +1799,9 @@ function conteudosTarja(r) {
     info: [eq.sup ? 'time de ' + eq.sup.nome : '', eq.venderam + ' de ' + eq.membros + ' já venderam'].filter(Boolean).join(' · ') });
   const v = r.feed.find(x => x.data), pv = v && state.consultores.get(v.consultor);
   if (pv) lista.push({ rot: 'Última venda', nome: pv.nome, valor: v.valor, foto: pv.foto, vip: !!pv.cargo, info: [v.categoria !== 'outros' ? CATS[v.categoria] : '', quando(v.data), rotulo(pv)].filter(Boolean).join(' · ') });
+  const bfd = diasBlack();
+  if (bfd != null && bfd >= 0) lista.push({ rot: 'Black Embracon', nome: bfd === 0 ? 'Hoje é o dia da Black' : bfd === 1 ? 'Amanhã é o dia da Black' : 'Faltam ' + bfd + ' dias pro dia da Black', valorTxt: 'BLACK',
+    info: dataCurta(c.blackFriday) + ' · meta de ' + curto(c.meta) + ' no mês', black: true });
   if (c.meta && r.falta > 0) lista.push({ rot: 'Meta da franquia', nome: 'Faltam ' + curto(r.falta), valorTxt: pctTxt(Math.floor(r.total / c.meta * 1000) / 10),
     info: r.total > 0 ? curto(r.total) + ' vendidos de ' + curto(c.meta) : 'a primeira venda do ciclo abre o placar' });
   return lista;
@@ -1768,6 +1830,7 @@ function mostrarTarja(t) {
   tarja.ativa = true;
   box.getAnimations({ subtree: true }).forEach(a => a.cancel());
   box.classList.toggle('virou', !!t.novo);
+  box.classList.toggle('bf', !!t.black);
   $('tarja-rot').textContent = t.rot;
   $('tarja-nome').textContent = t.nome;
   if (t.vip) $('tarja-nome').append(seloVip({ cargo: true }));

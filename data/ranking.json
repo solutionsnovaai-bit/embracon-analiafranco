@@ -1,20 +1,21 @@
 {
-  "atualizadoEm": "2026-10-15T14:37:00-03:00",
+  "atualizadoEm": "2026-11-03T13:45:00-03:00",
   "recarregar": "2026-10-20 20:40",
   "config": {
     "unidade": "Anália Franco",
-    "meta": 21000000,
+    "meta": 20000000,
     "metaConsultor": 2000000,
-    "ciclo": "ATA de Outubro",
-    "inicio": "2026-10-01",
-    "prazo": "2026-10-30",
+    "ciclo": "Black Embracon · Novembro",
+    "inicio": "2026-11-01",
+    "prazo": "2026-11-30",
     "exemplo": false,
-    "metaEquipe": 7000000
+    "metaEquipe": 0,
+    "campanha": "black-friday",
+    "blackFriday": "2026-11-27"
   },
   "consultores": [
     {"id":"camily-dias","nome":"Camily Dias","equipe":"Esquadrão Alpha","foto":"assets/consultores/camily-dias.jpg"},
     {"id":"claudia-lino","nome":"Claudia Lino","equipe":"Esquadrão Alpha","foto":"assets/consultores/claudia-lino.jpg"},
-    {"id":"giovana-rodrigues","nome":"Giovana Rodrigues","equipe":"Esquadrão Alpha","foto":"assets/consultores/giovana-rodrigues.jpg"},
     {"id":"sula-teixeira","nome":"Sula Teixeira","equipe":"Esquadrão Alpha","foto":"assets/consultores/sula-teixeira.jpg"},
     {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha","foto":"assets/consultores/izabella-nascimento.jpg"},
     {"id":"antonio-pimentel","nome":"Antônio Pimentel","equipe":"Esquadrão Alpha","foto":"assets/consultores/antonio-pimentel.jpg"},
@@ -42,14 +43,5 @@
     {"equipe":"Artilheiros","nome":"Mateus Sales","cargo":"Supervisor","foto":"assets/supervisores/mateus-sales.jpg"},
     {"equipe":"Lekos","nome":"Diego Lins","cargo":"Supervisor","foto":"assets/supervisores/diego-lins.jpg"}
   ],
-  "vendas": [
-    {"consultor":"gabriel-caseri","valor":770000,"cotas":2},
-    {"consultor":"juliana-delgado","valor":540000},
-    {"consultor":"mateus-sales","valor":400000},
-    {"consultor":"edvan-fernandes","valor":700000},
-    {"consultor":"tamyres-reis","valor":80000},
-    {"consultor":"tamyres-reis","valor":60000},
-    {"consultor":"ricardo-neves","valor":100000},
-    {"consultor":"mateus-sales","valor":70000,"data":"2026-10-15"}
-  ]
+  "vendas": []
 }
