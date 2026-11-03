@@ -1692,6 +1692,7 @@ function rolar(caixa, texto) {
    pendura a etiqueta no topo, passa a fita no placar, pinta a cortina de preto e conta os dias até a Black. */
 function ehBlack() { return state.config.campanha === 'black-friday'; }
 function aplicarCampanha() {
+  if (state.modo === 'carregando') return;   // até os dados chegarem vale o que ficou guardado da última visita
   const c = state.config.campanha || '';
   if (c) raiz.dataset.campanha = c; else delete raiz.dataset.campanha;
   if (c && aplicarCampanha.feita !== innerWidth) { aplicarCampanha.feita = innerWidth; requestAnimationFrame(posicionarEtiqueta); }

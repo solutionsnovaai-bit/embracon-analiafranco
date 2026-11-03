@@ -6,7 +6,7 @@
    Tudo anda só com transform e opacity, para rodar leve na TV.
    ========================================================================== */
 
-.bf-selo,.bf-load,.bf-fita,.bf-marca,.bf-faixas{display:none}
+.bf-selo,.bf-load,.bf-fita,.bf-marca{display:none}
 .cotas-tipo{display:inline-flex;flex-wrap:wrap;gap:.3rem;margin-inline-start:.45rem;vertical-align:middle}
 
 /* ---------- chips do tipo de cota (valem com ou sem campanha) ---------- */
@@ -27,7 +27,7 @@
 }
 
 /* ---------- cartões pretos: o cartão redefine as próprias cores e o conteúdo acompanha ---------- */
-:root[data-campanha="black-friday"] :is(.placar,.placarzinho,.tarja-corpo,.mu-palavra,.mu-cab,.flash,.eq-linha.lider){
+:root[data-campanha="black-friday"] :is(.placar,.placarzinho,.tarja-corpo,.mu-palavra,.mu-cab,.flash,.eq-linha,.linha.top,.pd-palco,.pd-chip,.te-sup,.te-dados,.tn[aria-current="page"],.acoes .btn){
   --paper:var(--bf);--ink:#FFFFFF;--ink-2:var(--bf-cinza);--line:var(--bf-linha);--track:var(--bf-3);
   --red:var(--bf-red);--red-deep:#B70E17;--red-wash:rgba(237,28,36,.18);--on-red:#FFFFFF;--on-red-2:#FFD9DA;
   --listra:rgba(255,255,255,.17);--brilho:rgba(255,255,255,.55);--varre:rgba(237,28,36,.32);
@@ -63,6 +63,21 @@
 /* equipe na frente: cartão preto, a luz da borda continua girando em vermelho */
 :root[data-campanha="black-friday"] .eq-linha.lider{border-color:var(--bf)}
 
+/* ---------- mais preto: top 3, todas as equipes, pódio, tela da equipe, abas, botões, filtro ---------- */
+:root[data-campanha="black-friday"] .linha.top:not(.lider){box-shadow:inset .3rem 0 0 var(--bf-red);border-color:var(--bf)}
+:root[data-campanha="black-friday"] .linha.top .pos{color:var(--bf-red)}
+:root[data-campanha="black-friday"] .eq-linha:not(.lider){border-color:var(--bf)}
+:root[data-campanha="black-friday"] .pd-palco{--pd1-bg:#ED1C24;--pd1-fg:#FFFFFF;--pd2-bg:#FFFFFF;--pd2-fg:#0D0A0B;--pd3-bg:#2A2224;--pd3-fg:#FFFFFF;--pd3-borda:transparent;--pd3-anel:#6B5D5F;border-color:var(--bf)}
+:root[data-campanha="black-friday"] .pd-chip{border-color:var(--bf)}
+:root[data-campanha="black-friday"] :is(.te-sup,.te-dados){border-color:var(--bf)}
+:root[data-campanha="black-friday"] .te-fato{background:var(--bf-2)}
+:root[data-campanha="black-friday"] .tn[aria-current="page"]{border-color:var(--bf);box-shadow:0 .4rem 1rem -.4rem rgba(13,10,11,.5)}
+:root[data-campanha="black-friday"] .acoes .btn{border-color:var(--bf)}
+:root[data-campanha="black-friday"] .filtro button[aria-pressed="true"]{background:var(--bf);color:#FFFFFF}
+
+/* ---------- abertura também preta: logo branco, mão e lâmina vermelhas ---------- */
+:root[data-campanha="black-friday"] .load{--load-bg:var(--bf);--ink:#FFFFFF;--ink-2:var(--bf-cinza);--red:var(--bf-red);--mao-cor:var(--bf-red);--track:var(--bf-3);--line:var(--bf-linha)}
+
 /* ---------- etiqueta preta pendurada no topo, balançando ---------- */
 /* presa no alto da tela o tempo todo (também quando o telão rola); o app.js põe ao lado do nome da franquia
    e diminui a escala quando o espaço até os botões é curto */
@@ -89,18 +104,10 @@
 /* o selo AO VIVO ganha um vermelho mais vivo para não se misturar com o chip preto */
 :root[data-campanha="black-friday"] .faixa-selo{background:var(--bf);box-shadow:inset -.25rem 0 0 var(--bf-red)}
 
-/* ---------- cortina da troca de tela: preta, com duas fitas cruzando ---------- */
+/* ---------- cortina da troca de tela: preta, com a mão vermelha ---------- */
 :root[data-campanha="black-friday"] .cortina{background:var(--bf);color:#FFFFFF;--mao-cor:var(--bf-red);--voo-cor:var(--bf-red)}
 :root[data-campanha="black-friday"] .cortina-rot{color:var(--bf-red)}
 :root[data-campanha="black-friday"] .cortina-anel{border-color:var(--bf-red)}
-:root[data-campanha="black-friday"] .bf-faixas{display:block;position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.bf-faixa{position:absolute;left:-20%;width:140%;overflow:hidden}
-.bf-f1{top:16%;transform:rotate(-7deg);background:var(--bf-red);color:#FFFFFF}
-.bf-f2{bottom:15%;transform:rotate(5deg);background:#FFFFFF;color:var(--bf)}
-.bf-faixa-trilho{display:flex;width:max-content;animation:bf-corre 7s linear infinite}
-.bf-f2 .bf-faixa-trilho{animation-direction:reverse;animation-duration:9s}
-.bf-faixa-trilho span{padding:.55rem 1.4rem;font:900 clamp(.9rem,1.6vw,1.35rem)/1 var(--display);font-stretch:84%;letter-spacing:.14em;white-space:nowrap}
-.bf-faixa-trilho span::after{content:"✦";margin-inline-start:2.4rem;opacity:.7}
 
 /* ---------- tarja: corpo preto; a tarja da Black tem o rótulo preto e o valor em vermelho ---------- */
 :root[data-campanha="black-friday"] .tarja-corpo{border-inline-start-color:var(--bf-red);box-shadow:0 1rem 2.4rem rgba(13,10,11,.35)}
@@ -140,5 +147,5 @@
   .ct-txt{display:none}
 }
 @media (prefers-reduced-motion:reduce){
-  .bf-fita-trilho,.bf-faixa-trilho,.bf-brilho,:root[data-campanha="black-friday"] .bf-selo,:root[data-campanha="black-friday"] .placar>.bf-marca{animation:none!important}
+  .bf-fita-trilho,.bf-brilho,:root[data-campanha="black-friday"] .bf-selo,:root[data-campanha="black-friday"] .placar>.bf-marca{animation:none!important}
 }
