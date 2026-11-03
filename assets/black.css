@@ -64,14 +64,14 @@
 :root[data-campanha="black-friday"] .eq-linha.lider{border-color:var(--bf)}
 
 /* ---------- etiqueta preta pendurada no topo, balançando ---------- */
-:root[data-campanha="black-friday"] .marca{position:relative}
-/* fica solta ao lado do nome da franquia, sem ocupar espaço: os botões continuam na mesma linha */
-:root[data-campanha="black-friday"] .bf-selo{display:block;position:absolute;left:100%;top:-1.35rem;margin-left:1rem;pointer-events:none;
-  transform-origin:50% 0;animation:bf-balanca 3.6s ease-in-out infinite alternate}
+/* presa no alto da tela o tempo todo (também quando o telão rola); o app.js põe ao lado do nome da franquia
+   e diminui a escala quando o espaço até os botões é curto */
+:root[data-campanha="black-friday"] .bf-selo{display:block;position:fixed;z-index:9;top:0;left:var(--bf-x,auto);right:var(--bf-dir,auto);pointer-events:none;
+  transform-origin:50% 0;scale:var(--bf-escala,1);animation:bf-balanca 3.6s ease-in-out infinite alternate}
 .bf-fio{display:block;width:2px;height:1.6rem;margin:0 auto;background:linear-gradient(var(--ink-2),var(--ink))}
 .bf-etiqueta{position:relative;display:grid;justify-items:center;gap:.22rem;padding:1.05rem 1rem .85rem;background:var(--bf);color:#FFFFFF;overflow:hidden;
   clip-path:polygon(50% 0,100% 18%,100% 100%,0 100%,0 18%);border-radius:0 0 8px 8px;filter:drop-shadow(0 .8rem 1rem rgba(13,10,11,.35))}
-.bf-furo{position:absolute;left:50%;top:.42rem;width:.5rem;height:.5rem;margin-left:-.25rem;border-radius:50%;background:var(--ground);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+.bf-furo{position:absolute;left:50%;top:.42rem;width:.5rem;height:.5rem;margin-left:-.25rem;border-radius:50%;background:#F5F3F3;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
 .bf-txt{display:grid;justify-items:center;line-height:.9}
 .bf-txt b{font:900 1.6rem/.9 var(--display);font-stretch:74%;letter-spacing:.04em;text-transform:uppercase}
 .bf-txt strong{font:900 .88rem/1 var(--display);font-stretch:80%;letter-spacing:.1em;text-transform:uppercase;color:var(--bf-red)}
@@ -132,10 +132,7 @@
 :root[data-campanha="black-friday"]{--cf-2:#0D0A0B;--cf-3:#0D0A0B}
 :root[data-campanha="black-friday"][data-tema="vermelho"]{--cf-2:#0D0A0B;--cf-3:#FFFFFF}
 
-/* a etiqueta só aparece quando cabe ao lado do nome da franquia sem empurrar os botões */
-@media (max-width:100rem){
-  :root[data-campanha="black-friday"] .bf-selo{display:none}
-}
+
 @media (max-width:46rem){
   .linha.lider .nome{font-size:1rem}
   .linha.lider .valor strong{font-size:1.125rem}

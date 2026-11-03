@@ -1588,6 +1588,7 @@ const TEMPOS = {
   equipes: { espera: 8000, fundo: 4000, fixa: 16000 },
   mural: { espera: 10000, fundo: 4000, fixa: 26000 }
 };
+const VEL_ROLAGEM = .065;   // px por ms (~65 px por segundo)
 const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0, ini: 0, de: 0, dur: 0, telaIni: 0, total: 1 };
 const suave = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 function acenar() {
@@ -1608,15 +1609,15 @@ function passoRolagem(t) {
     if (max < 40) { rolagem.ate = t + tempo.fixa; rolagem.total = tempo.fixa; }
     else {
       rolagem.ate = t + tempo.espera;
-      rolagem.total = tempo.espera + max / .045 * 1.08 + 1200 + tempo.fundo + Math.min(2600, Math.max(1300, max * .8)) + 1400;
+      rolagem.total = tempo.espera + max / VEL_ROLAGEM * 1.08 + 1200 + tempo.fundo + Math.min(2600, Math.max(1300, max * .8)) + 1400;
     }
   } else if (rolagem.fase === 'espera' && t >= rolagem.ate) {
     if (max < 40) { rolagem.fase = 'fim'; proximaTela(); return; }
     rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; rolagem.ini = t;
   } else if (rolagem.fase === 'desce') {
-    // ~45 px por segundo, ganhando velocidade no primeiro 1,5 s e freando nos últimos 160 px
+    // ~65 px por segundo, ganhando velocidade no primeiro 1,5 s e freando nos últimos 160 px
     const ritmo = Math.max(.12, Math.min(1, (t - rolagem.ini) / 1500, (max - rolagem.y) / 160));
-    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * .045 * ritmo, max); rolagem.ult = t;
+    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * VEL_ROLAGEM * ritmo, max); rolagem.ult = t;
     scrollTo(0, rolagem.y);
     if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + tempo.fundo; }
   } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) {
@@ -1636,6 +1637,7 @@ function marcarTelao(ligar) {
   raiz.classList.toggle('tv', ligar);
   $('btn-tv').textContent = ligar ? 'Sair do telão' : 'Modo telão';
   rolagem.fase = 'parado';
+  requestAnimationFrame(posicionarEtiqueta);
   pintarNav();
 }
 /* endereço com #telao abre direto no modo telão (sem tela cheia, que exige um clique) */
@@ -1692,8 +1694,25 @@ function ehBlack() { return state.config.campanha === 'black-friday'; }
 function aplicarCampanha() {
   const c = state.config.campanha || '';
   if (c) raiz.dataset.campanha = c; else delete raiz.dataset.campanha;
+  if (c && aplicarCampanha.feita !== innerWidth) { aplicarCampanha.feita = innerWidth; requestAnimationFrame(posicionarEtiqueta); }
   try { if (c) localStorage.setItem('ranking-campanha', c); else localStorage.removeItem('ranking-campanha'); } catch (e) { /* vale só nesta visita */ }
 }
+/* etiqueta da Black: fica presa no alto da tela; a posição sai do topo da página (nome da franquia e botões) */
+function posicionarEtiqueta() {
+  const s = $('bf-selo');
+  if (!s || !ehBlack()) return;
+  s.style.setProperty('--bf-escala', 1);
+  const w = s.offsetWidth || 150;
+  if (innerWidth < 992) { s.style.setProperty('--bf-x', 'auto'); s.style.setProperty('--bf-dir', '.5rem'); s.style.setProperty('--bf-escala', .62); return; }
+  const u = document.querySelector('.unidade').getBoundingClientRect(), a = document.querySelector('.acoes').getBoundingClientRect();
+  const mesmaLinha = a.top < u.bottom, fimLivre = mesmaLinha ? a.left : document.querySelector('.topo').getBoundingClientRect().right;
+  const livre = fimLivre - u.right, escala = Math.max(.62, Math.min(1, (livre - 28) / w));
+  s.style.setProperty('--bf-escala', escala.toFixed(3));
+  s.style.setProperty('--bf-dir', 'auto');
+  s.style.setProperty('--bf-x', Math.round(u.right + Math.max((livre - w * escala) / 2, 12) - w * (1 - escala) / 2) + 'px');
+}
+addEventListener('resize', () => requestAnimationFrame(posicionarEtiqueta));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(posicionarEtiqueta));
 function diasBlack() {
   const c = state.config;
   return ehBlack() && ehData(c.blackFriday) ? dias(hojeISO(), c.blackFriday) : null;
