@@ -37,10 +37,7 @@
 /* placar: cartão preto com "BLACK" vazado ao fundo */
 :root[data-campanha="black-friday"] .placar{box-shadow:0 1.4rem 3rem -1rem rgba(13,10,11,.45)}
 :root[data-campanha="black-friday"] .placar>.bf-marca{display:block;position:absolute;z-index:0;right:3%;bottom:-.18em;font:900 clamp(6rem,15vw,13rem)/1 var(--display);font-stretch:70%;
-  letter-spacing:.02em;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.06);pointer-events:none;user-select:none;
-  -webkit-mask:linear-gradient(100deg,#000 35%,rgba(0,0,0,.35) 50%,#000 65%) 0 0/300% 100%;mask:linear-gradient(100deg,#000 35%,rgba(0,0,0,.35) 50%,#000 65%) 0 0/300% 100%;
-  animation:bf-vazado 7s ease-in-out infinite}
-@keyframes bf-vazado{0%,100%{-webkit-mask-position:100% 0;mask-position:100% 0}50%{-webkit-mask-position:0 0;mask-position:0 0}}
+  letter-spacing:.02em;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.06);pointer-events:none;user-select:none}
 :root[data-campanha="black-friday"] .placar .total small{color:var(--bf-red)}
 
 /* líder do ranking: linha preta com filete vermelho que pulsa */
@@ -89,12 +86,15 @@
 @keyframes bf-balanca{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
 
 /* ---------- faixa: a contagem vira "Dia da Black em" num chip preto riscado ---------- */
-:root[data-campanha="black-friday"] .faixa-conta.bf{background:repeating-linear-gradient(-45deg,var(--bf) 0 .7rem,var(--bf-2) .7rem 1.4rem);background-size:200% 100%;color:#FFFFFF;
-  animation:bf-riscas 2.4s linear infinite}
+:root[data-campanha="black-friday"] .faixa-conta.bf{background:var(--bf);color:#FFFFFF}
+/* riscas andando numa camada própria (transform), sem repintar o chip */
+:root[data-campanha="black-friday"] .faixa-conta.bf::before{content:"";position:absolute;z-index:0;top:0;bottom:0;left:-2.82rem;right:0;pointer-events:none;
+  background:repeating-linear-gradient(-45deg,var(--bf) 0 .7rem,var(--bf-2) .7rem 1.4rem);animation:bf-riscas 2.4s linear infinite}
+:root[data-campanha="black-friday"] .faixa-conta.bf>*{position:relative;z-index:1}
 :root[data-campanha="black-friday"] .faixa-conta.bf .fc-rot{color:var(--bf-red);opacity:1}
 :root[data-campanha="black-friday"] .faixa-conta.bf .fc-crono{color:var(--bf-red)}
 :root[data-campanha="black-friday"] .faixa-conta.bf::after{background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%)}
-@keyframes bf-riscas{from{background-position:0 0}to{background-position:-2.82rem 0}}
+@keyframes bf-riscas{from{transform:translateX(0)}to{transform:translateX(1.98rem)}}
 /* o selo AO VIVO ganha um vermelho mais vivo para não se misturar com o chip preto */
 :root[data-campanha="black-friday"] .faixa-selo{background:var(--bf);box-shadow:inset -.25rem 0 0 var(--bf-red)}
 
@@ -158,10 +158,11 @@
   --cf-1:#ED1C24;--cf-2:#FFFFFF;--cf-3:#4A4243;--mf-op:.085;--voo-cor:rgba(237,28,36,.22);--raio:rgba(237,28,36,.09);
   color-scheme:dark}
 /* fundo: preto profundo com brilho vermelho no alto, granulado fino e trilho vermelho onde a etiqueta pendura */
-:root[data-campanha="black-friday"][data-tema="vermelho"] body{
-  background:radial-gradient(75rem 34rem at 80% -10%,rgba(237,28,36,.17),transparent 62%),radial-gradient(60rem 30rem at -5% 110%,rgba(237,28,36,.09),transparent 60%),var(--ground);background-attachment:fixed}
-:root[data-campanha="black-friday"][data-tema="vermelho"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.07;mix-blend-mode:screen;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+:root[data-campanha="black-friday"][data-tema="vermelho"] body{background:var(--ground)}
+/* uma camada fixa só, pintada uma vez (sem background-attachment:fixed nem mix-blend-mode, que pesam na TV quando o telão rola) */
+:root[data-campanha="black-friday"][data-tema="vermelho"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;transform:translateZ(0);
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(75rem 34rem at 80% -10%,rgba(237,28,36,.17),transparent 62%),radial-gradient(60rem 30rem at -5% 110%,rgba(237,28,36,.09),transparent 60%)}
 :root[data-campanha="black-friday"][data-tema="vermelho"] body::after{content:"";position:fixed;z-index:9;left:0;right:0;top:0;height:3px;pointer-events:none;
   background:linear-gradient(90deg,transparent,#ED1C24 18%,#FF4D54 50%,#ED1C24 82%,transparent)}
 /* logo: palavras brancas e a mão vermelha */

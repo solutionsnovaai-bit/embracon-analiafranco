@@ -35,6 +35,13 @@
   </div>
   <i class="load-lamina" id="load-lamina"></i>
 </div>
+<script>
+/* a intro espera as peças do logo (máscaras) e as fontes para começar do zero, inteira; no máximo 2 s de espera */
+(function(){var l=document.getElementById('load'),ok=0;function vai(){if(ok)return;ok=1;window.__introT0=performance.now();l.classList.add('vai')}
+var fs=['mao-1','mao-2','mao-3','mao-4','consorcio','embracon'].map(function(n){return new Promise(function(r){var i=new Image();i.onload=i.onerror=r;i.src='assets/marca/'+n+'.png'})});
+if(document.fonts&&document.fonts.ready)fs.push(document.fonts.ready);
+Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimationFrame(vai)})});setTimeout(vai,2000)})();
+</script>
 
 <div class="maos-fundo" aria-hidden="true"><span class="mao mf mf1" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf2" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf3" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf4" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf5" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf6" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span class="mao mf mf7" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span></div>
 

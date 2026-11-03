@@ -101,7 +101,9 @@ button,input,select{font:inherit;color:inherit}
    3. "Consórcio" e "Embracon" entram  4. a barra enche com a porcentagem
    5. uma lâmina na cor de destaque cruza a tela e abre o painel na diagonal */
 .load{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:1.5rem;background:var(--load-bg);overflow:hidden;
-  animation:load-some .4s 12s forwards}
+  animation:load-some .4s 14s forwards}
+/* tudo parado no primeiro quadro até as peças carregarem: a intro roda inteira, sem pular pedaço */
+.load:not(.vai),.load:not(.vai) *{animation-play-state:paused!important}
 .load-in{--lg-w:min(26rem,76vw);display:grid;justify-items:center;gap:1.4rem;max-width:100%}
 .load .lg-mao{transform-origin:50% 50%;animation:mao-centro 2s var(--ease-io) both}
 .load .lg-mao .m1{transform-origin:38% 57%;animation:mao-palma .95s var(--ease) .1s both}
@@ -112,17 +114,18 @@ button,input,select{font:inherit;color:inherit}
 .load .lg-embracon{animation:palavra .9s var(--ease) 1.34s both}
 .load-anel{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;margin:-23% 0 0 -23%;border:2px solid var(--red);border-radius:50%;opacity:0;
   animation:anel 1.15s var(--ease) .85s forwards}
-.load-tag{max-width:var(--lg-w);margin:0;font-size:.75rem;font-weight:700;text-transform:uppercase;text-align:center;text-wrap:balance;color:var(--ink-2);animation:tag 1s var(--ease) 1.55s both}
+.load-tag{max-width:var(--lg-w);margin:0;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-align:center;text-wrap:balance;color:var(--ink-2);animation:tag .9s var(--ease) 1.55s both}
 .load-progresso{position:relative;display:flex;align-items:center;gap:.75rem;animation:load-fade .5s .3s both}
 .load-barra{display:block;width:calc(var(--lg-w)*.62);height:3px;border-radius:2px;background:var(--track);overflow:hidden}
 .load-barra i{display:block;height:100%;background:var(--red);transform-origin:0 50%;transform:scaleX(0);animation:load-enche 2.1s var(--ease-io) .35s forwards}
 .load.espera .load-barra i{width:38%;transform:none;animation:load-vai 1.15s ease-in-out infinite}
 .load-pct{min-width:3ch;font:800 1rem/1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums;color:var(--ink)}
-.load-lamina{position:absolute;inset:0;z-index:2;background:var(--red);clip-path:polygon(-60% 0,-60% 0,-85% 100%,-85% 100%);pointer-events:none}
+/* lâmina diagonal que cruza a tela: anda só com transform, para rodar liso na TV */
+.load-lamina{position:absolute;z-index:2;top:-12%;bottom:-12%;left:-30%;width:160%;background:var(--red);transform:translateX(-125%) skewX(-16deg);will-change:transform;pointer-events:none}
 @keyframes mao-centro{0%,44%{transform:translate(-104%,33%) scale(1.6)}100%{transform:none}}
 @keyframes palavra{from{clip-path:inset(-5% 100% -5% 0);transform:translateX(-3%)}to{clip-path:inset(-5% 0 -5% 0);transform:none}}
 @keyframes anel{from{opacity:.8;transform:scale(.25)}to{opacity:0;transform:scale(2.6)}}
-@keyframes tag{from{opacity:0;letter-spacing:.42em}to{opacity:1;letter-spacing:.2em}}
+@keyframes tag{from{opacity:0;transform:translateY(.6rem)}to{opacity:1;transform:none}}
 @keyframes load-enche{to{transform:scaleX(1)}}
 @keyframes load-vai{from{transform:translateX(-110%)}to{transform:translateX(290%)}}
 @keyframes load-fade{from{opacity:0}to{opacity:1}}

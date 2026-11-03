@@ -938,12 +938,15 @@ function marcarConferencia() {
 }
 /* tela de abertura: fica o tempo de a animação se completar e sai quando os dados chegam */
 const telaLoad = $('load');
-const ABERTURA = { barraDe: 350, barraPor: 2100, minimo: 2650 };
+/* a intro inteira dura ~2,8 s (mão, palavras, barra e selo da campanha); o painel só abre depois dela e de 0,5 s parada */
+const ABERTURA = { barraDe: 350, barraPor: 2100, minimo: 3300 };
+const inicioIntro = () => window.__introT0 == null ? null : window.__introT0;
 const io = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 (function contarCarga() {
   const pct = $('load-pct');
   if (!pct || !telaLoad.isConnected) return;
-  const t = Math.min(Math.max((performance.now() - ABERTURA.barraDe) / ABERTURA.barraPor, 0), 1);
+  const t0 = inicioIntro();
+  const t = t0 == null ? 0 : Math.min(Math.max((performance.now() - t0 - ABERTURA.barraDe) / ABERTURA.barraPor, 0), 1);
   pct.textContent = Math.round((semMovimento ? 1 : io(t)) * 100) + '%';
   if (t < 1) requestAnimationFrame(contarCarga);
 })();
@@ -978,21 +981,27 @@ function abrirPainel() {
   if (semMovimento || !telaLoad.animate) { telaLoad.remove(); depoisDeAbrir(); return; }
   const lam = $('load-lamina'), sai = 'cubic-bezier(.6,0,.8,.4)', corte = 'cubic-bezier(.7,0,.2,1)';
   $('load-in').animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-1.25rem) scale(.97)' }], { duration: 380, easing: sai, fill: 'forwards' });
-  /* 1. a lâmina na cor de destaque cruza a tela na diagonal */
-  lam.animate([{ clipPath: 'polygon(-60% 0,-60% 0,-85% 100%,-85% 100%)' }, { clipPath: 'polygon(-60% 0,160% 0,135% 100%,-85% 100%)' }], { duration: 640, delay: 160, easing: corte, fill: 'forwards' })
+  /* 1. a lâmina na cor de destaque cruza e cobre a tela (só transform: liso mesmo na TV) */
+  lam.animate([{ transform: 'translateX(-125%) skewX(-16deg)' }, { transform: 'translateX(0) skewX(-16deg)' }], { duration: 640, delay: 160, easing: corte, fill: 'forwards' })
     .onfinish = () => {
-      /* 2. a tela inteira se abre da esquerda para a direita, revelando o painel */
+      /* 2. o fundo da intro some por trás da lâmina e ela segue para a direita, revelando o painel */
       telaLoad.style.background = 'transparent';
+      $('load-in').style.visibility = 'hidden';
       depoisDeAbrir();
-      telaLoad.animate([{ clipPath: 'polygon(-25% 0,200% 0,200% 100%,-50% 100%)' }, { clipPath: 'polygon(200% 0,200% 0,200% 100%,175% 100%)' }], { duration: 900, easing: corte, fill: 'forwards' })
+      lam.animate([{ transform: 'translateX(0) skewX(-16deg)' }, { transform: 'translateX(125%) skewX(-16deg)' }], { duration: 900, delay: 60, easing: corte, fill: 'forwards' })
         .onfinish = () => telaLoad.remove();
     };
 }
 async function iniciar() {
   render();
   const minimo = semMovimento ? 300 : ABERTURA.minimo;
-  const espera = new Promise(r => setTimeout(r, Math.max(minimo - performance.now(), 0)));
-  const demora = setTimeout(() => { if (telaLoad) { telaLoad.classList.add('espera'); $('load-pct').hidden = true; } }, 3400);
+  /* espera a intro começar (peças carregadas) e terminar inteira */
+  const espera = new Promise(r => {
+    const ver = () => { const t0 = inicioIntro(); if (t0 == null) { setTimeout(ver, 50); return; } setTimeout(r, Math.max(t0 + minimo - performance.now(), 0)); };
+    ver();
+  });
+  let demora = 0;
+  espera.then(() => { demora = setTimeout(() => { if (telaLoad && telaLoad.isConnected) { telaLoad.classList.add('espera'); $('load-pct').hidden = true; } }, 400); });
   let texto = '', dados = null;
   try { texto = await lerArquivo(); sinalDoArquivo(texto); dados = JSON.parse(texto); } catch (e) { dados = null; }
   if (PLANILHA) {
