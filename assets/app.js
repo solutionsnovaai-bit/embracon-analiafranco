@@ -459,6 +459,7 @@ function pintar() {
   pintarFeed(r, editar, carregando);
   pintarMix(r);
   pintarGraficos(r);
+  pintarEqCotas(r);
   pintarDestaque(r);
   if (!carregando) { pintarFaixa(r); pintarTela(r); }
   if ($('dlg-equipe').open) pintarEquipe();
@@ -702,6 +703,29 @@ function pintarMix(r) {
   }
 }
 
+
+/* ---------- "Cotas por equipe" (versão enxuta da aba Hoje, na aba Ranking) ---------- */
+function pintarEqCotas(r) {
+  const lista = $('eqc'), sec = $('sec-eqcotas'), eqs = r.equipes;
+  sec.hidden = !eqs.length || !r.total;
+  if (sec.hidden) return;
+  lista.textContent = '';
+  const maior = Math.max(...eqs.map(e => e.valor), 1);
+  eqs.forEach((e, n) => {
+    const tipos = {}, cotas = r.pessoas.filter(p => p.equipe === e.nome).reduce((t, p) => { for (const k in p.tipos) tipos[k] = (tipos[k] || 0) + p.tipos[k]; return t + p.cotas; }, 0);
+    const av = el('span', { class: 'avatar eqc-av' });
+    if (e.sup) pintarAvatar(av, e.sup); else av.append(el('span', { class: 'av-ini', text: iniciais(e.nome) }));
+    const barra = el('i', { class: 'eqc-barra' }); barra.style.setProperty('--w', (e.valor / maior * 100) + '%');
+    lista.append(el('li', { class: 'eqc-li' + (n === 0 && e.valor > 0 ? ' lider' : '') },
+      av,
+      el('div', { class: 'eqc-txt' },
+        el('strong', { text: e.nome }),
+        el('small', { text: e.sup ? 'Supervisor: ' + e.sup.nome : 'sem supervisor' }),
+        el('div', { class: 'eqc-cotas' }, el('b', { class: 'eqc-v', text: curto(e.valor) }), el('b', { text: e.valor > 0 ? cotasTxt(cotas) : 'sem venda' })),
+        chipsCota(tipos),
+        barra)));
+  });
+}
 
 /* ---------- cards com gráficos de pizza (aba Ranking) ---------- */
 const COR_G = { imovel: '#ED1C24', auto: '#FFFFFF', pesados: '#8E8586', servicos: '#F0A3A6', outros: '#4A4243' };

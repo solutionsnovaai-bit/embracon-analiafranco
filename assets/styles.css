@@ -633,3 +633,22 @@ h2{font-size:clamp(1.4rem,1.9vw,1.9rem)}
 .g-corpo{gap:.9rem}
 .g-leg li{font-size:clamp(.78rem,.88vw,.95rem);padding-inline:.2rem}
 .g-leg span{overflow:visible;text-overflow:clip}
+
+/* ---- Cotas por equipe (Ranking) ---- */
+.eqc{list-style:none;margin:0;padding:0;display:grid;gap:.6rem}
+.eqc-li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.75rem;align-items:center;padding:.7rem .8rem;border-radius:.9rem;background:#151112;color:#fff;border:2px solid rgba(237,28,36,.45)}
+.eqc-li.lider{border-color:#ED1C24;box-shadow:0 0 18px rgba(237,28,36,.35)}
+.eqc-av{width:clamp(3rem,4vw,4.2rem);height:clamp(3rem,4vw,4.2rem);grid-area:auto;box-shadow:0 0 0 3px #ED1C24;border:2px solid #151112}
+.eqc-txt{min-width:0;display:grid;gap:.15rem}
+.eqc-txt strong{font:800 clamp(1.15rem,1.5vw,1.55rem)/1.05 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eqc-txt small{font-size:clamp(.85rem,1.05vw,1.1rem);color:#FFD9DA;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eqc-cotas{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .5rem;font-size:clamp(.9rem,1.1vw,1.15rem)}
+.eqc-barra{display:block;height:.45rem;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;position:relative;margin-top:.2rem}
+.eqc-barra::before{content:"";position:absolute;inset:0;width:var(--w);background:linear-gradient(90deg,#ED1C24,#FF6A70);border-radius:99px;animation:eqcCresce 1.2s cubic-bezier(.2,.8,.2,1) both;transform-origin:left}
+.eqc-v{font:800 clamp(1.2rem,1.6vw,1.7rem) var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+@keyframes eqcCresce{from{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){.eqc-barra::before{animation:none}}
+
+.eqc-li{grid-template-columns:auto minmax(0,1fr)}
+.eqc-txt strong,.eqc-txt small{white-space:normal;overflow:visible}
+.eqc-cotas{gap:.15rem .7rem}
