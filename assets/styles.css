@@ -610,3 +610,26 @@ h2{font-size:clamp(1.4rem,1.9vw,1.9rem)}
 .g-leg{gap:.35rem}
 .g-leg li{font-size:clamp(.8rem,.95vw,1rem);gap:.35rem}
 .g-leg b{font-size:1em}
+/* ---- versão motion: radar, marcas, brilho, mãozinhas ---- */
+.dn-box{overflow:visible}
+.dn-radar{position:absolute;inset:6%;border-radius:50%;background:conic-gradient(from 0deg,rgba(237,28,36,0) 0,rgba(237,28,36,.38) 18%,rgba(237,28,36,0) 19%);-webkit-mask:radial-gradient(circle,transparent 56%,#000 58%);mask:radial-gradient(circle,transparent 56%,#000 58%);animation:dnGira 4.5s linear infinite;pointer-events:none}
+.dn-marcas{fill:none;stroke:rgba(255,255,255,.35);stroke-width:1.6;stroke-dasharray:.35 1.65;transform-origin:60px 60px;animation:dnGira 30s linear infinite reverse}
+.dn-fatia{transition:stroke-width .5s,filter .5s,opacity .5s;filter:drop-shadow(0 0 4px rgba(237,28,36,.5))}
+.dn-fatia.dest{stroke-width:20;filter:drop-shadow(0 0 9px rgba(255,255,255,.75))}
+.dn-giro{animation-duration:60s}
+.dn-marca{position:absolute;inset:0;transform:rotate(var(--ang));pointer-events:none;z-index:3}
+.dn-marca-i{position:absolute;left:50%;top:calc(50% - 44/120*100%);width:1.7rem;height:1.7rem;margin:-.85rem 0 0 -.85rem;display:grid;place-items:center;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #ED1C24,0 0 14px rgba(237,28,36,.9);animation:maoPulsa 1.8s ease-in-out infinite;transform:rotate(calc(var(--ang) * -1))}
+.dn-mao{width:1.15rem;height:1.15rem;display:block}
+.g-card .dn-marca-i .mao{--mao:#ED1C24}
+.g-leg li{transition:transform .4s,background .4s;border-radius:.4rem;padding:.12rem .3rem}
+.g-leg li.dest{background:rgba(255,255,255,.14);transform:translateX(5px)}
+.g-leg li.dest i{animation:maoPulsa 1s ease-in-out infinite}
+.g-mao{animation:maoBalanca 2.6s ease-in-out infinite;transform-origin:50% 80%}
+.dn-mid b{text-shadow:0 0 14px rgba(237,28,36,.8)}
+@keyframes maoPulsa{0%,100%{scale:1}50%{scale:1.2}}
+@keyframes maoBalanca{0%,100%{rotate:-8deg}50%{rotate:12deg}}
+@media (prefers-reduced-motion:reduce){.dn-radar,.dn-marcas,.dn-marca-i,.g-mao{animation:none}}
+.dn-box{width:clamp(5.4rem,6.3vw,7rem)}
+.g-corpo{gap:.9rem}
+.g-leg li{font-size:clamp(.78rem,.88vw,.95rem);padding-inline:.2rem}
+.g-leg span{overflow:visible;text-overflow:clip}
