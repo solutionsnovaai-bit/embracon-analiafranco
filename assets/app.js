@@ -458,6 +458,7 @@ function pintar() {
   pintarEquipes(r, carregando);
   pintarFeed(r, editar, carregando);
   pintarMix(r);
+  pintarGraficos(r);
   pintarDestaque(r);
   if (!carregando) { pintarFaixa(r); pintarTela(r); }
   if ($('dlg-equipe').open) pintarEquipe();
@@ -699,6 +700,54 @@ function pintarMix(r) {
     const nc = r.cotasCat[k];
     lista.append(el('li', {}, el('i', { class: 'c-' + k }), el('div', {}, CATS[k], el('small', { text: nc === 1 ? '1 cota' : nc + ' cotas' })), el('b', { text: curto(v) }), el('span', { text: pctTxt(Math.round(p)) })));
   }
+}
+
+
+/* ---------- cards com gráficos de pizza (aba Ranking) ---------- */
+const COR_G = { imovel: '#ED1C24', auto: '#FFFFFF', pesados: '#8E8586', servicos: '#F0A3A6', outros: '#4A4243' };
+const COR_EQ = ['#ED1C24', '#FFFFFF', '#F0A3A6', '#8E8586', '#FFD9DA'];
+const SVGNS = 'http://www.w3.org/2000/svg';
+let grafAss = '';
+function svgEl(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+/* donut animado: cada fatia é um círculo com pathLength=100; o traço "desenha" ao entrar */
+function donut(fatias, centro, sub) {
+  const svg = svgEl('svg', { viewBox: '0 0 120 120', class: 'dn', role: 'img', 'aria-hidden': 'true' });
+  svg.append(svgEl('circle', { cx: 60, cy: 60, r: 44, class: 'dn-trilho', pathLength: 100 }));
+  const tot = fatias.reduce((s, f) => s + f.v, 0) || 1; let ac = 0, i = 0;
+  const g = svgEl('g', { class: 'dn-giro' });
+  for (const f of fatias) {
+    const len = f.v / tot * 100, c = svgEl('circle', { cx: 60, cy: 60, r: 44, class: 'dn-fatia', pathLength: 100, stroke: f.cor, 'stroke-dasharray': Math.max(len - (fatias.length > 1 ? .8 : 0), 0) + ' ' + (100 - len + (fatias.length > 1 ? .8 : 0)), 'stroke-dashoffset': -ac });
+    c.style.setProperty('--d', (i++ * 140) + 'ms'); g.append(c); ac += len;
+  }
+  svg.append(g);
+  const box = el('div', { class: 'dn-box' }, svg, el('div', { class: 'dn-mid' }, el('b', { text: centro }), el('small', { text: sub })));
+  return box;
+}
+function cardGraf(titulo, fatias, centro, sub, legenda, i) {
+  const c = el('article', { class: 'g-card' }, el('div', { class: 'g-cab' }, maoEl('g-mao'), el('h3', { text: titulo })), el('div', { class: 'g-corpo' }, donut(fatias, centro, sub), el('ul', { class: 'g-leg' }, ...legenda)));
+  c.style.setProperty('--i', i); return c;
+}
+function pintarGraficos(r) {
+  const box = $('graficos');
+  const cats = Object.keys(CATS).filter(k => r.porCat[k] > 0);
+  const eqs = r.equipes.filter(e => e.valor > 0);
+  const meta = state.config.meta;
+  const ass = JSON.stringify([r.total, r.cotas, cats.map(k => [k, r.porCat[k], r.cotasCat[k]]), eqs.map(e => [e.nome, e.valor]), meta]);
+  if (ass === grafAss) return; grafAss = ass;
+  box.hidden = !r.total; box.textContent = '';
+  if (!r.total) return;
+  const li = (cor, nome, val) => el('li', {}, el('i', { style: 'background:' + cor }), el('span', { text: nome }), el('b', { text: val }));
+  const cards = [];
+  cards.push(cardGraf('Por categoria', cats.map(k => ({ v: r.porCat[k], cor: COR_G[k] })), curto(r.total), 'vendido', cats.map(k => li(COR_G[k], CATS[k], Math.round(r.porCat[k] / r.total * 100) + '%')), 0));
+  const cc = Object.keys(CATS).filter(k => r.cotasCat[k] > 0);
+  cards.push(cardGraf('Cotas por tipo', cc.map(k => ({ v: r.cotasCat[k], cor: COR_G[k] })), String(r.cotas), r.cotas === 1 ? 'cota' : 'cotas', cc.map(k => li(COR_G[k], CURTO_COTA[k] || CATS[k], String(r.cotasCat[k]))), 1));
+  if (eqs.length) cards.push(cardGraf('Peso de cada equipe', eqs.map((e, n) => ({ v: e.valor, cor: COR_EQ[n % COR_EQ.length] })), eqs[0].nome, 'na frente', eqs.map((e, n) => li(COR_EQ[n % COR_EQ.length], e.nome, Math.round(e.valor / r.total * 100) + '%')), 2));
+  if (meta > 0) {
+    const pct = Math.min(r.total / meta * 100, 100);
+    cards.push(cardGraf('Rumo à meta', [{ v: pct, cor: '#ED1C24' }, { v: 100 - pct, cor: 'transparent' }], Math.round(r.total / meta * 100) + '%', 'da meta', [li('#ED1C24', 'Feito', curto(r.total)), li('#4A4243', 'Falta', curto(Math.max(meta - r.total, 0)))], 3));
+  }
+  box.style.setProperty('--n', cards.length);
+  box.append(...cards);
 }
 
 let toastT = 0;
