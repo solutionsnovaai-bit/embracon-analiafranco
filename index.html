@@ -70,6 +70,7 @@ Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimatio
   <nav class="telas-nav" id="telas-nav" aria-label="Telas do painel">
     <button class="tn" type="button" data-tela="ranking" aria-current="page"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Ranking</span><i class="tn-prog"></i></button>
     <button class="tn" type="button" data-tela="podio"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Pódio</span><i class="tn-prog"></i></button>
+    <button class="tn" type="button" data-tela="hoje"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Hoje</span><i class="tn-prog"></i></button>
     <button class="tn" type="button" data-tela="equipes"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Equipes</span><i class="tn-prog"></i></button>
     <button class="tn" type="button" data-tela="mural"><span class="mao tn-mao" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span><span>Mural</span><i class="tn-prog"></i></button>
     <span class="tn-prox" id="tn-prox"></span>
@@ -147,6 +148,11 @@ Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimatio
     </header>
     <div class="pd-palco" id="pd-palco"></div>
     <div class="pd-cola" id="pd-cola-sec"><span class="rotulo">Na cola do pódio</span><ol class="pd-cola-lista" id="pd-cola"></ol></div>
+  </section>
+
+  <section class="tela tela-hoje" data-tela="hoje" id="tela-hoje" aria-label="Vendas do dia" hidden>
+    <span class="mao tela-mao-fundo" aria-hidden="true"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></span>
+    <div id="ho-corpo"></div>
   </section>
 
   <section class="tela tela-equipe" data-tela="equipes" id="tela-equipe" aria-labelledby="te-nome" hidden>

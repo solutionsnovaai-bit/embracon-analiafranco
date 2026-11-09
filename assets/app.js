@@ -265,7 +265,7 @@ function calcular() {
     const passados = Math.min(Math.max(dias(c.inicio, hoje) + 1, 0), totalDias);
     ideal = c.meta * passados / totalDias;
   }
-  const feed = ciclo.filter(v => !state.consultores.get(v.consultor).oculto).sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
+  const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
   /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
   const cotasPor = new Map(), tiposPor = new Map();
   for (const v of ciclo) {
@@ -776,7 +776,7 @@ function proximoAviso() {
 }
 function vendasNovas(antes, depois) {
   const ja = new Set(chaves(antes)), ks = chaves(depois);
-  return depois.filter((v, i) => !ja.has(ks[i]) && !(state.consultores.get(v.consultor) || {}).oculto);
+  return depois.filter((v, i) => !ja.has(ks[i]));
 }
 
 async function buscar(url) {
@@ -1253,6 +1253,7 @@ function relogio() {
 const TELAS = {
   ranking: { nome: 'Ranking', titulo: 'Ranking ao vivo' },
   podio: { nome: 'Pódio', titulo: 'Pódio do ciclo' },
+  hoje: { nome: 'Hoje', titulo: 'Vendas do dia' },
   equipes: { nome: 'Equipes', titulo: 'Equipes' },
   mural: { nome: 'Mural', titulo: 'Mural da franquia' }
 };
@@ -1265,6 +1266,7 @@ const cotasTxt = n => n === 1 ? '1 cota' : n + ' cotas';
 function sequencia(r) {
   const s = [{ tela: 'ranking' }];
   if (r.pessoas.length) s.push({ tela: 'podio' });
+  if (vendasDoDia().cotas) s.push({ tela: 'hoje' });
   for (const e of equipesValidas(r)) s.push({ tela: 'equipes', equipe: e.nome });
   if (r.pessoas.length) s.push({ tela: 'mural' });
   return s;
@@ -1306,6 +1308,7 @@ function mostrarTela(tela, equipe) {
 function pintarTela(r, forcar) {
   pintarPlacarzinho(r);
   if (telaAtual === 'podio') montarPodio(r, forcar);
+  else if (telaAtual === 'hoje') montarHoje(forcar);
   else if (telaAtual === 'equipes') montarEquipe(r, forcar);
   else if (telaAtual === 'mural') montarMural(r, forcar);
   pintarNav(r);
@@ -1317,8 +1320,75 @@ function entrar(tela, primeira) {
     document.querySelectorAll('#tela-ranking .h2-mao').forEach((m, i) => setTimeout(() => maoVai(m), 300 + i * 220));
     if (!primeira) contar($('total'), 0, mostrado.total, v => nf.format(Math.round(v)));
   } else if (tela === 'podio') entrarPodio();
+  else if (tela === 'hoje') entrarHoje();
   else if (tela === 'equipes') entrarEquipe();
   else if (tela === 'mural') entrarMural();
+}
+
+
+/* ---------- vendas do dia: total, equipes e pessoas (a franquia soma tudo, inclusive quem está fora das listas) ---------- */
+function vendasDoDia() {
+  const hoje = hojeISO(), tipos = () => ({ imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 });
+  const dia = { valor: 0, cotas: 0, tipos: tipos(), equipes: new Map() };
+  for (const nome of ordemEquipes()) dia.equipes.set(nome, { nome, sup: state.supervisores.get(normNome(nome)) || null, valor: 0, cotas: 0, tipos: tipos(), pessoas: new Map() });
+  for (const v of state.vendas) {
+    const p = state.consultores.get(v.consultor);
+    if (!p || v.data !== hoje) continue;
+    dia.valor += v.valor; dia.cotas += v.cotas; dia.tipos[v.categoria] += v.cotas;
+    const e = dia.equipes.get(p.equipe);
+    if (!e || p.oculto) continue;
+    e.valor += v.valor; e.cotas += v.cotas; e.tipos[v.categoria] += v.cotas;
+    const x = e.pessoas.get(p.id) || { p, valor: 0, cotas: 0, tipos: {} };
+    x.valor += v.valor; x.cotas += v.cotas; x.tipos[v.categoria] = (x.tipos[v.categoria] || 0) + v.cotas;
+    e.pessoas.set(p.id, x);
+  }
+  dia.lista = [...dia.equipes.values()].sort((a, b) => b.valor - a.valor);
+  for (const e of dia.lista) e.lista = [...e.pessoas.values()].sort((a, b) => b.valor - a.valor || b.cotas - a.cotas);
+  return dia;
+}
+function tilesTipo(tipos, grande) {
+  const ks = ['imovel', 'auto', 'pesados', 'servicos'].filter(k => tipos[k] > 0 || (grande && k !== 'servicos'));
+  return el('div', { class: 'ho-tipos' + (grande ? ' grande' : '') }, ...ks.map(k => {
+    const ic = el('span', { class: 'ct-ic', 'aria-hidden': 'true' }); ic.innerHTML = ICONE_COTA[k];
+    return el('div', { class: 'ho-tipo ho-' + k + (tipos[k] ? '' : ' zero') }, ic, el('b', { text: String(tipos[k] || 0) }), el('span', { text: CURTO_COTA[k] }));
+  }));
+}
+let hojeAss = '';
+function montarHoje(forcar) {
+  const d = vendasDoDia(), corpo = $('ho-corpo');
+  const ass = JSON.stringify([hojeISO(), d.valor, d.cotas, d.tipos, d.lista.map(e => [e.nome, e.valor, e.cotas, e.lista.map(x => [x.p.id, x.valor, x.tipos])])]);
+  if (!forcar && ass === hojeAss) return;
+  hojeAss = ass; corpo.textContent = '';
+  const dataTxt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  const total = el('span', { class: 'ho-valor', text: nf.format(d.valor) }); total._alvo = d.valor;
+  corpo.append(el('header', { class: 'ho-cab' },
+    maoEl('ho-mao'),
+    el('div', { class: 'ho-tit' }, el('span', { class: 'rotulo', text: 'Vendas do dia · ' + dataTxt }), el('p', { class: 'ho-total' }, el('small', { text: 'R$' }), total), el('span', { class: 'ho-sub', text: d.cotas ? cotasTxt(d.cotas) + ' vendidas hoje na franquia' : 'Nenhuma venda lançada hoje ainda' })),
+    tilesTipo(d.tipos, true)));
+  const grade = el('div', { class: 'ho-eqs' });
+  d.lista.forEach((e, i) => {
+    const av = el('span', { class: 'avatar ho-av', 'aria-hidden': 'true' });
+    if (e.sup) pintarAvatar(av, e.sup); else av.append(maoEl('te-av-mao'));
+    const pessoas = el('ol', { class: 'ho-pessoas' });
+    if (!e.lista.length) pessoas.append(el('li', { class: 'ho-vazio', text: 'Sem vendas hoje ainda' }));
+    for (const x of e.lista) {
+      const pa = el('span', { class: 'avatar ho-pav', 'aria-hidden': 'true' }); pintarAvatar(pa, x.p);
+      pessoas.append(el('li', {}, pa, el('div', { class: 'ho-quem' }, el('strong', { text: x.p.nome }), chipsCota(x.tipos)), el('b', { class: 'ho-pv', text: brl(x.valor) })));
+    }
+    grade.append(el('article', { class: 'ho-eq' + (i === 0 && e.valor > 0 ? ' lider' : '') },
+      el('div', { class: 'ho-eq-cab' }, av, el('div', {}, el('strong', { class: 'ho-eq-nome', text: e.nome }), el('span', { class: 'ho-eq-sup', text: e.sup ? e.sup.nome + ' · supervisão' : '' })), el('b', { class: 'ho-eq-v', text: e.valor ? brl(e.valor) : 'R$ 0' })),
+      tilesTipo(e.tipos, false), pessoas));
+  });
+  corpo.append(grade);
+}
+function entrarHoje() {
+  const c = $('ho-corpo'), ease = 'cubic-bezier(.2,.8,.2,1)', mola = 'cubic-bezier(.34,1.5,.6,1)';
+  const v = c.querySelector('.ho-valor');
+  if (v && v._alvo != null) contar(v, 0, v._alvo, x => nf.format(Math.round(x)));
+  c.querySelectorAll('.ho-cab .ho-tipo').forEach((t, i) => t.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 650, delay: 350 + i * 140, easing: mola, fill: 'backwards' }));
+  c.querySelectorAll('.ho-eq').forEach((e, i) => e.animate([{ opacity: 0, transform: 'translateY(2rem)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 500 + i * 180, easing: ease, fill: 'backwards' }));
+  c.querySelectorAll('.ho-pessoas li').forEach((l, i) => l.animate([{ opacity: 0, transform: 'translateX(-1.2rem)' }, { opacity: 1, transform: 'none' }], { duration: 520, delay: 900 + i * 90, easing: ease, fill: 'backwards' }));
+  document.querySelectorAll('#tela-hoje .ho-mao').forEach(m => maoVai(m));
 }
 
 /* ---------- barra de abas ---------- */

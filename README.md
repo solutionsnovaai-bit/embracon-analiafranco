@@ -140,6 +140,7 @@ O painel tem quatro telas, na barra logo abaixo do topo:
 
 - **Ranking:** o painel de sempre (placar, ranking de consultores, equipes, últimas vendas e categorias).
 - **Pódio:** os três primeiros do ciclo com foto grande, em blocos de pódio que sobem (3º, 2º e 1º, nessa ordem), raios girando atrás do 1º, a mão da Embracon de coroa e chuva de mãozinhas e confete. Embaixo, do 4º ao 8º.
+- **Hoje:** vendas do dia: total da franquia (soma tudo, inclusive quem está fora das listas), cotas por tipo, as três equipes com a foto da supervisão e cada pessoa com foto, valor e tipo de cota. O dia de cada venda é o dia em que o painel viu a casinha nova na planilha. Entra no giro do telão quando há venda no dia.
 - **Equipes:** uma tela por equipe, com a supervisão em destaque (foto num anel que enche com a meta e mãozinhas em órbita), o total da equipe, quanto falta, quem já vendeu, cotas, participação na franquia e os consultores do time com foto e valor. Os botões no alto trocam de equipe.
 - **Mural:** frase grande trocando (slogans e números do momento) e duas faixas de fotos de todo mundo andando em sentidos opostos, com cartões de palavras no meio.
 
