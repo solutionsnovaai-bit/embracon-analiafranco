@@ -566,3 +566,6 @@ h2{font-size:clamp(1.4rem,1.9vw,1.9rem)}
 .mix-barra{height:clamp(.9rem,1.2vw,1.2rem)}
 .destaque{font-size:clamp(1.05rem,1.55vw,1.55rem)}
 .ritmo-txt,.marca-t{font-size:clamp(.8rem,1.05vw,1.05rem)}
+
+.mix li small{display:block;margin-top:.1rem;font-size:clamp(.85rem,1.1vw,1.1rem);font-weight:700;color:var(--ink-2)}
+.mix li b{font-size:clamp(1.05rem,1.45vw,1.45rem)}

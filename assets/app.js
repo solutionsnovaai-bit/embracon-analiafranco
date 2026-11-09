@@ -694,7 +694,8 @@ function pintarMix(r) {
     const v = r.porCat[k], p = r.total ? v / r.total * 100 : 0;
     if (k === 'outros' && !v) continue;
     if (v > 0) barra.append(el('i', { class: 'c-' + k, style: 'width:' + p + '%' }));
-    lista.append(el('li', {}, el('i', { class: 'c-' + k }), el('div', { text: CATS[k] }), el('b', { text: curto(v) }), el('span', { text: pctTxt(Math.round(p)) })));
+    const nc = r.cotasCat[k];
+    lista.append(el('li', {}, el('i', { class: 'c-' + k }), el('div', {}, CATS[k], el('small', { text: nc === 1 ? '1 cota' : nc + ' cotas' })), el('b', { text: curto(v) }), el('span', { text: pctTxt(Math.round(p)) })));
   }
 }
 
