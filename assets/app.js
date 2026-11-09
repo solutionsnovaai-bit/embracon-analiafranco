@@ -464,14 +464,20 @@ function pintar() {
 let giroCotas = 0;
 function pintarCotas(r) {
   const faixa = $('f-cotas-faixa'), n = $('f-cotas-n');
+  const cx = $('f-cotas-tipos');
   const tipos = Object.keys(CATS).filter(k => r.cotasCat[k] > 0), conhecidos = tipos.filter(k => k !== 'outros');
   faixa.textContent = '';
   faixa.hidden = !r.cotas || !conhecidos.length;
+  cx.textContent = ''; cx.hidden = faixa.hidden;
   if (!r.cotas) { n.textContent = 'nenhuma venda no ciclo'; return; }
   const ticket = 'ticket médio de ' + curto(r.total / r.cotas);
   if (!conhecidos.length) { n.textContent = ticket; return; }
   const passos = [...conhecidos, 'ticket'], atual = passos[giroCotas % passos.length];
   for (const k of tipos) faixa.append(el('i', { class: 'c-' + k + (k === atual ? ' on' : ''), style: 'flex-grow:' + r.cotasCat[k], title: CATS[k] + ': ' + r.cotasCat[k] + (r.cotasCat[k] === 1 ? ' cota' : ' cotas') }));
+  for (const k of conhecidos) {
+    const ic = el('span', { class: 'ct-ic', 'aria-hidden': 'true' }); ic.innerHTML = ICONE_COTA[k];
+    cx.append(el('div', { class: 'ctile ctile-' + k + (k === atual ? ' on' : '') }, ic, el('b', { text: String(r.cotasCat[k]) }), el('span', { text: CURTO_COTA[k] })));
+  }
   faixa.dataset.gira = atual === 'ticket' ? '' : '1';
   const antes = n.dataset.k; n.dataset.k = atual; n.textContent = '';
   if (atual === 'ticket') n.append(ticket);
