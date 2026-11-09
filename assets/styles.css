@@ -214,6 +214,15 @@ html.tv .so-edicao{display:none}
 .fato dd{margin:.3rem 0 0}
 .fato dd strong{display:block;font:800 1.625rem/1.1 var(--display);font-stretch:80%;font-variant-numeric:tabular-nums}
 .fato dd span{display:block;margin-top:.2rem;font-size:.8125rem;color:var(--ink-2)}
+.cotas-faixa{display:flex;gap:2px;height:.55rem;margin-top:.45rem;border-radius:2px;overflow:hidden;background:var(--track)}
+.cotas-faixa[hidden]{display:none}
+.cotas-faixa i{display:block;height:100%;min-width:4px;transition:opacity .5s}
+.cotas-faixa[data-gira="1"] i:not(.on){opacity:.35}
+.fato dd span i.sw{display:inline-block;width:.6rem;height:.6rem;margin-inline-end:.4rem;border-radius:2px;vertical-align:baseline;box-shadow:0 0 0 1px var(--line)}
+.fato dd span b{color:var(--ink);font-variant-numeric:tabular-nums}
+.fato dd span.gira{animation:cotaIn .45s ease both}
+@keyframes cotaIn{from{opacity:0;transform:translateY(.25rem)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fato dd span.gira{animation:none}.cotas-faixa i{transition:none}}
 .fato dd span.acima{color:var(--ok);font-weight:600}
 .fato dd span.abaixo{color:var(--red-deep);font-weight:600}
 

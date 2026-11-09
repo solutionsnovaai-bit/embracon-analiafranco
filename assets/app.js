@@ -223,8 +223,8 @@ function calcular() {
   const ciclo = state.vendas.filter(noCiclo);
   const total = ciclo.reduce((s, v) => s + v.valor, 0);
   const porCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 };
-  const cicloPor = new Map();
-  for (const v of ciclo) { porCat[v.categoria] += v.valor; cicloPor.set(v.consultor, (cicloPor.get(v.consultor) || 0) + v.valor); }
+  const cicloPor = new Map(), cotasCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 };
+  for (const v of ciclo) { cotasCat[v.categoria] += v.cotas; porCat[v.categoria] += v.valor; cicloPor.set(v.consultor, (cicloPor.get(v.consultor) || 0) + v.valor); }
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
@@ -276,7 +276,7 @@ function calcular() {
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
-  return { total, porCat, linhas, equipes, lideres, pessoas, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -449,7 +449,7 @@ function pintar() {
   $('f-meta').textContent = r.venderam + ' de ' + r.quadro;
   $('f-meta-n').textContent = 'consultores com venda no ciclo';
   $('f-cotas').textContent = nf.format(r.cotas);
-  $('f-cotas-n').textContent = r.cotas ? 'ticket médio de ' + curto(r.total / r.cotas) : 'nenhuma venda no ciclo';
+  pintarCotas(r);
 
   pintarLista(r, editar, carregando);
   pintarEquipes(r, carregando);
@@ -458,6 +458,28 @@ function pintar() {
   pintarDestaque(r);
   if (!carregando) { pintarFaixa(r); pintarTela(r); }
   if ($('dlg-equipe').open) pintarEquipe();
+}
+
+/* card "Cotas vendidas": faixa por tipo (imóvel, auto, pesados...) e a linha de baixo gira entre os tipos */
+let giroCotas = 0;
+function pintarCotas(r) {
+  const faixa = $('f-cotas-faixa'), n = $('f-cotas-n');
+  const tipos = Object.keys(CATS).filter(k => r.cotasCat[k] > 0), conhecidos = tipos.filter(k => k !== 'outros');
+  faixa.textContent = '';
+  faixa.hidden = !r.cotas || !conhecidos.length;
+  if (!r.cotas) { n.textContent = 'nenhuma venda no ciclo'; return; }
+  const ticket = 'ticket médio de ' + curto(r.total / r.cotas);
+  if (!conhecidos.length) { n.textContent = ticket; return; }
+  const passos = [...conhecidos, 'ticket'], atual = passos[giroCotas % passos.length];
+  for (const k of tipos) faixa.append(el('i', { class: 'c-' + k + (k === atual ? ' on' : ''), style: 'flex-grow:' + r.cotasCat[k], title: CATS[k] + ': ' + r.cotasCat[k] + (r.cotasCat[k] === 1 ? ' cota' : ' cotas') }));
+  faixa.dataset.gira = atual === 'ticket' ? '' : '1';
+  const antes = n.dataset.k; n.dataset.k = atual; n.textContent = '';
+  if (atual === 'ticket') n.append(ticket);
+  else {
+    const q = r.cotasCat[atual];
+    n.append(el('i', { class: 'sw c-' + atual }), el('b', { text: String(q) }), ' ' + (q === 1 ? 'cota' : 'cotas') + ' de ' + CURTO_COTA[atual] + ' · ' + Math.round(q / r.cotas * 100) + '%');
+  }
+  if (antes !== atual && !semMovimento) { n.classList.remove('gira'); void n.offsetWidth; n.classList.add('gira'); }
 }
 
 function pintarAvisos(editar) {
@@ -1181,6 +1203,7 @@ $('btn-tema').addEventListener('click', () => aplicarTema(raiz.dataset.tema === 
 /* ---------- giros contínuos ---------- */
 function iniciarGiros() {
   setInterval(() => { giroStatus++; pintarStatus(); }, 5000);
+  setInterval(() => { giroCotas++; if (state.modo !== 'carregando') pintarCotas(calcular()); }, 4500);
   setInterval(() => { giroDestaque++; if (state.modo !== 'carregando') pintarDestaque(calcular()); }, 6500);
   setInterval(onda, 45000);
   setInterval(giroSupervisao, 16000);

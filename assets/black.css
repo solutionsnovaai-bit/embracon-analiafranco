@@ -191,3 +191,7 @@
 @media (prefers-reduced-motion:reduce){
   :root[data-campanha="black-friday"][data-tema="vermelho"] body::before{display:none}
 }
+
+/* faixa de cotas por tipo, no cartão escuro do placar: o auto fica branco e o pesados cinza claro para aparecerem sobre o preto */
+:root[data-campanha="black-friday"] .fatos .c-auto{background:#FFFFFF}
+:root[data-campanha="black-friday"] .fatos .c-pesados{background:#8E8586}
