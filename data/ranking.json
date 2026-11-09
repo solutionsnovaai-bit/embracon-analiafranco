@@ -1,6 +1,6 @@
 {
   "atualizadoEm": "2026-11-03T13:45:00-03:00",
-  "recarregar": "2026-11-09 17:18",
+  "recarregar": "2026-11-09 17:23",
   "config": {
     "unidade": "Anália Franco",
     "meta": 20000000,
@@ -30,7 +30,7 @@
     {"id":"rafael-ferraz","nome":"Rafael Ferraz","equipe":"Artilheiros","cargo":"CEO Embracon Anália Franco","foto":"assets/supervisores/rafael-ferraz.jpg"},
     {"id":"diego-lins","nome":"Diego Lins","equipe":"Lekos"},
     {"id":"leiliane-reis","nome":"Leiliane Reis","equipe":"Artilheiros","foto":"assets/consultores/leiliane-reis.jpg"},
-    {"id":"camila-casco","nome":"Camila Casco","cargo":"Proprietária Embracon Anália Franco","oculto":true,"foto":"assets/consultores/camila-casco.jpg"},
+    {"id":"camila-casco","nome":"Camila Casco","cargo":"Proprietária Embracon Anália Franco","oculto":true,"exibir":"Dra. Camila Casco","foto":"assets/consultores/camila-casco.jpg"},
     {"id":"bruno-marques","nome":"Bruno Marques","equipe":"Lekos","foto":"assets/consultores/bruno-marques.jpg"},
     {"id":"matheus-detilio","nome":"Matheus Detilio","equipe":"Lekos","foto":"assets/consultores/matheus-detilio.jpg"},
     {"id":"lais-berloni","nome":"Lais Berloni","equipe":"Lekos","foto":"assets/consultores/lais-berloni.jpg"},

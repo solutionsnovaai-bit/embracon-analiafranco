@@ -405,3 +405,18 @@ html:not(.tv) .tn-prog{display:none}
 .ho-tipos:not(.grande){justify-content:flex-start}
 .ho-quem strong{font-size:clamp(1.05rem,1.35vw,1.35rem);line-height:1.1}
 .ho-pv{font-size:clamp(1.05rem,1.35vw,1.35rem)}
+
+/* ---------- direção da franquia (proprietária e CEO) em destaque ---------- */
+.dir-card{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:clamp(.8rem,1.8vw,1.6rem);margin-top:clamp(.8rem,1.6vw,1.3rem);padding:clamp(.9rem,1.8vw,1.4rem) clamp(1.2rem,2.4vw,2.2rem);background:#131011;color:#fff;border:2px solid #ED1C24;border-radius:var(--r);box-shadow:0 0 2.2rem -.6rem rgba(237,28,36,.5)}
+.dir-mao{width:clamp(3rem,5vw,4.6rem);height:clamp(3rem,5vw,4.6rem);color:#ED1C24}
+.dir-av{grid-area:auto;width:clamp(3.4rem,5vw,5rem);height:clamp(3.4rem,5vw,5rem);box-shadow:0 0 0 3px #ED1C24;border:3px solid #131011;background:#272122;font-size:1.2rem}
+.dir-txt{display:grid;gap:.2rem;min-width:0}
+.dir-rot{font-size:clamp(.85rem,1.15vw,1.15rem);font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#FF9EA2}
+.dir-nome{font:800 clamp(1.5rem,2.6vw,2.4rem)/1.05 var(--display);font-stretch:82%}
+.dir-cotas{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;font-size:clamp(1rem,1.3vw,1.3rem);color:#C9BFC0}
+.dir-cotas .cotas-tipo{margin:0}
+.dir-v{font:800 clamp(1.9rem,3.4vw,3.2rem)/1 var(--display);font-stretch:76%;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tela-equipe .dir-card{grid-column:1/-1}
+.mu-card.dir{outline:3px solid #ED1C24;outline-offset:-3px}
+.mu-tag.dir-tag{background:#ED1C24;color:#fff}
+@media (max-width:991px){.dir-card{grid-template-columns:auto minmax(0,1fr)}.dir-mao{display:none}.dir-v{grid-column:1/-1}}

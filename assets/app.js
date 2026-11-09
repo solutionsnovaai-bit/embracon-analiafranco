@@ -173,7 +173,7 @@ function aplicar(dados) {
     let cargo = limparCargo(p.cargo), foto = fotoValida(p.foto);
     if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
     if (sup && sup.foto) foto = sup.foto;
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true });
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -183,7 +183,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.oculto ? { oculto: true } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
+    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.oculto ? { oculto: true } : {}), ...(p.exibir ? { exibir: p.exibir } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
     supervisores: [...state.supervisores.values()].map(s => ({ equipe: s.equipe, nome: s.nome, ...(s.cargo ? { cargo: s.cargo } : {}), ...(s.foto ? { foto: s.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
@@ -275,9 +275,11 @@ function calcular() {
   const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }))
     .filter(p => !p.oculto && (!p.cargo || p.valor > 0))
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
+  const diretoria = [...state.consultores.values()].filter(p => p.oculto || /\bceo\b/i.test(p.cargo || '')).sort((a, b) => (b.oculto ? 1 : 0) - (a.oculto ? 1 : 0))
+    .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
-  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -880,7 +882,7 @@ function dadosDaPlanilha(texto, cadastro) {
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
-    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: tipoCota(l[j]), chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
@@ -1326,23 +1328,39 @@ function entrar(tela, primeira) {
 }
 
 
+
+/* direção da franquia (proprietária e CEO): fica fora das listas de consultores e do pódio, mas aparece em destaque nas outras telas */
+const cargoCurto = p => String(p.cargo || '').split(' ')[0];
+function cartaoDirecao(p, linhaExtra) {
+  const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
+  return el('article', { class: 'dir-card' }, maoEl('dir-mao'), av,
+    el('div', { class: 'dir-txt' }, el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }), el('strong', { class: 'dir-nome', text: p.exibir || p.nome }), el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda ainda', chipsCota(p.tipos))),
+    el('b', { class: 'dir-v', text: brl(p.valor) }));
+}
+
 /* ---------- vendas do dia: total, equipes e pessoas (a franquia soma tudo, inclusive quem está fora das listas) ---------- */
 function vendasDoDia() {
   const hoje = hojeISO(), tipos = () => ({ imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 });
-  const dia = { valor: 0, cotas: 0, tipos: tipos(), equipes: new Map() };
+  const dia = { valor: 0, cotas: 0, tipos: tipos(), equipes: new Map(), dir: new Map() };
   for (const nome of ordemEquipes()) dia.equipes.set(nome, { nome, sup: state.supervisores.get(normNome(nome)) || null, valor: 0, cotas: 0, tipos: tipos(), pessoas: new Map() });
   for (const v of state.vendas) {
     const p = state.consultores.get(v.consultor);
     if (!p || v.data !== hoje) continue;
     dia.valor += v.valor; dia.cotas += v.cotas; dia.tipos[v.categoria] += v.cotas;
+    if (p.oculto) {
+      const x = dia.dir.get(p.id) || { id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, tipos: {} };
+      x.valor += v.valor; x.cotas += v.cotas; x.tipos[v.categoria] = (x.tipos[v.categoria] || 0) + v.cotas; dia.dir.set(p.id, x);
+      continue;
+    }
     const e = dia.equipes.get(p.equipe);
-    if (!e || p.oculto) continue;
+    if (!e) continue;
     e.valor += v.valor; e.cotas += v.cotas; e.tipos[v.categoria] += v.cotas;
     const x = e.pessoas.get(p.id) || { p, valor: 0, cotas: 0, tipos: {} };
     x.valor += v.valor; x.cotas += v.cotas; x.tipos[v.categoria] = (x.tipos[v.categoria] || 0) + v.cotas;
     e.pessoas.set(p.id, x);
   }
   dia.lista = [...dia.equipes.values()].sort((a, b) => b.valor - a.valor);
+  dia.direcao = [...dia.dir.values()];
   for (const e of dia.lista) e.lista = [...e.pessoas.values()].sort((a, b) => b.valor - a.valor || b.cotas - a.cotas);
   return dia;
 }
@@ -1356,7 +1374,7 @@ function tilesTipo(tipos, grande) {
 let hojeAss = '';
 function montarHoje(forcar) {
   const d = vendasDoDia(), corpo = $('ho-corpo');
-  const ass = JSON.stringify([hojeISO(), d.valor, d.cotas, d.tipos, d.lista.map(e => [e.nome, e.valor, e.cotas, e.lista.map(x => [x.p.id, x.valor, x.tipos])])]);
+  const ass = JSON.stringify([hojeISO(), d.valor, d.cotas, d.tipos, d.lista.map(e => [e.nome, e.valor, e.cotas, e.lista.map(x => [x.p.id, x.valor, x.tipos])]), d.direcao.map(x => [x.id, x.valor, x.tipos])]);
   if (!forcar && ass === hojeAss) return;
   hojeAss = ass; corpo.textContent = '';
   const dataTxt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
@@ -1365,6 +1383,7 @@ function montarHoje(forcar) {
     maoEl('ho-mao'),
     el('div', { class: 'ho-tit' }, el('span', { class: 'rotulo', text: 'Vendas do dia · ' + dataTxt }), el('p', { class: 'ho-total' }, el('small', { text: 'R$' }), total), el('span', { class: 'ho-sub', text: d.cotas ? cotasTxt(d.cotas) + ' vendidas hoje na franquia' : 'Nenhuma venda lançada hoje ainda' })),
     tilesTipo(d.tipos, true)));
+  for (const x of d.direcao) corpo.append(cartaoDirecao(x));
   const grade = el('div', { class: 'ho-eqs' });
   d.lista.forEach((e, i) => {
     const av = el('span', { class: 'avatar ho-av', 'aria-hidden': 'true' });
@@ -1533,7 +1552,7 @@ function montarEquipe(r, forcar) {
   const e = eqs.find(x => x.nome === equipeAtual) || eqs[0];
   equipeAtual = e.nome;
   const metaEq = state.config.metaEquipe, membros = r.pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome);
-  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome)]);
+  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome), r.diretoria.filter(x => x.oculto).map(x => [x.id, x.valor, x.cotas, x.tipos])]);
   if (!forcar && ass === equipeAss) return;
   equipeAss = ass;
   chips.textContent = '';
@@ -1574,6 +1593,8 @@ function montarEquipe(r, forcar) {
     el('ol', { class: 'te-time', style: 'grid-template-rows:repeat(' + Math.max(Math.ceil(membros.length / 2), 1) + ',auto)' }, ...membros.map((p, k) => pessoaEquipe(p, k, maior))));
   corpo.textContent = '';
   corpo.append(sup, dados);
+  const tela = $('tela-equipe'); tela.querySelectorAll('.dir-card').forEach(x => x.remove());
+  for (const x of r.diretoria.filter(x => x.oculto && x.valor > 0)) tela.append(cartaoDirecao(x));
 }
 function pessoaEquipe(p, k, maior) {
   const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }); pintarAvatar(av, p);
@@ -1636,16 +1657,17 @@ function montarMural(r, forcar) {
   num.append(
     el('div', {}, el('dt', { text: 'vendidos no ciclo' }), el('dd', { text: curto(r.total) })),
     el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: r.venderam + ' de ' + r.quadro })));
-  const ass = JSON.stringify([r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
+  const ass = JSON.stringify([r.diretoria.map(p => [p.id, p.valor, p.foto]), r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
   if (!forcar && ass === muralAss) return;
   muralAss = ass;
   const box = $('mu-linhas'); box.textContent = '';
   const palavras = ehBlack()
     ? ['Black Embracon', 'Porque sonhar não tem limites', 'Novembro é Black', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Black Embracon', 'Franquia ' + c.unidade]
     : ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Franquia ' + c.unidade];
-  const metade = Math.ceil(r.pessoas.length / 2);
-  const a = intercalar(r.pessoas.slice(0, metade).map(cartaoPessoa), palavras.filter((_, i) => i % 2 === 0));
-  const b = intercalar([...sups.map(cartaoSup), ...r.pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
+  const dirIds = new Set(r.diretoria.map(p => p.id)), pessoas = r.pessoas.filter(p => !dirIds.has(p.id));
+  const metade = Math.ceil(pessoas.length / 2);
+  const a = intercalar([...r.diretoria.map(cartaoDiretoria), ...pessoas.slice(0, metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 0));
+  const b = intercalar([...sups.map(cartaoSup), ...pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
   for (const [itens, dir] of [[a, 'esq'], [b, 'dir']]) {
     if (!itens.length) continue;
     const grupo = el('div', { class: 'mu-grupo' }, ...itens), trilho = el('div', { class: 'mu-trilho' }, grupo);
@@ -1672,6 +1694,12 @@ function cartaoPessoa(p) {
     fotoMural(p.nome, p.foto),
     p.valor > 0 ? el('b', { class: 'mu-valor' }, maoEl('mu-valor-mao'), curto(p.valor)) : null,
     el('figcaption', {}, el('strong', {}, p.nome, seloVip(p)), el('span', { text: rotulo(p) })));
+}
+function cartaoDiretoria(p) {
+  return el('figure', { class: 'mu-card sup dir' },
+    fotoMural(p.exibir || p.nome, p.foto),
+    el('b', { class: 'mu-tag dir-tag' }, maoEl('mu-valor-mao'), cargoCurto(p)),
+    el('figcaption', {}, el('strong', { text: p.exibir || p.nome }), el('span', { text: p.valor > 0 ? curto(p.valor) + ' vendidos' : 'Franquia ' + state.config.unidade })));
 }
 function cartaoSup(s) {
   return el('figure', { class: 'mu-card sup' },
