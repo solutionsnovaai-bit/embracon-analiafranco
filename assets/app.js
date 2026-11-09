@@ -173,7 +173,7 @@ function aplicar(dados) {
     let cargo = limparCargo(p.cargo), foto = fotoValida(p.foto);
     if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
     if (sup && sup.foto) foto = sup.foto;
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto });
+    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -183,7 +183,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
+    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.oculto ? { oculto: true } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
     supervisores: [...state.supervisores.values()].map(s => ({ equipe: s.equipe, nome: s.nome, ...(s.cargo ? { cargo: s.cargo } : {}), ...(s.foto ? { foto: s.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
@@ -228,15 +228,16 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, ultima: '', tipos: {} }));
+  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: 0, cotas: 0, ultima: '', tipos: {} }));
   const porId = new Map(todas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; l.tipos[v.categoria] = (l.tipos[v.categoria] || 0) + v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   /* quem tem cargo (diretoria e supervisão) só entra na lista quando tem venda no período mostrado */
-  const linhas = todas.filter(l => !l.cargo || l.valor > 0);
+  const linhas = todas.filter(l => !l.oculto && (!l.cargo || l.valor > 0));
   linhas.sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
 
   let venderam = 0, quadro = 0;
   for (const p of state.consultores.values()) {
+    if (p.oculto) continue;                 // fora do ranking: o crédito soma no total, mas ela não conta como consultora
     const vendeu = (cicloPor.get(p.id) || 0) > 0;
     if (vendeu) venderam++;
     if (vendeu || !p.cargo) quadro++;       // diretoria e supervisão só contam no "X de Y" quando venderam
@@ -249,7 +250,7 @@ function calcular() {
     const chave = p.equipe || SEM_EQUIPE;
     if (!porEquipe.has(chave)) porEquipe.set(chave, { nome: chave, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: 1e3 });
     const e = porEquipe.get(chave), vendido = cicloPor.get(p.id) || 0;
-    if (!p.cargo || vendido > 0) e.membros++;
+    if (!p.oculto && (!p.cargo || vendido > 0)) e.membros++;
     e.valor += vendido;
   }
   for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
@@ -264,15 +265,15 @@ function calcular() {
     const passados = Math.min(Math.max(dias(c.inicio, hoje) + 1, 0), totalDias);
     ideal = c.meta * passados / totalDias;
   }
-  const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
+  const feed = ciclo.filter(v => !state.consultores.get(v.consultor).oculto).sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
   /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
   const cotasPor = new Map(), tiposPor = new Map();
   for (const v of ciclo) {
     cotasPor.set(v.consultor, (cotasPor.get(v.consultor) || 0) + v.cotas);
     const tp = tiposPor.get(v.consultor) || {}; tp[v.categoria] = (tp[v.categoria] || 0) + v.cotas; tiposPor.set(v.consultor, tp);
   }
-  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }))
-    .filter(p => !p.cargo || p.valor > 0)
+  const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }))
+    .filter(p => !p.oculto && (!p.cargo || p.valor > 0))
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
@@ -774,7 +775,7 @@ function proximoAviso() {
 }
 function vendasNovas(antes, depois) {
   const ja = new Set(chaves(antes)), ks = chaves(depois);
-  return depois.filter((v, i) => !ja.has(ks[i]));
+  return depois.filter((v, i) => !ja.has(ks[i]) && !(state.consultores.get(v.consultor) || {}).oculto);
 }
 
 async function buscar(url) {
@@ -878,7 +879,7 @@ function dadosDaPlanilha(texto, cadastro) {
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
-    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: tipoCota(l[j]), chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
