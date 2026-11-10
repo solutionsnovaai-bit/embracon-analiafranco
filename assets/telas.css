@@ -154,14 +154,14 @@ html:not(.tv) .tn-prog{display:none}
 .pd-pos{position:relative;z-index:1;font:800 calc(var(--h) * .6)/1 var(--display);font-stretch:72%;font-variant-numeric:tabular-nums}
 .pd-bloco-mao{position:absolute;right:-14%;bottom:-20%;width:72%;--mao-cor:currentColor;opacity:.14;--onda:5s}
 .pd-cola{display:grid;gap:.6rem}
-.pd-cola-lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.5rem}
-.pd-chip{display:grid;grid-template-columns:auto 2.5rem minmax(0,1fr) auto;align-items:center;gap:.65rem;padding:.55rem 1rem .55rem .85rem;background:var(--paper);border:1px solid var(--line);border-radius:999px}
-.pd-chip .avatar{grid-area:auto;width:2.5rem;height:2.5rem;font-size:.8125rem;background:var(--track)}
-.pd-chip-pos{font:800 1.125rem/1 var(--display);font-stretch:80%;color:var(--ink-2)}
-.pd-chip-txt{display:grid;min-width:0;line-height:1.2}
-.pd-chip-txt strong{font-weight:700;font-size:.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-cola-lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14.5rem),1fr));gap:.6rem}
+.pd-chip{display:grid;grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"pos av txt" "pos av v";align-items:center;gap:.2rem .7rem;padding:.65rem 1rem .65rem .85rem;background:var(--paper);border:1px solid var(--line);border-radius:1.25rem}
+.pd-chip .avatar{grid-area:av;width:2.5rem;height:2.5rem;font-size:.8125rem;background:var(--track)}
+.pd-chip-pos{grid-area:pos;font:800 1.125rem/1 var(--display);font-stretch:80%;color:var(--ink-2)}
+.pd-chip-txt{grid-area:txt;align-self:end;display:grid;min-width:0;line-height:1.15}
+.pd-chip-txt strong{font-weight:700;font-size:.9375rem;overflow-wrap:break-word}
 .pd-chip-txt span{font-size:.75rem;color:var(--ink-2)}
-.pd-chip-v{font:800 1.0625rem/1 var(--display);font-stretch:80%;white-space:nowrap}
+.pd-chip-v{grid-area:v;align-self:start;font:800 1.0625rem/1 var(--display);font-stretch:80%;white-space:nowrap;color:var(--red)}
 
 /* ---------- uma tela por equipe ----------
    Linha fina: superfícies claras com cantos bem arredondados, contorno de 1px e nada de bloco
@@ -212,13 +212,13 @@ html:not(.tv) .tn-prog{display:none}
 .te-fato dd span{font-size:.75rem;color:var(--ink-2)}
 /* o time em ordem: lista em duas colunas, sem caixas, com uma barra fina embaixo de cada nome */
 .te-time{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:column;column-gap:clamp(1rem,2.5vw,2.25rem)}
-.te-p{display:grid;grid-template-columns:1.4rem 2.4rem minmax(0,1fr) auto;grid-template-areas:"pos av txt v" ". . barra barra";align-items:center;column-gap:.7rem;row-gap:.3rem;padding:.42rem 0 .48rem;border-bottom:1px solid var(--line)}
+.te-p{display:grid;grid-template-columns:minmax(1.4rem,auto) auto minmax(0,1fr) auto;grid-template-areas:"pos av txt v" ". . barra barra";align-items:center;column-gap:.7rem;row-gap:.3rem;padding:.42rem 0 .48rem;border-bottom:1px solid var(--line)}
 .te-p-pos{grid-area:pos;font:800 .9375rem/1 var(--display);font-stretch:80%;color:var(--ink-2);text-align:center;font-variant-numeric:tabular-nums}
 .te-p .avatar{width:2.4rem;height:2.4rem;font-size:.8125rem;background:var(--track)}
 .te-p.destaque .avatar{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--red)}
 .te-p-txt{grid-area:txt;display:grid;min-width:0;line-height:1.2}
 .te-p-nome{display:flex;align-items:center;gap:.4rem;min-width:0;font-weight:700;font-size:.9375rem}
-.te-p-nome>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.te-p-nome>span{min-width:0;overflow-wrap:break-word;line-height:1.1}
 .te-p-mao{flex:none;width:1rem;--mao-cor:var(--red);--onda:4.5s}
 .te-p-sub{font-size:.75rem;color:var(--ink-2)}
 .te-p-v{grid-area:v;font:800 1.0625rem/1 var(--display);font-stretch:80%;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -255,9 +255,9 @@ html:not(.tv) .tn-prog{display:none}
 .mu-ini{position:absolute;inset:0 0 28%;display:grid;place-items:center;font:800 2.4rem/1 var(--display);font-stretch:86%;color:var(--ink-2)}
 /* o nome fica sobre a foto, num degradê escuro só embaixo */
 .mu-card::after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(to top,rgba(21,17,18,.82),rgba(21,17,18,0));pointer-events:none}
-.mu-card figcaption{position:absolute;z-index:1;left:.8rem;right:.8rem;bottom:.7rem;display:grid;line-height:1.2;color:#FFFFFF}
-.mu-card figcaption strong{font-weight:700;font-size:.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mu-card figcaption span{font-size:.75rem;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu-card figcaption{position:absolute;z-index:1;left:.7rem;right:.7rem;bottom:.7rem;display:grid;line-height:1.2;color:#FFFFFF}
+.mu-card figcaption strong{font-weight:700;font-size:.9375rem;line-height:1.1;overflow-wrap:break-word}
+.mu-card figcaption span{font-size:.75rem;line-height:1.15;opacity:.82;overflow-wrap:break-word}
 .mu-valor,.mu-tag{position:absolute;z-index:1;top:.6rem;display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;font:800 .8125rem/1 var(--display);font-stretch:86%;white-space:nowrap}
 .mu-valor{right:.6rem;padding:.3rem .55rem .3rem .4rem;background:rgba(255,255,255,.92);color:#151112;--mao-cor:#ED1C24;
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 8px -2px rgba(21,17,18,.25)}
@@ -318,10 +318,10 @@ html:not(.tv) .tn-prog{display:none}
   .pd-valor{font-size:clamp(1.5rem,3vh + .4rem,2.5rem)}
   .pd-1 .pd-valor{font-size:clamp(1.9rem,4vh + .5rem,3.3rem)}
   .pd-chip{padding:.7rem .9rem}
-  .pd-chip .avatar{width:3.1rem;height:3.1rem}
+  .pd-chip .avatar{width:clamp(2.6rem,3.2vw,3.4rem);height:clamp(2.6rem,3.2vw,3.4rem)}
   .pd-chip-pos{font-size:clamp(1.3rem,1.7vw,1.7rem)}
-  .pd-chip-txt strong{font-size:clamp(1.1rem,1.45vw,1.45rem)}
-  .pd-chip-txt span{font-size:clamp(.9rem,1.15vw,1.15rem)}
+  .pd-chip-txt strong{font-size:clamp(1.05rem,1.3vw,1.3rem)}
+  .pd-chip-txt span{font-size:clamp(.85rem,1vw,1rem)}
   .pd-chip-v{font-size:clamp(1.25rem,1.7vw,1.7rem)}
   /* equipes */
   .te-chip{font-size:clamp(1rem,1.3vw,1.3rem);padding:.55rem 1.25rem}
@@ -346,8 +346,8 @@ html:not(.tv) .tn-prog{display:none}
   .mu-rot{font-size:clamp(1.05rem,1.4vw,1.4rem)}
   .mu-num dt{font-size:clamp(.95rem,1.25vw,1.25rem)}
   .mu-num dd{font-size:clamp(1.7rem,2.8vw,2.6rem)}
-  .mu-card figcaption strong{font-size:clamp(1.05rem,1.3vw,1.3rem);white-space:normal;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .mu-card figcaption span{font-size:clamp(.9rem,1.15vw,1.15rem)}
+  .mu-card figcaption strong{font-size:clamp(1.05rem,1.3vw,1.3rem)}
+  .mu-card figcaption span{font-size:clamp(.8rem,.98vw,1rem)}
   .mu-valor,.mu-tag{font-size:clamp(.95rem,1.25vw,1.25rem);padding-block:.3rem}
   .mu-palavra span{font-size:clamp(1.3rem,2.3vh + .35rem,1.8rem)}
   .cortina-rot{font-size:clamp(1rem,1.5vw,1.4rem)}
@@ -420,3 +420,4 @@ html:not(.tv) .tn-prog{display:none}
 .mu-card.dir{outline:3px solid #ED1C24;outline-offset:-3px}
 .mu-tag.dir-tag{background:#ED1C24;color:#fff}
 @media (max-width:991px){.dir-card{grid-template-columns:auto minmax(0,1fr)}.dir-mao{display:none}.dir-v{grid-column:1/-1}}
+@media (max-width:1199px){.tn-prox{display:none}}

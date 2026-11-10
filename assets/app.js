@@ -474,6 +474,7 @@ function pintarCotas(r) {
   faixa.textContent = '';
   faixa.hidden = !r.cotas || !conhecidos.length;
   cx.textContent = ''; cx.hidden = faixa.hidden;
+  cx.dataset.n = conhecidos.length; cx.classList.toggle('aperta', conhecidos.some(k => r.cotasCat[k] > 99));
   if (!r.cotas) { n.textContent = 'nenhuma venda no ciclo'; return; }
   const ticket = 'ticket médio de ' + curto(r.total / r.cotas);
   if (!conhecidos.length) { n.textContent = ticket; return; }
@@ -733,54 +734,75 @@ const COR_EQ = ['#ED1C24', '#FFFFFF', '#F0A3A6', '#8E8586', '#FFD9DA'];
 const SVGNS = 'http://www.w3.org/2000/svg';
 let grafAss = '';
 function svgEl(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
-/* donut animado: fatias com degradê e brilho, anel de marcas girando, varredura de radar, mãozinha cavalgando a fatia líder, número que conta */
+/* donut animado: fatias em degradê que se desenham, varredura de radar, anel de marcas girando, pulso,
+   mãozinha na fatia líder e número central que conta. O texto do centro é SVG: escala junto com o anel
+   e encolhe sozinho até caber no miolo, em qualquer tamanho de tela. */
 let gradN = 0;
-function contarG(n, to, fmt) {
+function caberSvg(t, max, fsMax) {
+  t.style.fontSize = fsMax + 'px';
+  let w = 0; try { w = t.getComputedTextLength(); } catch (e) { /* fora da tela: mede depois */ }
+  if (w > max) t.style.fontSize = (fsMax * max / w).toFixed(2) + 'px';
+}
+function contarG(n, to, fmt, max, fsMax) {
+  const fim = () => { n.textContent = fmt(to); caberSvg(n, max, fsMax); };
+  if (semMovimento) { fim(); return; }
   const t0 = performance.now(), dur = 1500;
-  const f = t => { const k = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - k, 3); n.textContent = fmt(to * e); if (k < 1 && n.isConnected) requestAnimationFrame(f); else n.textContent = fmt(to); };
+  const f = t => {
+    if (!n.isConnected) return;
+    const k = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - k, 3);
+    if (k < 1) { n.textContent = fmt(to * e); caberSvg(n, max, fsMax); requestAnimationFrame(f); } else fim();
+  };
   requestAnimationFrame(f);
 }
-function donut(fatias, centro, sub, marca) {
-  const svg = svgEl('svg', { viewBox: '0 0 120 120', class: 'dn', role: 'img', 'aria-hidden': 'true' });
+function donut(fatias, centro, sub, marca, rotulo) {
+  const svg = svgEl('svg', { viewBox: '0 0 120 120', class: 'dn', role: 'img', 'aria-label': rotulo });
   const defs = svgEl('defs', {}); svg.append(defs);
-  svg.append(svgEl('circle', { cx: 60, cy: 60, r: 44, class: 'dn-trilho', pathLength: 100 }));
+  svg.append(svgEl('circle', { cx: 60, cy: 60, r: 41, class: 'dn-pulso' }));
+  svg.append(svgEl('circle', { cx: 60, cy: 60, r: 53.5, class: 'dn-marcas', pathLength: 100 }));
+  svg.append(svgEl('circle', { cx: 60, cy: 60, r: 41, class: 'dn-trilho' }));
   const tot = fatias.reduce((s, f) => s + f.v, 0) || 1; let ac = 0, i = 0;
-  const g = svgEl('g', { class: 'dn-giro' });
+  const g = svgEl('g', { transform: 'rotate(-90 60 60)' });
+  const varias = fatias.filter(f => f.v > 0).length > 1;
   for (const f of fatias) {
-    const len = f.v / tot * 100, gap = fatias.length > 1 ? 1.2 : 0;
-    let cor = f.cor;
-    if (f.cor !== 'transparent') {
+    const len = f.v / tot * 100, gap = varias ? 1.4 : 0;
+    if (f.cor !== 'transparent' && len > 0) {
       const id = 'gr' + (++gradN), lg = svgEl('linearGradient', { id, x1: 0, y1: 0, x2: 1, y2: 1 });
-      lg.append(svgEl('stop', { offset: '0', 'stop-color': f.cor, 'stop-opacity': '1' }), svgEl('stop', { offset: '1', 'stop-color': f.cor, 'stop-opacity': '.55' }));
-      defs.append(lg); cor = 'url(#' + id + ')';
+      lg.append(svgEl('stop', { offset: '0', 'stop-color': f.cor, 'stop-opacity': '1' }), svgEl('stop', { offset: '1', 'stop-color': f.cor, 'stop-opacity': '.62' }));
+      defs.append(lg);
+      const c = svgEl('circle', { cx: 60, cy: 60, r: 41, class: 'dn-fatia', pathLength: 100, stroke: 'url(#' + id + ')', 'stroke-dasharray': Math.max(len - gap, .01) + ' ' + (100 - Math.max(len - gap, .01)), 'stroke-dashoffset': -(ac + gap / 2) });
+      c.style.setProperty('--d', (i++ * 180) + 'ms'); g.append(c);
     }
-    const c = svgEl('circle', { cx: 60, cy: 60, r: 44, class: 'dn-fatia', pathLength: 100, stroke: cor, 'stroke-linecap': 'round', 'stroke-dasharray': Math.max(len - gap, .01) + ' ' + (100 - len + gap), 'stroke-dashoffset': -ac });
-    c.style.setProperty('--d', (i++ * 160) + 'ms'); g.append(c); ac += len;
+    ac += len;
   }
   svg.append(g);
-  /* anel de marcas (tipo relógio) girando ao contrário */
-  const ticks = svgEl('circle', { cx: 60, cy: 60, r: 55, class: 'dn-marcas', pathLength: 100 });
-  svg.append(ticks);
-  const mid = el('div', { class: 'dn-mid' }, el('b', { text: centro.fmt(0) }), el('small', { text: sub }));
-  const box = el('div', { class: 'dn-box' }, el('i', { class: 'dn-radar' }), svg, mid);
-  /* mãozinha na ponta da fatia líder (ou do progresso) */
+  const num = svgEl('text', { x: 60, y: sub ? 62.5 : 67, class: 'dn-num', 'text-anchor': 'middle' }); num.textContent = centro.fmt(centro.to);
+  svg.append(num);
+  let leg = null;
+  if (sub) { leg = svgEl('text', { x: 60, y: 76, class: 'dn-sub', 'text-anchor': 'middle' }); leg.textContent = sub; svg.append(leg); }
+  const box = el('div', { class: 'dn-box' }, el('i', { class: 'dn-radar' }), svg);
+  /* mãozinha sobre a fatia líder (ou na ponta do progresso): tudo em % do anel, nunca sai dele */
   if (marca != null) {
-    const w = el('span', { class: 'dn-marca' }, el('span', { class: 'dn-marca-i' }, maoEl('dn-mao')));
-    w.style.setProperty('--ang', (marca * 3.6) + 'deg'); box.append(w);
+    const w = el('span', { class: 'dn-marca', 'aria-hidden': 'true' }, el('span', { class: 'dn-marca-i' }, maoEl('dn-mao')));
+    w.style.setProperty('--ang', (marca * 3.6).toFixed(1) + 'deg'); box.append(w);
   }
-  setTimeout(() => contarG(mid.firstChild, centro.to, centro.fmt), 250);
+  const NUM = [60, 23], SUB = [50, 7.6];
+  const ajustar = () => { if (!svg.isConnected) return; caberSvg(num, NUM[0], NUM[1]); if (leg) caberSvg(leg, SUB[0], SUB[1]); };
+  requestAnimationFrame(() => { ajustar(); contarG(num, centro.to, centro.fmt, NUM[0], NUM[1]); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(ajustar, 1700));
   return box;
 }
 function cardGraf(titulo, fatias, centro, sub, legenda, i, marca) {
-  const c = el('article', { class: 'g-card' }, el('div', { class: 'g-cab' }, maoEl('g-mao'), el('h3', { text: titulo })), el('div', { class: 'g-corpo' }, donut(fatias, centro, sub, marca), el('ul', { class: 'g-leg' }, ...legenda)));
+  const rotulo = titulo + ': ' + legenda.map(l => l._txt).join(', ');
+  const c = el('article', { class: 'g-card' }, el('div', { class: 'g-cab' }, maoEl('g-mao'), el('h3', { text: titulo })), el('div', { class: 'g-corpo' }, donut(fatias, centro, sub, marca, rotulo), el('ul', { class: 'g-leg' }, ...legenda)));
   c.style.setProperty('--i', i); return c;
 }
-/* a cada 3s uma fatia "salta" e a linha da legenda acompanha */
+/* a cada 3 s uma fatia ganha destaque e a linha dela na legenda acompanha */
 let grafTimer = 0, grafIdx = 0;
 function giroGraficos() {
   grafIdx++;
   document.querySelectorAll('.g-card').forEach(c => {
-    const fs = [...c.querySelectorAll('.dn-fatia')].filter(x => x.getAttribute('stroke') !== 'transparent'), ls = [...c.querySelectorAll('.g-leg li')];
+    const fs = [...c.querySelectorAll('.dn-fatia')], ls = [...c.querySelectorAll('.g-leg li')];
+    if (fs.length < 2) { ls.forEach((l, n) => l.classList.toggle('dest', n === grafIdx % ls.length)); return; }
     fs.forEach((f, n) => f.classList.toggle('dest', n === grafIdx % fs.length));
     ls.forEach((l, n) => l.classList.toggle('dest', n === grafIdx % fs.length));
   });
@@ -795,19 +817,26 @@ function pintarGraficos(r) {
   if (ass === grafAss) return; grafAss = ass;
   box.hidden = !r.total; box.textContent = '';
   if (!r.total) return;
-  const li = (cor, nome, val) => el('li', {}, el('i', { style: 'background:' + cor }), el('span', { text: nome }), el('b', { text: val }));
+  /* linha da legenda: cor, nome, valor e uma barrinha proporcional que cresce ao entrar */
+  const li = (cor, nome, val, parte) => {
+    const barra = el('u'); barra.style.setProperty('--w', Math.max(Math.min(parte * 100, 100), 0).toFixed(1) + '%'); barra.style.background = cor;
+    const n = el('li', {}, el('i', { style: 'background:' + cor }), el('span', { text: nome }), el('b', { text: val }), el('em', { class: 'g-bar', 'aria-hidden': 'true' }, barra));
+    n._txt = nome + ' ' + val; return n;
+  };
+  const pc = v => Math.round(v * 100) + '%';
   const cards = [];
-  cards.push(cardGraf('Por categoria', cats.map(k => ({ v: r.porCat[k], cor: COR_G[k] })), { to: r.total, fmt: v => curto(v) }, 'vendido', cats.map(k => li(COR_G[k], CATS[k], Math.round(r.porCat[k] / r.total * 100) + '%')), 0, marcaLider(cats.map(k => r.porCat[k]))));
+  cards.push(cardGraf('Crédito por categoria', cats.map(k => ({ v: r.porCat[k], cor: COR_G[k] })), { to: r.total, fmt: v => curto(v) }, 'vendido', cats.map(k => li(COR_G[k], CATS[k], pc(r.porCat[k] / r.total), r.porCat[k] / r.total)), 0, marcaLider(cats.map(k => r.porCat[k]))));
   const cc = Object.keys(CATS).filter(k => r.cotasCat[k] > 0);
-  cards.push(cardGraf('Cotas por tipo', cc.map(k => ({ v: r.cotasCat[k], cor: COR_G[k] })), { to: r.cotas, fmt: v => String(Math.round(v)) }, r.cotas === 1 ? 'cota' : 'cotas', cc.map(k => li(COR_G[k], CURTO_COTA[k] || CATS[k], String(r.cotasCat[k]))), 1, marcaLider(cc.map(k => r.cotasCat[k]))));
-  if (eqs.length) cards.push(cardGraf('Peso de cada equipe', eqs.map((e, n) => ({ v: e.valor, cor: COR_EQ[n % COR_EQ.length] })), { to: eqs[0].valor / r.total * 100, fmt: v => Math.round(v) + '%' }, 'líder: ' + eqs[0].nome, eqs.map((e, n) => li(COR_EQ[n % COR_EQ.length], e.nome, Math.round(e.valor / r.total * 100) + '%')), 2, marcaLider(eqs.map(e => e.valor))));
+  cards.push(cardGraf('Cotas por tipo', cc.map(k => ({ v: r.cotasCat[k], cor: COR_G[k] })), { to: r.cotas, fmt: v => String(Math.round(v)) }, r.cotas === 1 ? 'cota' : 'cotas', cc.map(k => li(COR_G[k], CATS[k], cotasTxt(r.cotasCat[k]), r.cotasCat[k] / r.cotas)), 1, marcaLider(cc.map(k => r.cotasCat[k]))));
+  if (eqs.length) cards.push(cardGraf('Peso de cada equipe', eqs.map((e, n) => ({ v: e.valor, cor: COR_EQ[n % COR_EQ.length] })), { to: eqs[0].valor / r.total * 100, fmt: v => Math.round(v) + '%' }, eqs[0].nome, eqs.map((e, n) => li(COR_EQ[n % COR_EQ.length], e.nome, pc(e.valor / r.total), e.valor / r.total)), 2, marcaLider(eqs.map(e => e.valor))));
   if (meta > 0) {
-    const pct = Math.min(r.total / meta * 100, 100);
-    cards.push(cardGraf('Rumo à meta', [{ v: pct, cor: '#ED1C24' }, { v: 100 - pct, cor: 'transparent' }], { to: r.total / meta * 100, fmt: v => (v < 10 ? v.toFixed(1).replace('.', ',') : Math.round(v)) + '%' }, 'da meta', [li('#ED1C24', 'Feito', curto(r.total)), li('#4A4243', 'Falta', curto(Math.max(meta - r.total, 0)))], 3, pct));
+    const pct = Math.min(r.total / meta * 100, 100), falta = Math.max(meta - r.total, 0);
+    cards.push(cardGraf('Rumo à meta', [{ v: pct, cor: '#ED1C24' }, { v: 100 - pct, cor: 'transparent' }], { to: r.total / meta * 100, fmt: v => (v < 10 ? String(Math.floor(v * 10 + 1e-9) / 10).replace('.', ',') : Math.floor(v + 1e-9)) + '%' }, 'da meta', [li('#ED1C24', 'Vendido', curto(r.total), r.total / meta), li('#8E8586', 'Falta', curto(falta), falta / meta)], 3, pct));
   }
-  box.style.setProperty('--n', cards.length);
+  box.dataset.n = cards.length;
   box.append(...cards);
-  grafIdx = 0; clearInterval(grafTimer); grafTimer = setInterval(giroGraficos, 3000); setTimeout(giroGraficos, 1800);
+  grafIdx = 0; clearInterval(grafTimer);
+  if (!semMovimento) { grafTimer = setInterval(giroGraficos, 3000); setTimeout(giroGraficos, 1900); }
 }
 
 let toastT = 0;
