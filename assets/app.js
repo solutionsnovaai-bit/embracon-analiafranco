@@ -258,13 +258,20 @@ function calcular() {
   const equipes = ordemEq.length ? [...porEquipe.values()].filter(e => e.nome !== SEM_EQUIPE).sort((a, b) => b.valor - a.valor || a.ordem - b.ordem) : [];
   for (const e of equipes) e.sup = state.supervisores.get(normNome(e.nome)) || null;
 
-  let ideal = null, restantes = null;
+  /* o painel é otimista: o ritmo da meta só aparece quando a franquia está acima dele.
+     No dia a dia ele mostra a média por dia e o próximo marco (o próximo milhão redondo). */
+  let ideal = null, restantes = null, passados = null;
   if (c.prazo) restantes = Math.max(dias(hoje, c.prazo) + 1, 0);
-  if (c.inicio && c.prazo && c.prazo >= c.inicio) {
-    const totalDias = dias(c.inicio, c.prazo) + 1;
-    const passados = Math.min(Math.max(dias(c.inicio, hoje) + 1, 0), totalDias);
-    ideal = c.meta * passados / totalDias;
+  if (c.inicio) {
+    passados = Math.max(dias(c.inicio, hoje) + 1, 0);
+    if (c.prazo && c.prazo >= c.inicio) {
+      const totalDias = dias(c.inicio, c.prazo) + 1;
+      passados = Math.min(passados, totalDias);
+      ideal = c.meta * passados / totalDias;
+    }
   }
+  const media = passados > 0 ? total / passados : null;
+  const marco = marcos(total, c.meta);
   const feed = [...ciclo].sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.ordem - a.ordem);
   /* todo mundo com o vendido no ciclo, do maior para o menor: base do pódio, das telas de equipe e do mural */
   const cotasPor = new Map(), tiposPor = new Map();
@@ -279,7 +286,7 @@ function calcular() {
     .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
-  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, feed, cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, passados, media, marco, feed,cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */
@@ -313,6 +320,21 @@ function passoRegua(meta) {
   const n = bruto / pot;
   return ([1, 2, 2.5, 3, 5, 10].find(x => x >= n - 1e-9) || 10) * pot;
 }
+
+/* marcos: degraus redondos no caminho da meta (R$ 1 mi para uma meta de R$ 20 mi), cada um comemorado ao ser batido */
+function passoMarco(meta) {
+  if (!(meta > 0)) return 1e6;
+  const bruto = meta / 20, pot = Math.pow(10, Math.floor(Math.log10(bruto))), n = bruto / pot;
+  return ([5, 2.5, 2, 1].find(x => x <= n + 1e-9) || 1) * pot;
+}
+function marcos(total, meta) {
+  const passo = passoMarco(meta), batido = Math.floor(total / passo + 1e-9) * passo;
+  if (meta > 0 && total >= meta) return { passo, batido, proximo: null, faltam: 0 };
+  const proximo = meta > 0 ? Math.min(batido + passo, meta) : batido + passo;
+  return { passo, batido, proximo, faltam: proximo - total };
+}
+/* diferença positiva para o ritmo da meta, ou 0 quando a franquia ainda não chegou nele */
+const acimaDoRitmo = r => r.ideal != null && r.total > 0 && r.total >= r.ideal ? r.total - r.ideal : 0;
 
 let ritmoX = 0;
 function posicionarRitmo() {
@@ -370,10 +392,17 @@ function mensagens(r) {
     if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + e1.sup.nome + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
     const u = r.feed.find(v => v.data);
     if (u) m.push('Última venda: ' + descrever(u));
-    m.push(r.falta > 0 ? 'Faltam ' + curto(r.falta) + ' para a meta de ' + curto(c.meta) : 'Meta de ' + curto(c.meta) + ' batida');
-    m.push(r.venderam + ' de ' + n + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') + ' neste ciclo');
+    if (r.falta <= 0) m.push('Meta de ' + curto(c.meta) + ' batida! Tudo que entra agora é recorde');
+    else if (r.passados > 1) m.push(curto(r.total) + ' conquistados em ' + r.passados + ' dias de ciclo');
+    else m.push(curto(r.total) + ' já conquistados neste ciclo');
+    if (r.media && r.passados > 1) m.push('Média de ' + curto(r.media) + ' em crédito por dia');
+    const acima = acimaDoRitmo(r);
+    if (acima && r.falta > 0) m.push('A franquia está ' + curto(acima) + ' acima do ritmo da meta');
+    if (r.marco.batido > 0 && r.falta > 0) m.push('A franquia já passou dos ' + curto(r.marco.batido) + ' no ciclo');
+    if (r.marco.proximo) m.push('Próximo marco: ' + curto(r.marco.proximo) + ', faltam só ' + curto(r.marco.faltam));
+    m.push(r.venderam + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') + ' neste ciclo');
+    if (r.cotas > 1) m.push(r.cotas + ' cotas vendidas neste ciclo');
     const bf = textoBlack(); if (bf) m.push('Black Embracon: ' + bf);
-    if (r.restantes > 0 && r.falta > 0) m.push('Para fechar a meta: ' + curto(r.falta / r.restantes) + ' por dia até ' + dataCurta(c.prazo));
     if (fraseSupervisao(r)) m.push(fraseSupervisao(r));
   } else if (n) {
     m.push('Placar zerado: a primeira venda do ciclo abre o ranking');
@@ -423,33 +452,47 @@ function pintar() {
     marcas.append(el('span', { class: 'marca-t', style: 'left:' + (v / c.meta * 100) + '%' }, el('i'), el('b', { text: v === 0 ? '0' : compacto(v) })));
   marcas.append(el('span', { class: 'marca-t', style: 'left:100%' }, el('i'), el('b', { text: compacto(c.meta) })));
 
-  const temRitmo = r.ideal != null && !carregando;
-  $('regua').classList.toggle('sem-ritmo', !temRitmo);
-  $('ritmo').hidden = !temRitmo;
-  $('ritmo-txt').hidden = !temRitmo;
-  if (temRitmo) {
-    ritmoX = Math.min(r.ideal / c.meta, 1);
+  /* a marca da régua aponta o próximo marco, sempre logo à frente do vendido */
+  const temMarco = !!(r.marco.proximo && c.meta > 0) && !carregando;
+  $('regua').classList.toggle('sem-ritmo', !temMarco);
+  $('ritmo').hidden = !temMarco;
+  $('ritmo-txt').hidden = !temMarco;
+  if (temMarco) {
+    ritmoX = Math.min(r.marco.proximo / c.meta, 1);
     $('ritmo').style.left = (ritmoX * 100) + '%';
-    $('ritmo-txt').textContent = 'Ritmo esperado hoje · ' + curto(r.ideal);
+    $('ritmo-txt').textContent = (r.marco.proximo >= c.meta ? 'Rumo à meta · ' : 'Próximo marco · ') + curto(r.marco.proximo);
     posicionarRitmo();
   }
 
-  $('f-falta').textContent = r.falta > 0 ? brl(r.falta) : 'Meta batida';
+  const acima = acimaDoRitmo(r);
   const nFalta = $('f-falta-n'); nFalta.className = '';
-  if (temRitmo) {
-    const dif = r.total - r.ideal;
-    nFalta.textContent = curto(Math.abs(dif)) + (dif >= 0 ? ' acima do ritmo' : ' abaixo do ritmo');
-    nFalta.className = dif >= 0 ? 'acima' : 'abaixo';
-  } else nFalta.textContent = r.falta > 0 ? 'para fechar a meta' : 'passou ' + curto(r.total - c.meta) + ' da meta';
+  if (r.falta <= 0) {
+    $('f-falta-rot').textContent = 'Meta da franquia';
+    $('f-falta').textContent = 'Meta batida';
+    nFalta.textContent = r.total > c.meta ? 'passou ' + curto(r.total - c.meta) + ' da meta' : 'meta da franquia fechada';
+    nFalta.className = 'acima';
+  } else {
+    $('f-falta-rot').textContent = r.marco.proximo >= c.meta ? 'Reta da meta' : 'Próximo marco';
+    $('f-falta').textContent = curto(r.marco.proximo);
+    nFalta.textContent = 'faltam só ' + curto(r.marco.faltam);
+    nFalta.className = 'acima';
+  }
 
-  if (r.falta <= 0) { $('f-ritmo').textContent = 'Concluído'; $('f-ritmo-n').textContent = 'meta da franquia fechada'; }
-  else if (r.restantes > 0) {
-    $('f-ritmo').textContent = curto(r.falta / r.restantes) + '/dia';
-    $('f-ritmo-n').textContent = (r.restantes === 1 ? 'último dia' : r.restantes + ' dias') + ' até ' + dataCurta(c.prazo);
-  } else if (r.restantes === 0) { $('f-ritmo').textContent = 'Ciclo encerrado'; $('f-ritmo-n').textContent = 'terminou em ' + dataCurta(c.prazo); }
-  else { $('f-ritmo').textContent = 'Sem prazo'; $('f-ritmo-n').textContent = editar ? 'defina o fim do ciclo em Ajustes' : 'fim do ciclo não definido'; }
+  const nRitmo = $('f-ritmo-n'); nRitmo.className = '';
+  if (r.media != null) {
+    $('f-ritmo-rot').textContent = 'Média por dia';
+    $('f-ritmo').textContent = r.total > 0 ? curto(r.media) : 'R$ 0';
+    if (acima && r.falta > 0) { nRitmo.textContent = curto(acima) + ' acima do ritmo da meta'; nRitmo.className = 'acima'; }
+    else if (r.restantes === 0) nRitmo.textContent = 'ciclo fechado em ' + dataCurta(c.prazo);
+    else if (!r.total) nRitmo.textContent = 'a primeira venda abre a média';
+    else nRitmo.textContent = r.passados === 1 ? 'no primeiro dia do ciclo' : 'em ' + r.passados + ' dias de ciclo';
+  } else {
+    $('f-ritmo-rot').textContent = 'Ticket médio';
+    $('f-ritmo').textContent = r.cotas ? curto(r.total / r.cotas) : 'R$ 0';
+    nRitmo.textContent = r.cotas ? 'por cota vendida' : 'a primeira venda abre a média';
+  }
 
-  $('f-meta').textContent = r.venderam + ' de ' + r.quadro;
+  $('f-meta').textContent = nf.format(r.venderam);
   $('f-meta-n').textContent = 'consultores com venda no ciclo';
   $('f-cotas').textContent = nf.format(r.cotas);
   pintarCotas(r);
@@ -587,7 +630,7 @@ function pintarLista(r, editar, carregando) {
     if (p.nome._t !== l.nome + '|' + !!l.cargo) { p.nome._t = l.nome + '|' + !!l.cargo; p.nome.textContent = l.nome; const s = seloVip(l); if (s) p.nome.append(s); }
     p.sub.textContent = '';
     if (rotulo(l)) p.sub.append(el('b', { class: 'eq', text: rotulo(l) }), ' · ');
-    p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'sem venda no ciclo' : 'sem venda no período');
+    p.sub.append(l.cotas ? (l.cotas === 1 ? '1 cota' : l.cotas + ' cotas') + (l.ultima ? ' · última ' + quando(l.ultima) : '') : noCiclo ? 'na largada' : 'sem venda no período');
     const ct = chipsCota(l.tipos); if (ct) p.sub.append(ct);
     p.cheio.style.width = (l.valor / escala * 100) + '%';
     p.marca.hidden = true;
@@ -645,8 +688,8 @@ function pintarEquipes(r, carregando) {
     }
     /* espaços fixos dentro de cada trecho: a quebra de linha só acontece entre os trechos */
     p.sub.textContent = [e.membros === 1 ? '1 consultor' : e.membros + ' consultores',
-      e.cotas ? (e.cotas === 1 ? '1 cota' : e.cotas + ' cotas') : 'sem venda no ciclo',
-      metaEq && e.nome !== SEM_EQUIPE ? (e.valor >= metaEq ? 'meta batida' : 'faltam ' + curto(metaEq - e.valor)) : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
+      e.cotas ? (e.cotas === 1 ? '1 cota' : e.cotas + ' cotas') : 'na largada',
+      metaEq && e.nome !== SEM_EQUIPE && e.valor >= metaEq ? 'meta batida' : ''].filter(Boolean).map(t => t.replace(/ /g, '\u00a0')).join(' · ');
     contarValor(p.val, e.valor);
     p.pct.textContent = metaEq && e.nome !== SEM_EQUIPE ? pctTxt(Math.floor(e.valor / metaEq * 1000) / 10) + ' de ' + curto(metaEq)
       : r.total ? pctTxt(Math.round(e.valor / r.total * 100)) + ' do total' : '';
@@ -722,7 +765,7 @@ function pintarEqCotas(r) {
       el('div', { class: 'eqc-txt' },
         el('strong', { text: e.nome }),
         el('small', { text: e.sup ? 'Supervisor: ' + e.sup.nome : 'sem supervisor' }),
-        el('div', { class: 'eqc-cotas' }, el('b', { class: 'eqc-v', text: curto(e.valor) }), el('b', { text: e.valor > 0 ? cotasTxt(cotas) : 'sem venda' })),
+        el('div', { class: 'eqc-cotas' }, el('b', { class: 'eqc-v', text: curto(e.valor) }), el('b', { text: e.valor > 0 ? cotasTxt(cotas) : 'na largada' })),
         chipsCota(tipos),
         barra)));
   });
@@ -831,7 +874,7 @@ function pintarGraficos(r) {
   if (eqs.length) cards.push(cardGraf('Peso de cada equipe', eqs.map((e, n) => ({ v: e.valor, cor: COR_EQ[n % COR_EQ.length] })), { to: eqs[0].valor / r.total * 100, fmt: v => Math.round(v) + '%' }, eqs[0].nome, eqs.map((e, n) => li(COR_EQ[n % COR_EQ.length], e.nome, pc(e.valor / r.total), e.valor / r.total)), 2, marcaLider(eqs.map(e => e.valor))));
   if (meta > 0) {
     const pct = Math.min(r.total / meta * 100, 100), falta = Math.max(meta - r.total, 0);
-    cards.push(cardGraf('Rumo à meta', [{ v: pct, cor: '#ED1C24' }, { v: 100 - pct, cor: 'transparent' }], { to: r.total / meta * 100, fmt: v => (v < 10 ? String(Math.floor(v * 10 + 1e-9) / 10).replace('.', ',') : Math.floor(v + 1e-9)) + '%' }, 'da meta', [li('#ED1C24', 'Vendido', curto(r.total), r.total / meta), li('#8E8586', 'Falta', curto(falta), falta / meta)], 3, pct));
+    cards.push(cardGraf('Rumo à meta', [{ v: pct, cor: '#ED1C24' }, { v: 100 - pct, cor: 'transparent' }], { to: r.total / meta * 100, fmt: v => (v < 10 ? String(Math.floor(v * 10 + 1e-9) / 10).replace('.', ',') : Math.floor(v + 1e-9)) + '%' }, 'da meta', [li('#ED1C24', 'Vendido', curto(r.total), r.total / meta), li('#8E8586', 'A conquistar', curto(falta), falta / meta)], 3, pct));
   }
   box.dataset.n = cards.length;
   box.append(...cards);
@@ -859,7 +902,9 @@ function itensFaixa(r) {
     r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + e.sup.nome : ''), e.sup && e.sup.foto]));
     r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor), l.foto]));
     r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v), state.consultores.get(v.consultor).foto]));
-    if (r.falta > 0) itens.push(['Faltam', curto(r.falta) + ' para a meta da franquia']);
+    if (r.media && r.passados > 1) itens.push(['Média por dia', curto(r.media) + ' em crédito']);
+    if (r.marco.proximo) itens.push([r.marco.proximo >= c.meta ? 'Reta da meta' : 'Próximo marco', curto(r.marco.proximo) + ' · faltam só ' + curto(r.marco.faltam)]);
+    else itens.push(['Meta batida', curto(c.meta) + ' conquistados']);
   } else {
     itens.push(['Meta da franquia', curto(c.meta)]);
     if (c.metaEquipe) itens.push(['Meta por equipe', curto(c.metaEquipe)]);
@@ -1091,11 +1136,12 @@ async function conferir() {
     const d = l.dados(), antes = state.vendas;
     if (!d) return;
     if (PLANILHA) { sinal('planilha', d.sinal); if (recarregando) return; }
-    const liderAntes = (calcular().lideres[0] || {}).id;
+    const rAntes = calcular(), liderAntes = (rAntes.lideres[0] || {}).id;
     textoArquivo = l.marca; aplicar(d); render();
     const novas = vendasNovas(antes, state.vendas);
     novas.slice(-3).forEach(anunciar);
     checarLider(liderAntes, novas.length);
+    checarMarco(rAntes.total, novas.length);
   } catch (e) { /* falha de rede ou arquivo no meio de uma publicação: tenta de novo no próximo ciclo */ }
   finally { conferindo = false; }
 }
@@ -1472,7 +1518,7 @@ const cargoCurto = p => String(p.cargo || '').split(' ')[0];
 function cartaoDirecao(p, linhaExtra) {
   const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
   return el('article', { class: 'dir-card' }, maoEl('dir-mao'), av,
-    el('div', { class: 'dir-txt' }, el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }), el('strong', { class: 'dir-nome', text: p.exibir || p.nome }), el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda ainda', chipsCota(p.tipos))),
+    el('div', { class: 'dir-txt' }, el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }), el('strong', { class: 'dir-nome', text: p.exibir || p.nome }), el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'na largada', chipsCota(p.tipos))),
     el('b', { class: 'dir-v', text: brl(p.valor) }));
 }
 
@@ -1527,7 +1573,7 @@ function montarHoje(forcar) {
     const av = el('span', { class: 'avatar ho-av', 'aria-hidden': 'true' });
     if (e.sup) pintarAvatar(av, e.sup); else av.append(maoEl('te-av-mao'));
     const pessoas = el('ol', { class: 'ho-pessoas' });
-    if (!e.lista.length) pessoas.append(el('li', { class: 'ho-vazio', text: 'Sem vendas hoje ainda' }));
+    if (!e.lista.length) pessoas.append(el('li', { class: 'ho-vazio', text: 'Na largada hoje' }));
     for (const x of e.lista) {
       const pa = el('span', { class: 'avatar ho-pav', 'aria-hidden': 'true' }); pintarAvatar(pa, x.p);
       pessoas.append(el('li', {}, pa, el('div', { class: 'ho-quem' }, el('strong', { text: x.p.nome }), chipsCota(x.tipos)), el('b', { class: 'ho-pv', text: brl(x.valor) })));
@@ -1631,7 +1677,7 @@ function montarPodio(r, forcar) {
   if (!forcar && ass === podioAss) return;
   podioAss = ass;
   const num = $('pd-num'); num.textContent = '';
-  num.append(el('strong', { text: curto(r.total) }), el('span', { text: r.venderam + ' de ' + r.quadro + ' consultores já venderam' }));
+  num.append(el('strong', { text: curto(r.total) }), el('span', { text: r.venderam + (r.venderam === 1 ? ' consultor já vendeu' : ' consultores já venderam') }));
   const palco = $('pd-palco'); palco.textContent = '';
   palco.append(el('div', { class: 'pd-raios', 'aria-hidden': 'true' }));
   for (const i of [1, 0, 2]) palco.append(lugarPodio(top[i], i + 1));
@@ -1690,7 +1736,7 @@ function montarEquipe(r, forcar) {
   const e = eqs.find(x => x.nome === equipeAtual) || eqs[0];
   equipeAtual = e.nome;
   const metaEq = state.config.metaEquipe, membros = r.pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome);
-  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome), r.diretoria.filter(x => x.oculto).map(x => [x.id, x.valor, x.cotas, x.tipos])]);
+  const ass = JSON.stringify([e.nome, e.valor, e.cotas, metaEq, r.passados, e.sup, membros.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos]), r.equipes.indexOf(e), r.total, eqs.map(x => x.nome), r.diretoria.filter(x => x.oculto).map(x => [x.id, x.valor, x.cotas, x.tipos])]);
   if (!forcar && ass === equipeAss) return;
   equipeAss = ass;
   chips.textContent = '';
@@ -1724,9 +1770,10 @@ function montarEquipe(r, forcar) {
         el('p', { class: 'te-de' }, metaEq ? 'de ' + curto(metaEq) + ' de meta' : 'do total da franquia'))),
     regua,
     el('dl', { class: 'te-fatos' },
-      fato('Falta vender', metaEq ? (falta > 0 ? curto(falta) : 'Meta batida') : '—', metaEq ? 'para fechar a meta' : 'sem meta por equipe'),
-      fato('Já venderam', e.venderam + ' de ' + e.membros, 'consultores'),
-      fato('Cotas', nf.format(e.cotas), e.cotas ? 'ticket médio ' + curto(e.valor / e.cotas) : 'nenhuma ainda'),
+      metaEq && falta <= 0 ? fato('Meta da equipe', 'Meta batida', 'passou ' + curto(e.valor - metaEq))
+        : fato('Média por dia', e.valor > 0 && r.passados ? curto(e.valor / r.passados) : 'R$ 0', e.valor > 0 ? (r.passados ? 'em ' + r.passados + (r.passados === 1 ? ' dia' : ' dias') + ' de ciclo' : 'no ciclo') : 'a primeira venda abre a média'),
+      fato('Já venderam', nf.format(e.venderam), e.venderam === 1 ? 'consultor com venda' : 'consultores com venda'),
+      fato('Cotas', nf.format(e.cotas), e.cotas ? 'ticket médio ' + curto(e.valor / e.cotas) : 'na largada'),
       fato('Na franquia', r.total ? pctTxt(Math.round(e.valor / r.total * 100)) : '0%', 'do crédito vendido')),
     el('ol', { class: 'te-time', style: 'grid-template-rows:repeat(' + Math.max(Math.ceil(membros.length / 2), 1) + ',auto)' }, ...membros.map((p, k) => pessoaEquipe(p, k, maior))));
   corpo.textContent = '';
@@ -1742,7 +1789,7 @@ function pessoaEquipe(p, k, maior) {
     el('span', { class: 'te-p-pos', text: p.valor > 0 ? k + 1 : '–' }), av,
     el('div', { class: 'te-p-txt' },
       el('strong', { class: 'te-p-nome' }, el('span', { text: p.nome }), seloVip(p), destaque ? maoEl('te-p-mao') : null),
-      el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'sem venda no ciclo' }, p.valor > 0 ? chipsCota(p.tipos) : null)),
+      el('span', { class: 'te-p-sub', text: p.valor > 0 ? cotasTxt(p.cotas) : 'na largada' }, p.valor > 0 ? chipsCota(p.tipos) : null)),
     el('strong', { class: 'te-p-v', text: p.valor > 0 ? curto(p.valor) : 'R$ 0' }),
     el('span', { class: 'te-p-barra' }, cheio));
 }
@@ -1794,7 +1841,7 @@ function montarMural(r, forcar) {
   const num = $('mu-num'); num.textContent = '';
   num.append(
     el('div', {}, el('dt', { text: 'vendidos no ciclo' }), el('dd', { text: curto(r.total) })),
-    el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: r.venderam + ' de ' + r.quadro })));
+    el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: nf.format(r.venderam) })));
   const ass = JSON.stringify([r.diretoria.map(p => [p.id, p.valor, p.foto]), r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
   if (!forcar && ass === muralAss) return;
   muralAss = ass;
@@ -2075,7 +2122,7 @@ function seloSobe(li, n) {
    1. o rótulo vermelho abre da esquerda e o painel vem atrás, com uma lâmina vermelha cruzando
    2. a foto salta para dentro do anel, nome e informação sobem, o valor conta do zero
    3. a linha de baixo esvazia no tempo em que a tarja fica e ela sai pelo mesmo lado
-   Gira entre: líder, quem está na cola, equipe na frente, última venda e quanto falta da meta.
+   Gira entre: líder, quem está na cola, equipe na frente, última venda e o caminho rumo à meta.
    Quando uma venda troca o líder, entra uma tarja especial de novo líder, toda vermelha. */
 const TARJA = { primeira: 14000, intervalo: 26000, fica: 7000 };
 const tarja = { fila: [], giro: 0, proxima: 0, ativa: false, calma: 0, t: 0 };
@@ -2095,14 +2142,14 @@ function conteudosTarja(r) {
   }
   const eq = r.equipes.find(e => e.valor > 0 && e.nome !== SEM_EQUIPE);
   if (eq) lista.push({ rot: 'Equipe na frente', nome: eq.nome, valor: eq.valor, foto: eq.sup && eq.sup.foto,
-    info: [eq.sup ? 'time de ' + eq.sup.nome : '', eq.venderam + ' de ' + eq.membros + ' já venderam'].filter(Boolean).join(' · ') });
+    info: [eq.sup ? 'time de ' + eq.sup.nome : '', eq.venderam + (eq.venderam === 1 ? ' já vendeu' : ' já venderam')].filter(Boolean).join(' · ') });
   const v = r.feed.find(x => x.data), pv = v && state.consultores.get(v.consultor);
   if (pv) lista.push({ rot: 'Última venda', nome: pv.nome, valor: v.valor, foto: pv.foto, vip: !!pv.cargo, info: [v.categoria !== 'outros' ? CATS[v.categoria] : '', quando(v.data), rotulo(pv)].filter(Boolean).join(' · ') });
   const bfd = diasBlack();
   if (bfd != null && bfd >= 0) lista.push({ rot: 'Black Embracon', nome: bfd === 0 ? 'Hoje é o dia da Black' : bfd === 1 ? 'Amanhã é o dia da Black' : 'Faltam ' + bfd + ' dias pro dia da Black', valorTxt: 'BLACK',
     info: dataCurta(c.blackFriday) + ' · meta de ' + curto(c.meta) + ' no mês', black: true });
-  if (c.meta && r.falta > 0) lista.push({ rot: 'Meta da franquia', nome: 'Faltam ' + curto(r.falta), valorTxt: pctTxt(Math.floor(r.total / c.meta * 1000) / 10),
-    info: r.total > 0 ? curto(r.total) + ' vendidos de ' + curto(c.meta) : 'a primeira venda do ciclo abre o placar' });
+  if (c.meta && r.total > 0) lista.push({ rot: r.falta > 0 ? 'Rumo à meta' : 'Meta batida', nome: curto(r.total) + ' conquistados', valorTxt: pctTxt(Math.floor(r.total / c.meta * 1000) / 10),
+    info: [r.media && r.passados > 1 ? 'média de ' + curto(r.media) + ' por dia' : '', r.marco.proximo ? 'próximo marco ' + curto(r.marco.proximo) : 'meta de ' + curto(c.meta) + ' batida'].filter(Boolean).join(' · ') });
   return lista;
 }
 function checarLider(antes, novas) {
@@ -2110,9 +2157,20 @@ function checarLider(antes, novas) {
   const r = calcular(), l = r.lideres[0];
   if (!l || !antes || l.id === antes) return;
   const ant = state.consultores.get(antes);
-  tarja.fila = tarja.fila.filter(t => !t.novo);
+  tarja.fila = tarja.fila.filter(t => !t.novo || t.marco);
   tarja.fila.unshift({ rot: 'Novo líder do ciclo', nome: l.nome, valor: l.valor, foto: l.foto, vip: !!l.cargo, coroa: true, novo: true,
     info: [rotulo(l), ant ? 'passou ' + primeiroNome(ant.nome) : ''].filter(Boolean).join(' · ') });
+}
+/* marco batido: uma venda nova passou de um milhão redondo (ou fechou a meta) e entra a tarja vermelha com chuva de mãozinhas */
+function checarMarco(totalAntes, novas) {
+  if (!novas || semMovimento) return;
+  const r = calcular(), c = state.config, antes = marcos(totalAntes, c.meta);
+  if (r.marco.batido <= antes.batido && !(r.falta <= 0 && totalAntes < c.meta)) return;
+  tarja.fila = tarja.fila.filter(t => !t.marco);
+  const fechou = c.meta > 0 && r.total >= c.meta && totalAntes < c.meta;
+  tarja.fila.push({ rot: fechou ? 'Meta batida' : 'Marco batido', nome: fechou ? 'Meta de ' + curto(c.meta) + ' batida!' : 'Passamos dos ' + curto(r.marco.batido) + '!',
+    valor: r.total, novo: true, marco: true,
+    info: ['Franquia ' + c.unidade, r.marco.proximo ? 'próximo marco ' + curto(r.marco.proximo) : fechou ? 'agora é recorde' : ''].filter(Boolean).join(' · ') });
 }
 function tarjaTic() {
   const agora = performance.now();

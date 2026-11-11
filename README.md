@@ -93,17 +93,17 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | --- | --- |
 | `recarregar` | Comando para recarregar a TV de longe (opcional). Mudou o valor e publicou, a TV recarrega a página em até 1 minuto. Veja "Recarregar a TV de longe". |
 | `config.meta` | Meta da franquia no ciclo, em reais, sem pontos nem centavos. |
-| `config.metaEquipe` | Meta de cada equipe na ATA. Aparece no ranking de equipes com o quanto falta. |
+| `config.metaEquipe` | Meta de cada equipe na ATA. Enche o anel da supervisão e mostra o percentual da equipe; quando é batida, aparece "meta batida". |
 | `config.ciclo` | Nome do ciclo exibido no placar (opcional). |
-| `config.inicio` e `config.prazo` | Datas do ciclo em `AAAA-MM-DD`. Só as vendas dentro desse intervalo entram no placar. Com as duas preenchidas, a régua mostra o ritmo esperado para hoje. |
+| `config.inicio` e `config.prazo` | Datas do ciclo em `AAAA-MM-DD`. Só as vendas dentro desse intervalo entram no placar. Com o início preenchido, o placar mostra a média por dia; com as duas, o painel avisa quando a franquia está acima do ritmo da meta (só quando está acima). |
 | `config.exemplo` | `true` exibe a faixa avisando que os dados são de exemplo. Use `false` com os dados reais. |
 | `consultores[].id` | Identificador curto, sem espaços nem acentos. É o que liga a venda ao consultor. |
 | `consultores[].foto` | Foto da bolinha do consultor (opcional), por exemplo `assets/consultores/juliana-delgado.jpg`. Quadrada, de preferência 320 × 320. Sem foto, a bolinha mostra as iniciais. |
 | `consultores[].equipe` | Nome da equipe do consultor (Esquadrão Alpha, Artilheiros, Lekos). Escreva sempre igual para todos da mesma equipe. A ordem em que as equipes aparecem no arquivo é a ordem de desempate. Sem equipe (ex.: a proprietária), as vendas somam no total da franquia e no ranking de consultores, mas em nenhuma equipe; na planilha, deixe a coluna EQUIPE vazia. |
 | `consultores[].cargo` | Opcional. Texto que aparece embaixo do nome no lugar da equipe (ex.: `CEO Embracon Anália Franco`, `Proprietária Embracon Anália Franco`). Quem tem cargo ganha o selo de destaque (roseta vermelha com a mão) ao lado do nome. As vendas continuam somando para a equipe da pessoa, se ela tiver uma. |
-| `consultores[].oculto` | Opcional. `true` tira a pessoa do ranking de consultores, do pódio, das listas de consultores das equipes e do "X de Y"; ela aparece em destaque próprio (cartão com a mão da Embracon) nas telas Hoje, Equipes e Mural, e as vendas dela entram nas últimas vendas. O crédito e as cotas dela continuam somando no total da franquia, na meta, nas cotas por tipo e no crédito por categoria. Usado para a proprietária, que vende mas não é consultora. Na planilha, a linha dela continua igual (mesmo nome do cadastro). |
+| `consultores[].oculto` | Opcional. `true` tira a pessoa do ranking de consultores, do pódio, das listas de consultores das equipes e das contagens de quem já vendeu; ela aparece em destaque próprio (cartão com a mão da Embracon) nas telas Hoje, Equipes e Mural, e as vendas dela entram nas últimas vendas. O crédito e as cotas dela continuam somando no total da franquia, na meta, nas cotas por tipo e no crédito por categoria. Usado para a proprietária, que vende mas não é consultora. Na planilha, a linha dela continua igual (mesmo nome do cadastro). |
 | `consultores[].exibir` | Opcional. Nome mostrado no cartão de destaque da direção (ex.: com o título antes do nome). O `nome` continua sendo o da planilha. |
-| Diretoria e supervisão | Quem tem `cargo` (CEO, proprietária) e quem está em `supervisores[]` também pode vender, mas só aparece na lista de consultores, no pódio, no mural, na tela da equipe e nas contagens "X de Y" quando tem venda. Para um supervisor vender, basta uma linha com o nome dele na planilha: o painel usa a foto da supervisão e mostra o cargo (ex.: Supervisor Artilheiros) com o selo de destaque. |
+| Diretoria e supervisão | Quem tem `cargo` (CEO, proprietária) e quem está em `supervisores[]` também pode vender, mas só aparece na lista de consultores, no pódio, no mural, na tela da equipe e nas contagens de quem já vendeu quando tem venda. Para um supervisor vender, basta uma linha com o nome dele na planilha: o painel usa a foto da supervisão e mostra o cargo (ex.: Supervisor Artilheiros) com o selo de destaque. |
 | `supervisores[]` | Quem supervisiona cada equipe: `equipe` (escrita igual à dos consultores), `nome`, `cargo` (ex.: Supervisora, CEO) e `foto` (quadrada, em `assets/supervisores/`). Aparece com foto no cartão da equipe, nos destaques e na faixa ao vivo. Com a planilha do Google ligada, a supervisão continua vindo daqui. |
 | `vendas[].consultor` | O `id` do consultor que vendeu. |
 | `vendas[].valor` | Crédito vendido, em reais. |
@@ -112,7 +112,7 @@ O painel lê `data/ranking.json` ao abrir e confere o arquivo de novo a cada 60 
 | `vendas[].cotas` | Quantas cotas a linha representa (opcional, padrão 1). |
 | `atualizadoEm` | Data e hora da última atualização, mostrada no topo do painel. |
 
-O ranking, os totais, os percentuais e o ritmo são calculados a partir das vendas. Não existe total para manter à mão.
+O ranking, os totais, os percentuais, a média por dia e os marcos são calculados a partir das vendas. Não existe total para manter à mão.
 
 ### Três formas de atualizar
 
@@ -131,7 +131,7 @@ O `PUT` recebe o conteúdo novo em Base64, a mensagem do commit e o `sha` devolv
 
 ## Equipes
 
-Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores, de cotas e quanto falta para a meta da equipe.
+Cada consultor tem a equipe embaixo do nome no ranking. Na lateral, o **Ranking de equipes** soma o crédito vendido no ciclo por equipe e ordena as três, com a quantidade de consultores e de cotas.
 
 Cada cartão traz a foto de quem supervisiona a equipe (Enaila Rocha no Esquadrão Alpha, Mateus Sales nos Artilheiros e Diego Lins nos Lekos), dentro de um anel que enche conforme a equipe avança na meta. Para trocar a supervisão, edite `supervisores` no `data/ranking.json` e coloque a foto nova em `assets/supervisores/`.
 
@@ -142,7 +142,7 @@ O painel tem quatro telas, na barra logo abaixo do topo:
 - **Ranking:** placar, quatro cartões com gráficos de anel animados (crédito por categoria, cotas por tipo, peso de cada equipe e rumo à meta), ranking de consultores, equipes, últimas vendas, categorias e cotas por equipe (supervisão, valor, cotas e tipo de cota).
 - **Pódio:** os três primeiros do ciclo com foto grande, em blocos de pódio que sobem (3º, 2º e 1º, nessa ordem), raios girando atrás do 1º, a mão da Embracon de coroa e chuva de mãozinhas e confete. Embaixo, do 4º ao 8º.
 - **Hoje:** vendas do dia: total da franquia (soma tudo, inclusive quem está fora das listas), cotas por tipo, as três equipes com a foto da supervisão e cada pessoa com foto, valor e tipo de cota. O dia de cada venda é o dia em que o painel viu a casinha nova na planilha. Entra no giro do telão quando há venda no dia.
-- **Equipes:** uma tela por equipe, com a supervisão em destaque (foto num anel que enche com a meta e mãozinhas em órbita), o total da equipe, quanto falta, quem já vendeu, cotas, participação na franquia e os consultores do time com foto e valor. Os botões no alto trocam de equipe.
+- **Equipes:** uma tela por equipe, com a supervisão em destaque (foto num anel que enche com a meta e mãozinhas em órbita), o total da equipe, a média por dia, quem já vendeu, cotas, participação na franquia e os consultores do time com foto e valor. Os botões no alto trocam de equipe.
 - **Mural:** frase grande trocando (slogans e números do momento) e duas faixas de fotos de todo mundo andando em sentidos opostos, com cartões de palavras no meio.
 
 No **modo telão** as telas giram sozinhas: Ranking, Pódio, uma tela para cada equipe (da que está na frente para trás) e Mural, e volta ao Ranking. Tela mais alta que a TV desce até o fim e volta antes de passar. A aba ativa mostra uma barrinha enchendo até a troca e, à direita, o que vem a seguir. Toda troca passa por uma cortina vermelha com a mão da Embracon se montando, mãozinhas voando, o nome da franquia e o nome da tela. Fora do telão, as telas trocam só pelo toque.
@@ -160,7 +160,7 @@ A mão da Embracon se monta traço por traço no centro da tela, desliza para o 
 O painel foi feito para ficar passando no telão, então nunca fica parado:
 
 - **Barras:** listras correm na inclinação dos dedos da mão e um brilho atravessa cada barra de tempos em tempos. No tema claro o preenchimento é vermelho; no vermelho, branco.
-- **Destaques:** embaixo do total, uma frase troca a cada 6,5 segundos (quem lidera, equipe na frente, última venda, quanto falta). As palavras saem por cima e entram por baixo.
+- **Destaques:** embaixo do total, uma frase troca a cada 6,5 segundos (quem lidera, equipe na frente, última venda, crédito conquistado, média por dia, próximo marco). As palavras saem por cima e entram por baixo.
 - **Ao vivo:** o topo alterna entre a hora da última atualização dos números e a hora em que o painel conferiu o arquivo pela última vez.
 - **Faixa ao vivo:** no rodapé, um letreiro corre com o placar, as equipes (com a foto da supervisão), os primeiros colocados e as últimas vendas (com a foto de quem vendeu). O selo AO VIVO tem barrinhas de equalizador, relógio com os dois pontos piscando e um brilho que passa; uma linha fina no alto da faixa enche até a próxima conferência da planilha.
 - **Equipes:** a luz dá a volta na borda do cartão da equipe que está na frente, um brilho corre pelo anel de cada supervisão, a foto da supervisão da equipe líder pulsa e, a cada 16 segundos, as fotos da supervisão dão um giro de moeda, uma depois da outra.
@@ -172,6 +172,16 @@ O painel foi feito para ficar passando no telão, então nunca fica parado:
 - **Mão de fundo:** no placar, uma mão grande faz uma onda com os dedos.
 
 Quem usa o sistema com a opção de reduzir movimento ativada vê o painel parado.
+
+## Painel otimista
+
+O painel passa no telão o mês inteiro, então ele mostra o caminho percorrido, não o que ainda falta. Nada de "abaixo do ritmo" nem "falta vender".
+
+- **Próximo marco:** a meta é dividida em degraus redondos (R$ 1 mi para uma meta de R$ 20 mi). A régua do placar marca o próximo degrau, sempre logo à frente do vendido, e o primeiro cartão mostra quanto falta só até ele ("faltam só R$ 530 mil").
+- **Média por dia:** o segundo cartão mostra o crédito médio vendido por dia no ciclo. Quando a franquia está acima do ritmo da meta, o cartão e as frases avisam ("R$ 300 mil acima do ritmo da meta"); quando está abaixo, o painel não fala de ritmo.
+- **Marco batido:** quando uma venda nova faz a franquia passar de um degrau, entra a tarja vermelha "Passamos dos R$ 6 mi!" com chuva de mãozinhas. Ao fechar a meta, a tarja vira "Meta batida".
+- **Quem já vendeu:** as contagens mostram quantos venderam ("13 consultores com venda"), sem o "de 25". Quem ainda não vendeu aparece como "na largada".
+- A meta da franquia continua no placar (valor e percentual) e no gráfico "Rumo à meta", onde a parte que falta se chama "A conquistar".
 
 ## Usar no telão
 
@@ -200,7 +210,7 @@ O painel guarda o valor que viu ao abrir e só recarrega quando ele muda. Depois
 ## Apetrechos de transmissão
 
 - **Contagem regressiva** no selo AO VIVO, até as 23:59:59 do último dia do ciclo (data de fim da planilha ou do `ranking.json`). No último dia vira "Último dia" e o cronômetro bate; na última hora, "Reta final". Sem data de fim, ou com o ciclo encerrado, o chip some.
-- **Tarja de destaque** no canto de baixo (telas Ranking e Mural, em telas a partir de 992 px): gira entre líder, quem está na cola, equipe na frente, última venda e quanto falta da meta. Quando uma venda troca o líder, entra a tarja vermelha de **novo líder** com chuva de mãozinhas.
+- **Tarja de destaque** no canto de baixo (telas Ranking e Mural, em telas a partir de 992 px): gira entre líder, quem está na cola, equipe na frente, última venda e o caminho rumo à meta (crédito conquistado, média por dia e próximo marco). Quando uma venda troca o líder, entra a tarja vermelha de **novo líder** com chuva de mãozinhas; quando passa de um marco, a tarja vermelha de **marco batido**.
 - **Placar fixo** no alto à direita quando o placar grande sai da tela (no telão, enquanto a lista rola).
 - **Selo de subida**: quem passa outros consultores com uma venda nova ganha um selo verde com quantas posições subiu, por 15 segundos.
 - **Relógio** da faixa com dígitos que rolam.

@@ -68,6 +68,7 @@
 .tarja.virou .tarja-foto{box-shadow:0 0 0 3px var(--red),0 0 0 5.5px var(--on-red)}
 .tarja.virou .tarja-foto::after{border-color:var(--on-red)}
 .tarja.virou .tarja-coroa{--mao-cor:var(--on-red)}
+.tarja.virou .tarja-foto-mao{--mao-cor:var(--on-red)}   /* marco batido: mão branca no círculo vermelho */
 .tarja.virou .tarja-tempo{background:var(--on-red)}
 .tarja.virou .tarja-lamina{background:linear-gradient(90deg,transparent,rgba(255,255,255,.55) 28%,rgba(255,255,255,.55) 72%,transparent)}
 :root[data-tema="vermelho"] .tarja.virou .tarja-lamina{background:linear-gradient(90deg,transparent,rgba(237,28,36,.4) 28%,rgba(237,28,36,.4) 72%,transparent)}

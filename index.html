@@ -100,8 +100,8 @@ Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimatio
       <div class="regua-marcas" id="regua-marcas"></div>
     </div>
     <dl class="fatos">
-      <div class="fato"><dt>Falta vender</dt><dd><strong id="f-falta">R$ 0</strong><span id="f-falta-n">&nbsp;</span></dd></div>
-      <div class="fato"><dt>Ritmo necessário</dt><dd><strong id="f-ritmo">R$ 0</strong><span id="f-ritmo-n">&nbsp;</span></dd></div>
+      <div class="fato"><dt id="f-falta-rot">Próximo marco</dt><dd><strong id="f-falta">R$ 0</strong><span id="f-falta-n">&nbsp;</span></dd></div>
+      <div class="fato"><dt id="f-ritmo-rot">Média por dia</dt><dd><strong id="f-ritmo">R$ 0</strong><span id="f-ritmo-n">&nbsp;</span></dd></div>
       <div class="fato"><dt>Já venderam</dt><dd><strong id="f-meta">0 de 0</strong><span id="f-meta-n">&nbsp;</span></dd></div>
       <div class="fato"><dt>Cotas vendidas</dt><dd><strong id="f-cotas">0</strong><div class="cotas-faixa" id="f-cotas-faixa" hidden></div><div class="cotas-tipos" id="f-cotas-tipos" hidden></div><span id="f-cotas-n">&nbsp;</span></dd></div>
     </dl>
@@ -232,7 +232,7 @@ Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimatio
       <div class="campo"><label for="a-inicio">Início do ciclo</label><input id="a-inicio" type="date"></div>
       <div class="campo"><label for="a-prazo">Fim do ciclo</label><input id="a-prazo" type="date"></div>
     </div>
-    <p>Só as vendas com data dentro do ciclo entram no placar. Com início e fim preenchidos, a régua mostra o ritmo esperado para hoje.</p>
+    <p>Só as vendas com data dentro do ciclo entram no placar. Com o início preenchido, o placar mostra a média por dia; a régua marca o próximo marco a caminho da meta.</p>
     <p class="erro" id="a-erro" role="alert"></p>
     <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn principal" type="submit">Salvar ajustes</button></div>
   </form>
