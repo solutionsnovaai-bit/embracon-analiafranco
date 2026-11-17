@@ -166,14 +166,15 @@ function aplicar(dados) {
      fica fora da lista de consultores até ter venda (ver calcular). O supervisor ganha o cargo e a foto da supervisão. */
   state.consultores = new Map();
   for (const p of Array.isArray(d.consultores) ? d.consultores : []) {
-    if (!p || typeof p !== 'object') continue;
+    if (!p || typeof p !== 'object' || p.saiu === true) continue;
     const nome = String(p.nome || '').trim().slice(0, 60);
     if (!nome) continue;
     const id = String(p.id || slug(nome)), sup = supPorNome.get(normNome(nome));
     let cargo = limparCargo(p.cargo), foto = fotoValida(p.foto);
     if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
     if (sup && sup.foto) foto = sup.foto;
-    state.consultores.set(id, { id, nome, equipe: limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
+    /* a direção da franquia (oculto) soma só no total da franquia, nunca numa equipe */
+    state.consultores.set(id, { id, nome, equipe: p.oculto === true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -1055,19 +1056,35 @@ function dadosDaPlanilha(texto, cadastro) {
   /* foto e identificador vêm do cadastro (data/ranking.json), pelo nome escrito igual */
   const doCadastro = new Map();
   for (const p of Array.isArray(b.consultores) ? b.consultores : []) if (p && p.nome) { doCadastro.set(normNome(p.nome), p); if (p.id) doCadastro.set('#' + p.id, p); }
-  const consultores = [], vendas = [], usados = new Set();
+  const consultores = [], vendas = [], usados = new Set(), repasses = [];
   for (const l of linhas.slice(ini)) {
     const nome = String(l[col.nome] || '').replace(/\s+/g, ' ').trim().slice(0, 60);
     if (!nome) continue;
     const cad = doCadastro.get(normNome(nome)) || doCadastro.get('#' + slug(nome));
+    /* quem saiu da franquia (cadastro com "saiu": true) não aparece mais; as vendas dele passam
+       para quem estiver em "vendasPara" (a chave continua a mesma, então o dia de cada venda não muda) */
+    if (cad && cad.saiu === true) {
+      const para = String(cad.vendasPara || '');
+      if (para && colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) repasses.push({ para, valor: v, categoria: tipoCota(l[j]), chave: (cad.id ? String(cad.id) : slug(nome)) + '|' + (k + 1) + '|' + v }); });
+      continue;
+    }
     const raizId = cad && cad.id ? String(cad.id) : slug(nome);
     let id = raizId, n = 2;
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
     consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
-    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: tipoCota(l[j]), chave: id + '|' + (k + 1) + '|' + v }); });
+    const fixo = cad && cad.tipoVenda && typeof cad.tipoVenda === 'object' ? cad.tipoVenda : {};
+    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); let cat = tipoCota(l[j]); if (cat === 'outros' && fixo[k + 1]) cat = tipoCota(fixo[k + 1]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: cat, chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
+  }
+  for (const r of repasses) {
+    if (!consultores.some(c => c.id === r.para)) {
+      const cad = doCadastro.get('#' + r.para);
+      if (!cad) continue;
+      consultores.push({ id: r.para, nome: cad.nome, equipe: '', ...(cad.cargo ? { cargo: cad.cargo } : {}), ...(cad.oculto === true ? { oculto: true } : {}), ...(cad.exibir ? { exibir: cad.exibir } : {}), ...(cad.foto ? { foto: cad.foto } : {}) });
+    }
+    vendas.push({ consultor: r.para, valor: r.valor, categoria: r.categoria, chave: r.chave });
   }
   /* a supervisão de cada equipe também vem do cadastro */
   /* casinha embaixo do título "Recarregar": mudou o que está escrito nela, a TV recarrega o painel */
@@ -2055,18 +2072,19 @@ const ICONE_COTA = {
   imovel: '<svg viewBox="0 0 24 24"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.6V20h13V9.6"/><path d="M10 20v-5.5h4V20"/></svg>',
   auto: '<svg viewBox="0 0 24 24"><path d="M3.5 16.5v-3.8l2.1-5a2 2 0 0 1 1.8-1.2h9.2a2 2 0 0 1 1.8 1.2l2.1 5v3.8z"/><path d="M3.5 12.7h17"/><circle cx="7.5" cy="16.8" r="1.9"/><circle cx="16.5" cy="16.8" r="1.9"/></svg>',
   pesados: '<svg viewBox="0 0 24 24"><path d="M2.5 16.5V6.5h11v10"/><path d="M13.5 9.5h4.2l3.8 3.9v3.1h-8"/><circle cx="6.5" cy="17" r="1.9"/><circle cx="17" cy="17" r="1.9"/></svg>',
-  servicos: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3.8 17a1.6 1.6 0 0 0 2.3 2.3l5.6-5.5a4 4 0 0 0 5.1-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/></svg>'
+  servicos: '<svg viewBox="0 0 24 24"><path d="M4.5 16.5a7.5 7.5 0 0 1 15 0z"/><path d="M2.5 19.5h19"/><path d="M12 9V6.5"/><path d="M10 6.5h4"/><path d="M8.3 13.4a4.2 4.2 0 0 1 2.2-2"/></svg>'
 };
 const CURTO_COTA = { imovel: 'imóvel', auto: 'auto', pesados: 'pesados', servicos: 'serviços' };
+const rotCota = (k, n) => n === 1 ? ({ pesados: 'pesado', servicos: 'serviço' }[k] || CURTO_COTA[k]) : CURTO_COTA[k];
 function chipsCota(tipos) {
   const ks = Object.keys(CURTO_COTA).filter(k => tipos && tipos[k] > 0);
   if (!ks.length) return null;
   return el('span', { class: 'cotas-tipo' }, ...ks.map(k => {
     const ic = el('span', { class: 'ct-ic', 'aria-hidden': 'true' }); ic.innerHTML = ICONE_COTA[k];
-    return el('span', { class: 'ct ct-' + k, title: CATS[k] }, ic, el('b', { text: String(tipos[k]) }), el('span', { class: 'ct-txt', text: CURTO_COTA[k] }));
+    return el('span', { class: 'ct ct-' + k, title: CATS[k] }, ic, el('b', { text: String(tipos[k]) }), el('span', { class: 'ct-txt', text: rotCota(k, tipos[k]) }));
   }));
 }
-const tiposTxt = tipos => Object.keys(CURTO_COTA).filter(k => tipos && tipos[k] > 0).map(k => tipos[k] + ' ' + CURTO_COTA[k]).join(', ');
+const tiposTxt = tipos => Object.keys(CURTO_COTA).filter(k => tipos && tipos[k] > 0).map(k => tipos[k] + ' ' + rotCota(k, tipos[k])).join(', ');
 
 /* ---------- contagem regressiva até o fim do ciclo (23:59:59 do último dia) ---------- */
 function contagem() {
