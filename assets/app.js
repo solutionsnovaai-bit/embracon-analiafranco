@@ -2072,7 +2072,7 @@ const ICONE_COTA = {
   imovel: '<svg viewBox="0 0 24 24"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.6V20h13V9.6"/><path d="M10 20v-5.5h4V20"/></svg>',
   auto: '<svg viewBox="0 0 24 24"><path d="M3.5 16.5v-3.8l2.1-5a2 2 0 0 1 1.8-1.2h9.2a2 2 0 0 1 1.8 1.2l2.1 5v3.8z"/><path d="M3.5 12.7h17"/><circle cx="7.5" cy="16.8" r="1.9"/><circle cx="16.5" cy="16.8" r="1.9"/></svg>',
   pesados: '<svg viewBox="0 0 24 24"><path d="M2.5 16.5V6.5h11v10"/><path d="M13.5 9.5h4.2l3.8 3.9v3.1h-8"/><circle cx="6.5" cy="17" r="1.9"/><circle cx="17" cy="17" r="1.9"/></svg>',
-  servicos: '<svg viewBox="0 0 24 24"><path d="M4.5 16.5a7.5 7.5 0 0 1 15 0z"/><path d="M2.5 19.5h19"/><path d="M12 9V6.5"/><path d="M10 6.5h4"/><path d="M8.3 13.4a4.2 4.2 0 0 1 2.2-2"/></svg>'
+  servicos: '<svg viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>'
 };
 const CURTO_COTA = { imovel: 'imóvel', auto: 'auto', pesados: 'pesados', servicos: 'serviços' };
 const rotCota = (k, n) => n === 1 ? ({ pesados: 'pesado', servicos: 'serviço' }[k] || CURTO_COTA[k]) : CURTO_COTA[k];
