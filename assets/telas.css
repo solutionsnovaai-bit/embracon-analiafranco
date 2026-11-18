@@ -421,3 +421,24 @@ html:not(.tv) .tn-prog{display:none}
 .mu-tag.dir-tag{background:#ED1C24;color:#fff}
 @media (max-width:991px){.dir-card{grid-template-columns:auto minmax(0,1fr)}.dir-mao{display:none}.dir-v{grid-column:1/-1}}
 @media (max-width:1199px){.tn-prox{display:none}}
+
+/* ---------- tela de ranking: espaço próprio da direção da franquia ---------- */
+.direcao{margin:0 0 clamp(1.2rem,2vw,2rem)}
+.direcao[hidden]{display:none}
+.dir-sub{font-size:clamp(.9rem,1.1vw,1.15rem);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2,#6b6263)}
+.dir-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.8rem,1.4vw,1.4rem)}
+.dir-grade[data-n="1"]{grid-template-columns:minmax(0,1fr)}
+.dir-card.dir-grande{margin:0;padding:clamp(1rem,2vw,1.7rem) clamp(1.2rem,2.2vw,2.2rem);background:radial-gradient(120% 140% at 0% 0%,#2a1416 0%,#131011 55%)}
+.dir-grande .dir-av{width:clamp(4.2rem,6.4vw,6.6rem);height:clamp(4.2rem,6.4vw,6.6rem)}
+.dir-grande .dir-nome{font-size:clamp(1.6rem,2.5vw,2.6rem)}
+.dir-vbox{display:grid;justify-items:end;gap:.25rem;text-align:right}
+.dir-grande .dir-v{font-size:clamp(2rem,3.2vw,3.4rem)}
+.dir-pct{font-size:clamp(.9rem,1.15vw,1.2rem);font-weight:700;color:#FF9EA2;white-space:nowrap}
+.dir-grande .dir-mao{position:absolute;right:-1.2rem;bottom:-1.6rem;width:clamp(7rem,11vw,11rem);height:clamp(7rem,11vw,11rem);opacity:.12;z-index:-1}
+.dir-card.dir-grande{grid-template-columns:auto minmax(0,1fr);row-gap:.6rem}
+.dir-grande .dir-av{grid-column:1;grid-row:1/3;align-self:center}
+.dir-grande .dir-txt{grid-column:2;grid-row:1}
+.dir-grande .dir-vbox{grid-column:2;grid-row:2;display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .9rem;justify-items:start;text-align:left}
+.dir-grande .dir-v{grid-column:auto}
+@media (max-width:1199px){.dir-grade{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.dir-grande .dir-av{grid-row:1}.dir-grande .dir-vbox{grid-column:1/-1}}

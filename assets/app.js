@@ -393,6 +393,7 @@ function mensagens(r) {
     if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + e1.sup.nome + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
     const u = r.feed.find(v => v.data);
     if (u) m.push('Última venda: ' + descrever(u));
+    for (const p of r.diretoria.filter(p => p.oculto && p.valor > 0)) m.push((p.exibir || p.nome) + ', ' + cargoCurto(p) + ' da franquia, já soma ' + curto(p.valor) + ' em crédito');
     if (r.falta <= 0) m.push('Meta de ' + curto(c.meta) + ' batida! Tudo que entra agora é recorde');
     else if (r.passados > 1) m.push(curto(r.total) + ' conquistados em ' + r.passados + ' dias de ciclo');
     else m.push(curto(r.total) + ' já conquistados neste ciclo');
@@ -503,6 +504,7 @@ function pintar() {
   pintarFeed(r, editar, carregando);
   pintarMix(r);
   pintarGraficos(r);
+  pintarDirecao(r);
   pintarEqCotas(r);
   pintarDestaque(r);
   if (!carregando) { pintarFaixa(r); pintarTela(r); }
@@ -902,6 +904,7 @@ function itensFaixa(r) {
     /* equipes com a foto da supervisão; consultores e vendas com a foto de quem vendeu */
     r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + e.sup.nome : ''), e.sup && e.sup.foto]));
     r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor), l.foto]));
+    r.diretoria.filter(p => p.oculto && p.valor > 0).forEach(p => itens.push([cargoCurto(p) + ' da franquia', (p.exibir || p.nome) + ' · ' + curto(p.valor), p.foto]));
     r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v), state.consultores.get(v.consultor).foto]));
     if (r.media && r.passados > 1) itens.push(['Média por dia', curto(r.media) + ' em crédito']);
     if (r.marco.proximo) itens.push([r.marco.proximo >= c.meta ? 'Reta da meta' : 'Próximo marco', curto(r.marco.proximo) + ' · faltam só ' + curto(r.marco.faltam)]);
@@ -1532,6 +1535,27 @@ function entrar(tela, primeira) {
 
 /* direção da franquia (proprietária e CEO): fica fora das listas de consultores e do pódio, mas aparece em destaque nas outras telas */
 const cargoCurto = p => String(p.cargo || '').split(' ')[0];
+/* espaço próprio da direção na tela de ranking: cartões grandes, fora da lista de consultores */
+const direcaoOrdem = p => /propriet/i.test(p.cargo || '') ? 0 : 1;
+function pintarDirecao(r) {
+  const sec = $('sec-direcao'), grade = $('dir-grade');
+  const dir = r.diretoria.filter(p => p.oculto).sort((a, b) => direcaoOrdem(a) - direcaoOrdem(b));
+  sec.hidden = !dir.length || state.modo === 'carregando';
+  const ass = JSON.stringify([dir.map(p => [p.id, p.valor, p.cotas, p.foto, p.tipos, p.exibir]), r.total]);
+  if (grade._ass === ass) return;
+  grade._ass = ass; grade.textContent = '';
+  grade.dataset.n = dir.length;
+  for (const p of dir) {
+    const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
+    const pct = r.total > 0 ? p.valor / r.total * 100 : 0;
+    grade.append(el('article', { class: 'dir-card dir-grande' }, maoEl('dir-mao'), av,
+      el('div', { class: 'dir-txt' },
+        el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }),
+        el('strong', { class: 'dir-nome', text: p.exibir || p.nome }),
+        el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'Franquia ' + state.config.unidade, chipsCota(p.tipos))),
+      p.valor > 0 ? el('div', { class: 'dir-vbox' }, el('b', { class: 'dir-v', text: brl(p.valor) }), el('span', { class: 'dir-pct', text: pctTxt(Math.round(pct)) + ' do crédito da franquia' })) : null));
+  }
+}
 function cartaoDirecao(p, linhaExtra) {
   const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
   return el('article', { class: 'dir-card' }, maoEl('dir-mao'), av,
