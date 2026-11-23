@@ -21,7 +21,7 @@
     {"id":"igor-araujo","nome":"Igor Araújo","equipe":"Esquadrão Alpha"},
     {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha","foto":"assets/consultores/izabella-nascimento.jpg","saiu":true,"somaNaEquipe":true},
     {"id":"antonio-pimentel","nome":"Antônio Pimentel","equipe":"Esquadrão Alpha","foto":"assets/consultores/antonio-pimentel.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
-    {"id":"diana-trindade","nome":"Diana Trindade","equipe":"Esquadrão Alpha","foto":"assets/consultores/diana-trindade.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
+    {"id":"diana-trindade","nome":"Diana Trindade","equipe":"Esquadrão Alpha","foto":"assets/consultores/diana-trindade.jpg","saiu":true},
     {"id":"alex-sandro","nome":"Alex Sandro","equipe":"Artilheiros","foto":"assets/consultores/alex-sandro.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
     {"id":"edvan-fernandes","nome":"Edvan Fernandes","equipe":"Artilheiros","foto":"assets/consultores/edvan-fernandes.jpg","tipoVenda":{"2":"s"}},
     {"id":"enzo-santorelli","nome":"Enzo Santorelli","equipe":"Artilheiros","foto":"assets/consultores/enzo-santorelli.jpg"},
