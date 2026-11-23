@@ -171,3 +171,9 @@
 :root[data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{background:linear-gradient(0deg,#FFB020 0%,#FFE680 55%,#FFFFFF 100%);-webkit-background-clip:text;background-clip:text}
 :root[data-tema="vermelho"]:not([data-modo="black"]) .chama{mix-blend-mode:normal}
 @media (prefers-reduced-motion:reduce){.chama,.brasa,.fogo-ponta,.pct strong.pct-fogo{animation:none}.brasa{display:none}}
+/* versão discreta: sem chamas nem brasas, só a barra quente com brilho e a ponta acesa */
+.chama,.brasa{display:none}
+.fogo-ponta{right:-.7rem;width:1.4rem;height:1.4rem;margin-top:-.7rem;background:radial-gradient(circle,#FFFFFF 0%,#FFE680 30%,rgba(255,176,32,.5) 55%,rgba(255,176,32,0) 72%)}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B3121A 0%,#ED1C24 55%,#FF5A1F 85%,#FF9A2E 100%)}
+.pct strong.pct-fogo{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--red)}
+:root[data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{background:none;color:#FFFFFF}
