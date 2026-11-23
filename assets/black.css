@@ -243,3 +243,8 @@
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{color:#FFFFFF}
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta *{color:#ED1C24}
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta em{color:#B70E17}
+/* etiqueta pendurada fica preta mesmo no modo vermelho */
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta{background:#0D0A0B;color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta *{color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta strong{color:#ED1C24}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta em{color:#B8AEAF}
