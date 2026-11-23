@@ -30,7 +30,7 @@ const DEMO = {
   config: { meta: 21000000, metaConsultor: 2000000, metaEquipe: 7000000, unidade: 'Anália Franco' },
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
-    ['sula-teixeira', 'Sula Teixeira', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
+    ['sula-teixeira', 'Sula Teixeira', 'Esquadrão Alpha'], ['jackson-jotan', 'Jackson Jotan', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
     ['antonio-pimentel', 'Antônio Pimentel', 'Esquadrão Alpha'], ['diana-trindade', 'Diana Trindade', 'Esquadrão Alpha'],
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
     ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
