@@ -210,3 +210,36 @@
 .linha.lider .ct{background:#fff;color:#151112}
 .linha.lider .ct .ct-ic,.linha.lider .ct-imovel .ct-ic{color:#151112}
 .linha.lider .ct-imovel .ct-ic{color:#ED1C24}
+
+/* ==========================================================================
+   TEMA VERMELHO na Black: os cartões da campanha continuam, mas tudo vermelho (nada preto).
+   ========================================================================== */
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]){
+  --bf:#D3141B; --bf-2:#C0101A; --bf-3:#AE0C14; --bf-linha:rgba(255,255,255,.3); --bf-cinza:#FFE9E9; --bf-red:#FFFFFF; --bf-borda:#D3141B;
+}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) :is(.placar,.placarzinho,.tarja-corpo,.mu-palavra,.mu-cab,.ho-cab,.ho-eq,.flash,.eq-linha,.linha.top,.pd-palco,.pd-chip,.te-sup,.te-dados,.tn[aria-current="page"],.acoes .btn){
+  --paper:#D3141B;--ink:#FFFFFF;--ink-2:#FFE9E9;--line:rgba(255,255,255,.3);--track:#AE0C14;
+  --red:#FFFFFF;--red-deep:#FFD9DA;--red-wash:rgba(255,255,255,.14);--on-red:#ED1C24;--on-red-2:#B70E17;
+  --listra:rgba(237,28,36,.18);--brilho:rgba(255,255,255,.55);--varre:rgba(255,255,255,.25);
+  --reluz:#FFFFFF;--reluz-pct:#FFFFFF;--selo-bg:rgba(255,255,255,.18);--selo-fg:#FFFFFF;--ok:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .placar>.bf-marca{color:rgba(255,255,255,.07);-webkit-text-stroke:0}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .linha.lider{--l-fg:#ED1C24;--l-sub:#B70E17;--l-trilho:#FFD9DA;--l-cheio:#ED1C24;--l-meta:#ED1C24;--l-av:#FFD9DA;--l-listra:rgba(255,255,255,.2);--l-selo-bg:#ED1C24;--l-selo-fg:#FFFFFF;background:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .pd-palco{--pd1-bg:#FFFFFF;--pd1-fg:#ED1C24;--pd2-bg:#FFD9DA;--pd2-fg:#B70E17;--pd3-bg:#AE0C14;--pd3-fg:#FFFFFF;--pd3-anel:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) :is(.cortina,.tarja.bf .tarja-rot,.bf-load,.filtro button[aria-pressed="true"]){background:#D3141B;color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta{background:#FFFFFF;color:#ED1C24}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) :is(.bf-load b,.cortina-rot){color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .tarja.virou .tarja-corpo{background:#FFFFFF;color:#ED1C24}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .load{--load-bg:#ED1C24;--ink:#FFFFFF;--ink-2:#FFE3E4;--red:#FFFFFF;--mao-cor:#FFFFFF;--track:#B70E17;--line:rgba(255,255,255,.3)}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .faixa-selo{background:#B70E17;color:#FFFFFF;box-shadow:none}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .faixa-selo i{background:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .faixa-conta{background:#D3141B!important;color:#FFFFFF!important}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .faixa-conta *{color:#FFFFFF!important}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .faixa-conta::before{background:#D3141B!important}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .tarja-corpo{box-shadow:0 1rem 2.4rem rgba(122,10,16,.35)}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .fatos .c-auto{background:#FFD9DA}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#FFD9DA 0%,#FFFFFF 100%);--l-listra:rgba(237,28,36,.15)}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .fogo-mao{--mao-cor:#FFFFFF;filter:drop-shadow(0 .3rem .7rem rgba(122,10,16,.45))}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .fogo-mao::before{border-color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{color:#FFFFFF}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta *{color:#ED1C24}
+:root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta em{color:#B70E17}

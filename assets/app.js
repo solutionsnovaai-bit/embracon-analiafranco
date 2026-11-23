@@ -1414,7 +1414,7 @@ function montarFogo() {
     ch.style.cssText = 'left:' + x.toFixed(1) + '%;--h:' + (.55 + i / N * .9).toFixed(2) + ';--d:' + (.45 + Math.random() * .5).toFixed(2) + 's;--a:' + (-Math.random()).toFixed(2) + 's';
     f.append(ch);
   }
-  f.append(el('b', { class: 'fogo-ponta' }));
+  f.append(el('b', { class: 'fogo-ponta' }), maoEl('fogo-mao'));
   for (let i = 0; i < 16; i++) {
     const br = el('u', { class: 'brasa' });
     br.style.cssText = 'right:' + (Math.random() * 18).toFixed(1) + '%;--x:' + ((Math.random() - .5) * 4).toFixed(2) + 'rem;--d:' + (1.4 + Math.random() * 1.6).toFixed(2) + 's;--a:' + (-Math.random() * 3).toFixed(2) + 's;--s:' + (.18 + Math.random() * .22).toFixed(2) + 'rem';

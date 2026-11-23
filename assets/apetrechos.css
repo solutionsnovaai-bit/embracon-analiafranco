@@ -176,4 +176,13 @@
 .fogo-ponta{right:-.7rem;width:1.4rem;height:1.4rem;margin-top:-.7rem;background:radial-gradient(circle,#FFFFFF 0%,#FFE680 30%,rgba(255,176,32,.5) 55%,rgba(255,176,32,0) 72%)}
 .regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B3121A 0%,#ED1C24 55%,#FF5A1F 85%,#FF9A2E 100%)}
 .pct strong.pct-fogo{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--red)}
-:root[data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{background:none;color:#FFFFFF}
+
+/* régua em vermelho Embracon, com a mãozinha da marca na ponta dando um "tum" */
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B70E17 0%,#ED1C24 70%,#FF4D54 100%)}
+.fogo-ponta{display:none}
+.fogo-mao{position:absolute;right:-1.6rem;top:50%;width:3.2rem;margin-top:-1.4rem;filter:drop-shadow(0 .3rem .6rem rgba(237,28,36,.55));
+  --mao-cor:#ED1C24;animation:mao-tum 1.8s cubic-bezier(.34,1.6,.6,1) infinite}
+.fogo-mao::before{content:"";position:absolute;inset:-35%;border-radius:50%;border:2px solid #ED1C24;opacity:0;animation:mao-onda 1.8s ease-out infinite}
+@keyframes mao-tum{0%,55%,100%{transform:scale(1) rotate(0)}12%{transform:scale(1.28) rotate(-10deg)}24%{transform:scale(.95) rotate(4deg)}36%{transform:scale(1.05) rotate(0)}}
+@keyframes mao-onda{0%,8%{opacity:.7;transform:scale(.5)}45%,100%{opacity:0;transform:scale(1.4)}}
+@media (prefers-reduced-motion:reduce){.fogo-mao,.fogo-mao::before{animation:none}}
