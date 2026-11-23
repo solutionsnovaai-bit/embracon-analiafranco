@@ -19,7 +19,7 @@
     {"id":"sula-teixeira","nome":"Sula Teixeira","equipe":"Esquadrão Alpha","foto":"assets/consultores/sula-teixeira.jpg"},
     {"id":"jackson-jotan","nome":"Jackson Jotan","equipe":"Esquadrão Alpha","foto":"assets/consultores/jackson-jotan.jpg"},
     {"id":"igor-araujo","nome":"Igor Araújo","equipe":"Esquadrão Alpha"},
-    {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha","foto":"assets/consultores/izabella-nascimento.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
+    {"id":"izabella-nascimento","nome":"Izabella Nascimento","equipe":"Esquadrão Alpha","foto":"assets/consultores/izabella-nascimento.jpg","saiu":true,"somaNaEquipe":true},
     {"id":"antonio-pimentel","nome":"Antônio Pimentel","equipe":"Esquadrão Alpha","foto":"assets/consultores/antonio-pimentel.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
     {"id":"diana-trindade","nome":"Diana Trindade","equipe":"Esquadrão Alpha","foto":"assets/consultores/diana-trindade.jpg","saiu":true,"vendasPara":"rafael-ferraz"},
     {"id":"alex-sandro","nome":"Alex Sandro","equipe":"Artilheiros","foto":"assets/consultores/alex-sandro.jpg","saiu":true,"vendasPara":"rafael-ferraz"},

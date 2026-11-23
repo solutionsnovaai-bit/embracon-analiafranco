@@ -174,7 +174,7 @@ function aplicar(dados) {
     if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
     if (sup && sup.foto) foto = sup.foto;
     /* a direção da franquia (oculto) soma só no total da franquia, nunca numa equipe */
-    state.consultores.set(id, { id, nome, equipe: p.oculto === true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
+    state.consultores.set(id, { id, nome, equipe: p.oculto === true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, fora: p.fora === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -229,7 +229,7 @@ function calcular() {
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
-  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: 0, cotas: 0, ultima: '', tipos: {} }));
+  const todas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto || p.fora, foto: p.foto, valor: 0, cotas: 0, ultima: '', tipos: {} }));
   const porId = new Map(todas.map(l => [l.id, l]));
   for (const v of base) { const l = porId.get(v.consultor); l.valor += v.valor; l.cotas += v.cotas; l.tipos[v.categoria] = (l.tipos[v.categoria] || 0) + v.cotas; if (v.data && v.data > l.ultima) l.ultima = v.data; }
   /* quem tem cargo (diretoria e supervisão) só entra na lista quando tem venda no período mostrado */
@@ -238,7 +238,7 @@ function calcular() {
 
   let venderam = 0, quadro = 0;
   for (const p of state.consultores.values()) {
-    if (p.oculto) continue;                 // fora do ranking: o crédito soma no total, mas ela não conta como consultora
+    if (p.oculto || p.fora) continue;       // fora do ranking: o crédito soma no total, mas ela não conta como consultora
     const vendeu = (cicloPor.get(p.id) || 0) > 0;
     if (vendeu) venderam++;
     if (vendeu || !p.cargo) quadro++;       // diretoria e supervisão só contam no "X de Y" quando venderam
@@ -251,7 +251,7 @@ function calcular() {
     const chave = p.equipe || SEM_EQUIPE;
     if (!porEquipe.has(chave)) porEquipe.set(chave, { nome: chave, valor: 0, cotas: 0, membros: 0, naMeta: 0, ordem: 1e3 });
     const e = porEquipe.get(chave), vendido = cicloPor.get(p.id) || 0;
-    if (!p.oculto && (!p.cargo || vendido > 0)) e.membros++;
+    if (!p.oculto && !p.fora && (!p.cargo || vendido > 0)) e.membros++;   // quem saiu (fora) não conta como membro, mas o crédito soma na equipe
     e.valor += vendido;
   }
   for (const v of ciclo) { const p = state.consultores.get(v.consultor); porEquipe.get(p.equipe || SEM_EQUIPE).cotas += v.cotas; }
@@ -281,7 +281,7 @@ function calcular() {
     const tp = tiposPor.get(v.consultor) || {}; tp[v.categoria] = (tp[v.categoria] || 0) + v.cotas; tiposPor.set(v.consultor, tp);
   }
   const pessoas = [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, equipe: p.equipe, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }))
-    .filter(p => !p.oculto && (!p.cargo || p.valor > 0))
+    .filter(p => !p.oculto && !p.fora && (!p.cargo || p.valor > 0))
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   const diretoria = [...state.consultores.values()].filter(p => p.oculto || /\bceo\b/i.test(p.cargo || '')).sort((a, b) => (b.oculto ? 1 : 0) - (a.oculto ? 1 : 0))
     .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
@@ -1072,7 +1072,8 @@ function dadosDaPlanilha(texto, cadastro) {
     const cad = doCadastro.get(normNome(nome)) || doCadastro.get('#' + slug(nome));
     /* quem saiu da franquia (cadastro com "saiu": true) não aparece mais; as vendas dele passam
        para quem estiver em "vendasPara" (a chave continua a mesma, então o dia de cada venda não muda) */
-    if (cad && cad.saiu === true) {
+    const fora = !!(cad && cad.saiu === true && cad.somaNaEquipe === true);
+    if (cad && cad.saiu === true && !fora) {
       const para = String(cad.vendasPara || '');
       if (para && colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) repasses.push({ para, valor: v, categoria: tipoCota(l[j]), chave: (cad.id ? String(cad.id) : slug(nome)) + '|' + (k + 1) + '|' + v }); });
       continue;
@@ -1082,7 +1083,7 @@ function dadosDaPlanilha(texto, cadastro) {
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
-    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(fora ? { fora: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     const fixo = cad && cad.tipoVenda && typeof cad.tipoVenda === 'object' ? cad.tipoVenda : {};
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); let cat = tipoCota(l[j]); if (cat === 'outros' && fixo[k + 1]) cat = tipoCota(fixo[k + 1]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: cat, chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
