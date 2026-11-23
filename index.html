@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="assets/telas.css">
 <link rel="stylesheet" href="assets/apetrechos.css">
 <link rel="stylesheet" href="assets/black.css">
-<script>try{if(localStorage.getItem("ranking-tema")==="vermelho")document.documentElement.dataset.tema="vermelho";var c=localStorage.getItem("ranking-campanha");if(c)document.documentElement.dataset.campanha=c}catch(e){}</script>
+<script>try{var r=document.documentElement,t=localStorage.getItem("ranking-tema"),c=localStorage.getItem("ranking-campanha");if(c){r.dataset.campanha=c;r.dataset.tema="vermelho";var b=localStorage.getItem("ranking-tema-bf")||(t==="vermelho"?"black":"vermelho");if(b==="black")r.dataset.modo="black"}else if(t==="vermelho")r.dataset.tema="vermelho"}catch(e){}</script>
 </head>
 <body>
 <div class="load" id="load" role="status" aria-label="Carregando o ranking">
@@ -95,7 +95,7 @@ Promise.all(fs).then(function(){requestAnimationFrame(function(){requestAnimatio
       <div class="regua-area" id="regua-area">
         <span class="ritmo-txt" id="ritmo-txt" hidden></span>
         <div class="ritmo" id="ritmo" hidden></div>
-        <div class="regua-trilho"><div class="regua-cheio" id="regua-cheio"></div></div>
+        <div class="regua-pista"><div class="regua-trilho"><div class="regua-cheio" id="regua-cheio"></div></div><div class="regua-fogo" id="regua-fogo" aria-hidden="true"></div></div>
       </div>
       <div class="regua-marcas" id="regua-marcas"></div>
     </div>

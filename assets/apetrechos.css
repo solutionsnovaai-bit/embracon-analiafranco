@@ -133,3 +133,41 @@
   .tarja{display:none}
   .faixa-conta::after,#pz-cheio::after,.vip::after{display:none}
 }
+
+/* ==========================================================================
+   Régua pegando fogo: acende a partir de 50% da meta (data-fogo 1..3 esquenta mais perto do fim)
+   ========================================================================== */
+.regua-pista{position:relative}
+.regua-fogo{position:absolute;left:0;top:0;height:1.6rem;width:0;pointer-events:none;display:none;z-index:2;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-fogo{display:block}
+.regua[data-fogo="1"]{--int:1}.regua[data-fogo="2"]{--int:1.35}.regua[data-fogo="3"]{--int:1.75}
+.regua:not([data-fogo="0"]):not([data-fogo=""]) .regua-trilho{overflow:visible}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{
+  background:linear-gradient(90deg,#7A0A0F 0%,#ED1C24 35%,#FF4A1C 62%,#FF8A1E 80%,#FFC233 93%,#FFF1A8 100%);
+  background-size:100% 100%;overflow:hidden;
+  animation:brasa-pulsa 1.4s ease-in-out infinite}
+@keyframes brasa-pulsa{0%,100%{box-shadow:0 0 1rem .1rem rgba(255,90,20,.55),0 0 2.4rem .3rem rgba(237,28,36,.35)}50%{box-shadow:0 0 1.8rem .35rem rgba(255,140,30,.85),0 0 4rem .8rem rgba(237,28,36,.5)}}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio::before{--l-listra:rgba(255,255,255,.14);animation-duration:.55s}
+/* línguas de fogo saindo de cima da barra */
+.chama{position:absolute;bottom:55%;width:1.5rem;height:calc(2.1rem * var(--h) * var(--int,1));margin-left:-.75rem;transform-origin:50% 100%;
+  border-radius:50% 50% 45% 45% / 70% 70% 30% 30%;
+  background:radial-gradient(ellipse at 50% 85%,#FFF6C8 0%,#FFD23A 22%,#FF8A1E 45%,#ED1C24 70%,rgba(237,28,36,0) 78%);
+  filter:blur(.5px);opacity:.92;mix-blend-mode:screen;
+  animation:chama var(--d,.6s) ease-in-out var(--a,0s) infinite alternate}
+@keyframes chama{0%{transform:scale(.85,.7) skewX(-6deg);opacity:.75}50%{transform:scale(1.05,1.15) skewX(5deg);opacity:1}100%{transform:scale(.9,.9) skewX(-3deg) translateY(-.15rem);opacity:.85}}
+/* ponta incandescente */
+.fogo-ponta{position:absolute;right:-1.4rem;top:50%;width:2.8rem;height:2.8rem;margin-top:-1.4rem;border-radius:50%;
+  background:radial-gradient(circle,#FFFFFF 0%,#FFF1A8 18%,#FFB020 38%,rgba(255,74,28,.55) 58%,rgba(237,28,36,0) 72%);
+  transform:scale(calc(.9 * var(--int,1)));animation:ponta-fogo .9s ease-in-out infinite alternate}
+@keyframes ponta-fogo{from{opacity:.8;transform:scale(calc(.85 * var(--int,1)))}to{opacity:1;transform:scale(calc(1.15 * var(--int,1)))}}
+/* brasas subindo da ponta */
+.brasa{position:absolute;bottom:40%;width:var(--s,.25rem);height:var(--s,.25rem);border-radius:50%;background:#FFD23A;box-shadow:0 0 .4rem .1rem #FF8A1E;
+  opacity:0;animation:brasa var(--d,2s) ease-out var(--a,0s) infinite}
+@keyframes brasa{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(var(--x,0),calc(-4.5rem * var(--int,1))) scale(.3)}}
+/* número da porcentagem em brasa */
+.pct strong.pct-fogo{background:linear-gradient(0deg,#ED1C24 0%,#FF5A1F 45%,#FFB020 80%,#FFE680 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:pct-calor 1.6s ease-in-out infinite;filter:drop-shadow(0 0 .6rem rgba(255,110,30,.55))}
+@keyframes pct-calor{0%,100%{filter:drop-shadow(0 0 .45rem rgba(255,110,30,.45))}50%{filter:drop-shadow(0 0 1.3rem rgba(255,140,30,.9))}}
+:root[data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{background:linear-gradient(0deg,#FFB020 0%,#FFE680 55%,#FFFFFF 100%);-webkit-background-clip:text;background-clip:text}
+:root[data-tema="vermelho"]:not([data-modo="black"]) .chama{mix-blend-mode:normal}
+@media (prefers-reduced-motion:reduce){.chama,.brasa,.fogo-ponta,.pct strong.pct-fogo{animation:none}.brasa{display:none}}

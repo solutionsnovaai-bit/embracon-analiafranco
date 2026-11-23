@@ -447,6 +447,12 @@ function pintar() {
   const pct = c.meta ? r.total / c.meta * 100 : 0;
   $('pct').textContent = pctTxt(Math.floor(pct * 10) / 10);
   $('regua-cheio').style.width = Math.min(pct, 100) + '%';
+  /* régua pegando fogo: a partir de 50% da meta acende, e esquenta mais perto do fim */
+  const fogo = pct >= 50 ? (pct >= 85 ? 3 : pct >= 65 ? 2 : 1) : 0;
+  $('regua').dataset.fogo = fogo;
+  $('regua-fogo').style.width = Math.min(pct, 100) + '%';
+  montarFogo();
+  $('pct').classList.toggle('pct-fogo', fogo > 0);
 
   const marcas = $('regua-marcas'); marcas.textContent = '';
   const passo = passoRegua(c.meta);
@@ -1189,7 +1195,7 @@ const io = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 /* barras crescem do zero quando o painel aparece */
 function reencher() {
   if (semMovimento) return;
-  const barras = [$('regua-cheio'), ...document.querySelectorAll('#lista .barra-cheio, #equipes .eq-barra i')];
+  const barras = [$('regua-cheio'), $('regua-fogo'), ...document.querySelectorAll('#lista .barra-cheio, #equipes .eq-barra i')];
   barras.forEach(b => { b._alvo = b.style.width; b.style.transition = 'none'; b.style.width = '0%'; });
   void document.body.offsetWidth;
   barras.forEach((b, i) => { b.style.transition = 'width 1.5s cubic-bezier(.2,.8,.2,1) ' + (.45 + Math.min(i, 22) * .045) + 's'; b.style.width = b._alvo; });
@@ -1398,21 +1404,46 @@ document.querySelector('.filtro').addEventListener('click', e => {
 });
 $('btn-todas').addEventListener('click', () => { state.verTodas = !state.verTodas; render(); });
 
-/* tema: claro (padrão) ou vermelho; a escolha fica guardada neste navegador */
+/* chamas da régua: monta uma vez (línguas de fogo ao longo da barra, ponta acesa e brasas subindo) */
+function montarFogo() {
+  const f = $('regua-fogo'); if (f.childElementCount) return;
+  const N = 18;
+  for (let i = 0; i < N; i++) {
+    const x = Math.pow(i / (N - 1), .7) * 100;            // mais chamas perto da ponta
+    const ch = el('i', { class: 'chama' });
+    ch.style.cssText = 'left:' + x.toFixed(1) + '%;--h:' + (.55 + i / N * .9).toFixed(2) + ';--d:' + (.45 + Math.random() * .5).toFixed(2) + 's;--a:' + (-Math.random()).toFixed(2) + 's';
+    f.append(ch);
+  }
+  f.append(el('b', { class: 'fogo-ponta' }));
+  for (let i = 0; i < 16; i++) {
+    const br = el('u', { class: 'brasa' });
+    br.style.cssText = 'right:' + (Math.random() * 18).toFixed(1) + '%;--x:' + ((Math.random() - .5) * 4).toFixed(2) + 'rem;--d:' + (1.4 + Math.random() * 1.6).toFixed(2) + 's;--a:' + (-Math.random() * 3).toFixed(2) + 's;--s:' + (.18 + Math.random() * .22).toFixed(2) + 'rem';
+    f.append(br);
+  }
+}
+
+/* tema: claro ou vermelho; durante a Black Embracon as opções viram vermelho ou black (o claro sai de cena).
+   A escolha fica guardada neste navegador. */
 const raiz = document.documentElement;
+function temaBf() { try { const v = localStorage.getItem('ranking-tema-bf'); if (v) return v; return localStorage.getItem('ranking-tema') === 'vermelho' ? 'black' : 'vermelho'; } catch (e) { return 'vermelho'; } }
+function temaAtual() { return raiz.dataset.modo === 'black' ? 'black' : raiz.dataset.tema === 'vermelho' ? 'vermelho' : 'claro'; }
 function aplicarTema(tema, guardar) {
-  const vermelho = tema === 'vermelho';
-  if (vermelho) raiz.dataset.tema = 'vermelho'; else delete raiz.dataset.tema;
-  /* durante a Black Embracon o tema vermelho vira o modo black */
   const black = raiz.dataset.campanha === 'black-friday';
-  $('btn-tema-txt').textContent = vermelho ? 'Tema claro' : black ? 'Tema black' : 'Tema vermelho';
-  $('btn-tema').setAttribute('aria-pressed', String(vermelho));
-  $('cor-tema').setAttribute('content', vermelho ? (black ? '#070506' : '#ED1C24') : '#F5F3F3');
-  if (guardar) { try { localStorage.setItem('ranking-tema', vermelho ? 'vermelho' : 'claro'); } catch (e) { /* sem armazenamento local: vale só nesta visita */ } }
+  if (black && tema === 'claro') tema = 'vermelho';
+  if (!black && tema === 'black') tema = 'vermelho';
+  if (tema === 'claro') delete raiz.dataset.tema; else raiz.dataset.tema = 'vermelho';
+  if (tema === 'black') raiz.dataset.modo = 'black'; else delete raiz.dataset.modo;
+  $('btn-tema-txt').textContent = black ? (tema === 'black' ? 'Tema vermelho' : 'Tema black') : (tema === 'vermelho' ? 'Tema claro' : 'Tema vermelho');
+  $('btn-tema').setAttribute('aria-pressed', String(tema !== 'claro' && !(black && tema === 'vermelho')));
+  $('cor-tema').setAttribute('content', tema === 'black' ? '#070506' : tema === 'vermelho' ? '#ED1C24' : '#F5F3F3');
+  if (guardar) { try { if (black) localStorage.setItem('ranking-tema-bf', tema); else localStorage.setItem('ranking-tema', tema); } catch (e) { /* sem armazenamento local: vale só nesta visita */ } }
   posicionarRitmo();
 }
-aplicarTema(raiz.dataset.tema === 'vermelho' ? 'vermelho' : 'claro', false);
-$('btn-tema').addEventListener('click', () => aplicarTema(raiz.dataset.tema === 'vermelho' ? 'claro' : 'vermelho', true));
+aplicarTema(raiz.dataset.campanha === 'black-friday' ? temaBf() : temaAtual(), false);
+$('btn-tema').addEventListener('click', () => {
+  const t = temaAtual(), black = raiz.dataset.campanha === 'black-friday';
+  aplicarTema(black ? (t === 'black' ? 'vermelho' : 'black') : (t === 'vermelho' ? 'claro' : 'vermelho'), true);
+});
 
 /* ---------- giros contínuos ---------- */
 function iniciarGiros() {
@@ -2061,7 +2092,7 @@ function aplicarCampanha() {
   if (state.modo === 'carregando') return;   // até os dados chegarem vale o que ficou guardado da última visita
   const c = state.config.campanha || '';
   if (c) raiz.dataset.campanha = c; else delete raiz.dataset.campanha;
-  if (aplicarCampanha.ultima !== c) { aplicarCampanha.ultima = c; aplicarTema(raiz.dataset.tema === 'vermelho' ? 'vermelho' : 'claro', false); }
+  if (aplicarCampanha.ultima !== c) { aplicarCampanha.ultima = c; aplicarTema(c === 'black-friday' ? temaBf() : (function () { try { return localStorage.getItem('ranking-tema') || 'claro'; } catch (e) { return 'claro'; } })(), false); }
   if (c && aplicarCampanha.feita !== innerWidth) { aplicarCampanha.feita = innerWidth; requestAnimationFrame(posicionarEtiqueta); }
   try { if (c) localStorage.setItem('ranking-campanha', c); else localStorage.removeItem('ranking-campanha'); } catch (e) { /* vale só nesta visita */ }
 }

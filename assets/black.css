@@ -131,7 +131,7 @@
 
 /* ---------- confete com mais preto ---------- */
 :root[data-campanha="black-friday"]{--cf-2:#0D0A0B;--cf-3:#0D0A0B}
-:root[data-campanha="black-friday"][data-tema="vermelho"]{--cf-2:#0D0A0B;--cf-3:#FFFFFF}
+:root[data-campanha="black-friday"][data-modo="black"]{--cf-2:#0D0A0B;--cf-3:#FFFFFF}
 
 
 @media (max-width:46rem){
@@ -147,7 +147,7 @@
    MODO BLACK: durante a campanha o tema vermelho vira o modo black (página toda preta).
    Quando a campanha sair do ranking.json, o tema vermelho volta a ser o vermelho de sempre.
    ========================================================================== */
-:root[data-campanha="black-friday"][data-tema="vermelho"]{
+:root[data-campanha="black-friday"][data-modo="black"]{
   --bf:#131011; --bf-2:#1D1819; --bf-3:#272122; --bf-borda:rgba(255,255,255,.085);
   --ground:#070506;--paper:#131011;--ink:#FFFFFF;--ink-2:#A89D9E;--line:rgba(255,255,255,.085);--track:#262021;
   --red:#ED1C24;--red-deep:#B70E17;--red-wash:rgba(237,28,36,.14);--on-red:#FFFFFF;--on-red-2:#FFD9DA;--ok:#FFFFFF;
@@ -158,38 +158,38 @@
   --cf-1:#ED1C24;--cf-2:#FFFFFF;--cf-3:#4A4243;--mf-op:.085;--voo-cor:rgba(237,28,36,.22);--raio:rgba(237,28,36,.09);
   color-scheme:dark}
 /* fundo: preto profundo com brilho vermelho no alto, granulado fino e trilho vermelho onde a etiqueta pendura */
-:root[data-campanha="black-friday"][data-tema="vermelho"] body{background:var(--ground)}
+:root[data-campanha="black-friday"][data-modo="black"] body{background:var(--ground)}
 /* uma camada fixa só, pintada uma vez (sem background-attachment:fixed nem mix-blend-mode, que pesam na TV quando o telão rola) */
-:root[data-campanha="black-friday"][data-tema="vermelho"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;transform:translateZ(0);
+:root[data-campanha="black-friday"][data-modo="black"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;transform:translateZ(0);
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(75rem 34rem at 80% -10%,rgba(237,28,36,.17),transparent 62%),radial-gradient(60rem 30rem at -5% 110%,rgba(237,28,36,.09),transparent 60%)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] body::after{content:"";position:fixed;z-index:9;left:0;right:0;top:0;height:3px;pointer-events:none;
+:root[data-campanha="black-friday"][data-modo="black"] body::after{content:"";position:fixed;z-index:9;left:0;right:0;top:0;height:3px;pointer-events:none;
   background:linear-gradient(90deg,transparent,#ED1C24 18%,#FF4D54 50%,#ED1C24 82%,transparent)}
 /* logo: palavras brancas e a mão vermelha */
-:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-branco{display:none}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor{display:block}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor :is(.lv-consorcio,.lv-embracon){fill:#FFFFFF}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .logo-cor .lv-assinatura{fill:#A89D9E}
+:root[data-campanha="black-friday"][data-modo="black"] .logo-branco{display:none}
+:root[data-campanha="black-friday"][data-modo="black"] .logo-cor{display:block}
+:root[data-campanha="black-friday"][data-modo="black"] .logo-cor :is(.lv-consorcio,.lv-embracon){fill:#FFFFFF}
+:root[data-campanha="black-friday"][data-modo="black"] .logo-cor .lv-assinatura{fill:#A89D9E}
 /* cartões: preto um tom acima da página, filete claro e reflexo fino no alto */
-:root[data-campanha="black-friday"][data-tema="vermelho"] :is(.placar,.eq-linha,.pd-palco,.te-sup,.te-dados,.mu-palavra,.mu-cab,.ho-cab,.ho-eq,.tarja-corpo,.placarzinho,.flash,.pd-chip){
+:root[data-campanha="black-friday"][data-modo="black"] :is(.placar,.eq-linha,.pd-palco,.te-sup,.te-dados,.mu-palavra,.mu-cab,.ho-cab,.ho-eq,.tarja-corpo,.placarzinho,.flash,.pd-chip){
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1.6rem 3rem -1.4rem rgba(0,0,0,.9)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .linha.lider{box-shadow:inset .4rem 0 0 var(--bf-red),0 0 0 1px rgba(237,28,36,.4),0 0 2.6rem -.6rem rgba(237,28,36,.45)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .linha:not(.top){border-bottom-color:rgba(255,255,255,.06)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .tarja-corpo{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(255,255,255,.08),0 1.4rem 3rem rgba(0,0,0,.8)}
+:root[data-campanha="black-friday"][data-modo="black"] .linha.lider{box-shadow:inset .4rem 0 0 var(--bf-red),0 0 0 1px rgba(237,28,36,.4),0 0 2.6rem -.6rem rgba(237,28,36,.45)}
+:root[data-campanha="black-friday"][data-modo="black"] .linha:not(.top){border-bottom-color:rgba(255,255,255,.06)}
+:root[data-campanha="black-friday"][data-modo="black"] .tarja-corpo{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(255,255,255,.08),0 1.4rem 3rem rgba(0,0,0,.8)}
 /* etiqueta branca, como etiqueta de loja chique: "BLACK" preto e "EMBRACON" vermelho */
-:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-etiqueta{background:#FFFFFF;color:#070506;filter:drop-shadow(0 .9rem 1.2rem rgba(0,0,0,.6))}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-etiqueta em{color:#6D6E70}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-furo{background:#070506;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.25)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-fio{background:linear-gradient(#ED1C24,#FFFFFF)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .bf-brilho{background:linear-gradient(105deg,transparent 35%,rgba(237,28,36,.16) 50%,transparent 65%)}
+:root[data-campanha="black-friday"][data-modo="black"] .bf-etiqueta{background:#FFFFFF;color:#070506;filter:drop-shadow(0 .9rem 1.2rem rgba(0,0,0,.6))}
+:root[data-campanha="black-friday"][data-modo="black"] .bf-etiqueta em{color:#6D6E70}
+:root[data-campanha="black-friday"][data-modo="black"] .bf-furo{background:#070506;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.25)}
+:root[data-campanha="black-friday"][data-modo="black"] .bf-fio{background:linear-gradient(#ED1C24,#FFFFFF)}
+:root[data-campanha="black-friday"][data-modo="black"] .bf-brilho{background:linear-gradient(105deg,transparent 35%,rgba(237,28,36,.16) 50%,transparent 65%)}
 /* cortina e abertura: preto puro */
-:root[data-campanha="black-friday"][data-tema="vermelho"] .cortina{background:#000000}
+:root[data-campanha="black-friday"][data-modo="black"] .cortina{background:#000000}
 /* filtro e abas no preto */
-:root[data-campanha="black-friday"][data-tema="vermelho"] .filtro{background:var(--bf-2)}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .filtro button[aria-pressed="true"]{background:#FFFFFF;color:#070506}
-:root[data-campanha="black-friday"][data-tema="vermelho"] .btn-tema i{background:#FFFFFF}
+:root[data-campanha="black-friday"][data-modo="black"] .filtro{background:var(--bf-2)}
+:root[data-campanha="black-friday"][data-modo="black"] .filtro button[aria-pressed="true"]{background:#FFFFFF;color:#070506}
+:root[data-campanha="black-friday"][data-modo="black"] .btn-tema i{background:#FFFFFF}
 @media (prefers-reduced-motion:reduce){
-  :root[data-campanha="black-friday"][data-tema="vermelho"] body::before{display:none}
+  :root[data-campanha="black-friday"][data-modo="black"] body::before{display:none}
 }
 
 /* faixa de cotas por tipo, no cartão escuro do placar: o auto fica branco e o pesados cinza claro para aparecerem sobre o preto */
