@@ -28,14 +28,14 @@ body{overflow-x:clip}
 :is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao) :is(.m2,.m3,.m4){animation:onda-dedo var(--onda,6.5s) var(--ease) infinite}
 :is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao) .m3{animation-delay:.22s}
 :is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao) .m4{animation-delay:.44s}
-:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s both,onda-dedo var(--onda,6.5s) var(--ease) 1.5s infinite}
-:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s both,onda-dedo var(--onda,6.5s) var(--ease) 1.72s infinite}
-:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s both,onda-dedo var(--onda,6.5s) var(--ease) 1.94s infinite}
+:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.5s infinite}
+:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.72s infinite}
+:is(.h2-mao,.tela-mao-fundo,.pd-bloco-mao,.pd-coroa,.linha-mao,.eq-mao,.te-o,.te-p-mao,.te-pos-mao,.mu-mao,.mu-palavra-mao,.mu-valor-mao,.tl-mao,.tn-prox-mao).vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.94s infinite}
 
 /* ---------- mãos flutuando no fundo da página ---------- */
 .app{position:relative;z-index:1}
 .maos-fundo{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.maos-fundo .mao{position:absolute;--mao-cor:var(--red);opacity:var(--mf-op);will-change:transform}
+.maos-fundo .mao{position:absolute;--mao-cor:var(--red);--mao-op:var(--mf-op);will-change:transform}
 .maos-fundo .mao :is(.m2,.m3,.m4){animation:onda-dedo 8s var(--ease) infinite;animation-delay:var(--d,0s)}
 .maos-fundo .mao .m3{animation-delay:calc(var(--d,0s) + .22s)}
 .maos-fundo .mao .m4{animation-delay:calc(var(--d,0s) + .44s)}
@@ -55,8 +55,8 @@ h2 .h2-mao{display:inline-block;width:1.3em;margin-inline-end:.45em;vertical-ali
 /* mão d'água na linha do líder e no cartão da equipe que está na frente */
 .linha-mao,.eq-mao{display:none}
 .linha.lider>*{position:relative}
-.linha.lider>.linha-mao{display:block;position:absolute;z-index:0;right:23%;top:50%;width:9rem;margin-top:-3.85rem;--mao-cor:var(--on-red);opacity:.13;pointer-events:none;--onda:5s}
-.eq-linha.lider>.eq-mao{display:block;position:absolute;z-index:0;right:-1.3rem;bottom:-1.7rem;width:6.75rem;--mao-cor:var(--red);opacity:.1;pointer-events:none;--onda:5.5s}
+.linha.lider>.linha-mao{display:block;position:absolute;z-index:0;right:23%;top:50%;width:9rem;margin-top:-3.85rem;--mao-cor:var(--on-red);--mao-op:.13;pointer-events:none;--onda:5s}
+.eq-linha.lider>.eq-mao{display:block;position:absolute;z-index:0;right:-1.3rem;bottom:-1.7rem;width:6.75rem;--mao-cor:var(--red);--mao-op:.1;pointer-events:none;--onda:5.5s}
 .eq-linha.lider>*:not(.eq-mao),.eq-linha.lider .eq-quem>*,.eq-linha.lider .eq-valor>*{position:relative;z-index:1}
 
 /* ==========================================================================
@@ -81,8 +81,9 @@ html:not(.tv) .tn-prog{display:none}
 /* ==========================================================================
    Cortina da troca de tela
    ========================================================================== */
-.cortina{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:1.5rem;overflow:hidden;background:var(--red);color:var(--on-red);--mao-cor:var(--on-red);
-  clip-path:polygon(-60% 0,-60% 0,-85% 100%,-85% 100%)}
+.cortina{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:1.5rem;overflow:hidden;--cortina-bg:var(--red);color:var(--on-red);--mao-cor:var(--on-red)}
+/* a cortina é uma folha inclinada que atravessa a tela só com transform (a TV move a textura pronta) */
+.cortina-folha{position:absolute;top:0;bottom:0;left:-30%;right:-30%;background:var(--cortina-bg);transform:translateX(-100%) skewX(-24deg);will-change:transform}
 .cortina-in{position:relative;display:flex;align-items:center;gap:clamp(1.25rem,3vw,2.75rem);max-width:min(100%,64rem)}
 .cortina-marca{position:relative;flex:none;width:clamp(5.5rem,13vw,10.5rem)}
 .cortina-mao{width:100%}
@@ -104,7 +105,7 @@ html:not(.tv) .tn-prog{display:none}
 .telas{display:grid;min-width:0}
 .tela{position:relative;display:grid;gap:1.5rem;min-width:0}
 .tela>:not(.tela-mao-fundo){position:relative;z-index:1}
-.tela-mao-fundo{position:absolute;z-index:0;right:-5%;top:-1rem;width:min(34rem,46%);--mao-cor:var(--red);opacity:var(--mao-fundo);pointer-events:none;
+.tela-mao-fundo{position:absolute;z-index:0;right:-5%;top:-1rem;width:min(34rem,46%);--mao-cor:var(--red);--mao-op:var(--mao-fundo);pointer-events:none;
   animation:flutua 10s ease-in-out infinite alternate;--onda:6s}
 .tl-cab{display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.5rem}
 .tl-mao{flex:none;width:clamp(2.75rem,5vw,3.6rem);--mao-cor:var(--red);--onda:4.5s}
@@ -152,7 +153,7 @@ html:not(.tv) .tn-prog{display:none}
   transform:translateX(-130%) skewX(-34deg);animation:brilho 5.5s var(--ease-io) infinite;animation-delay:calc(var(--i,0) * .7s)}
 .pd-2 .pd-bloco::after{--i:1}.pd-3 .pd-bloco::after{--i:2}
 .pd-pos{position:relative;z-index:1;font:800 calc(var(--h) * .6)/1 var(--display);font-stretch:72%;font-variant-numeric:tabular-nums}
-.pd-bloco-mao{position:absolute;right:-14%;bottom:-20%;width:72%;--mao-cor:currentColor;opacity:.14;--onda:5s}
+.pd-bloco-mao{position:absolute;right:-14%;bottom:-20%;width:72%;--mao-cor:currentColor;--mao-op:.14;--onda:5s}
 .pd-cola{display:grid;gap:.6rem}
 .pd-cola-lista{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14.5rem),1fr));gap:.6rem}
 .pd-chip{display:grid;grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"pos av txt" "pos av v";align-items:center;gap:.2rem .7rem;padding:.65rem 1rem .65rem .85rem;background:var(--paper);border:1px solid var(--line);border-radius:1.25rem}

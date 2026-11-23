@@ -77,9 +77,9 @@
 :is(.tarja-mao,.tarja-coroa,.tarja-foto-mao) :is(.m2,.m3,.m4){animation:onda-dedo var(--onda,6.5s) var(--ease) infinite}
 :is(.tarja-mao,.tarja-coroa,.tarja-foto-mao) .m3{animation-delay:.22s}
 :is(.tarja-mao,.tarja-coroa,.tarja-foto-mao) .m4{animation-delay:.44s}
-:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s both,onda-dedo var(--onda,6.5s) var(--ease) 1.5s infinite}
-:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s both,onda-dedo var(--onda,6.5s) var(--ease) 1.72s infinite}
-:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s both,onda-dedo var(--onda,6.5s) var(--ease) 1.94s infinite}
+:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.5s infinite}
+:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.72s infinite}
+:is(.tarja-mao,.tarja-coroa,.tarja-foto-mao).vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s backwards,onda-dedo var(--onda,6.5s) var(--ease) 1.94s infinite}
 
 /* ---------- placar fixo ---------- */
 .placarzinho{position:fixed;z-index:9;top:1rem;right:clamp(1rem,3vw,2.5rem);display:flex;align-items:center;gap:.9rem;padding:.7rem 1.15rem .7rem .95rem;
@@ -87,7 +87,8 @@
   box-shadow:0 .8rem 2rem rgba(21,17,18,.16);pointer-events:none;visibility:hidden;opacity:0;transform:translateY(calc(-100% - 2rem));
   transition:transform .65s cubic-bezier(.34,1.4,.6,1),opacity .3s ease,visibility 0s linear .65s}
 .placarzinho.on{visibility:visible;opacity:1;transform:none;transition:transform .65s cubic-bezier(.34,1.4,.6,1),opacity .3s ease,visibility 0s}
-.pz-vivo{flex:none;width:.55rem;height:.55rem;border-radius:50%;background:var(--red);animation:pulsa 1.6s ease-out infinite}
+.pz-vivo{position:relative;flex:none;width:.55rem;height:.55rem;border-radius:50%;background:var(--red)}
+.pz-vivo::after{content:"";position:absolute;inset:0;border-radius:50%;background:inherit;animation:anel-vivo 1.6s ease-out infinite}
 .pz-txt{display:grid;gap:.2rem;line-height:1.1}
 .pz-rot{font-size:.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
 #pz-total{font:800 1.625rem/1 var(--display);font-stretch:84%;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -135,54 +136,23 @@
 }
 
 /* ==========================================================================
-   Régua pegando fogo: acende a partir de 50% da meta (data-fogo 1..3 esquenta mais perto do fim)
+   Régua da meta: a ponta da barra fica acesa (brilho que só pulsa a opacidade) e, a partir de 50%
+   da meta (data-fogo 1..3), a mãozinha da Embracon dá um "tum" na ponta. Tudo só com transform e
+   opacidade: a TV não repinta nada enquanto anima.
    ========================================================================== */
 .regua-pista{position:relative}
-.regua-fogo{position:absolute;left:0;top:0;height:1.6rem;width:0;pointer-events:none;display:none;z-index:2;transition:width .9s cubic-bezier(.2,.8,.2,1)}
-.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-fogo{display:block}
-.regua[data-fogo="1"]{--int:1}.regua[data-fogo="2"]{--int:1.35}.regua[data-fogo="3"]{--int:1.75}
+.regua-fogo{position:absolute;left:0;top:0;height:1.6rem;width:0;pointer-events:none;z-index:2;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.regua-fogo::before{content:"";position:absolute;right:-.2rem;top:50%;width:3.2rem;height:3.2rem;margin-top:-1.6rem;border-radius:50%;
+  background:radial-gradient(circle,var(--red) 0,rgba(237,28,36,.45) 30%,rgba(237,28,36,0) 68%);opacity:0;animation:ponta-acesa 2.6s ease-in-out infinite}
+@keyframes ponta-acesa{0%,100%{opacity:.15}50%{opacity:.85}}
+.regua[data-fogo="0"] .fogo-mao{display:none}
 .regua:not([data-fogo="0"]):not([data-fogo=""]) .regua-trilho{overflow:visible}
-.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{
-  background:linear-gradient(90deg,#7A0A0F 0%,#ED1C24 35%,#FF4A1C 62%,#FF8A1E 80%,#FFC233 93%,#FFF1A8 100%);
-  background-size:100% 100%;overflow:hidden;
-  animation:brasa-pulsa 1.4s ease-in-out infinite}
-@keyframes brasa-pulsa{0%,100%{box-shadow:0 0 1rem .1rem rgba(255,90,20,.55),0 0 2.4rem .3rem rgba(237,28,36,.35)}50%{box-shadow:0 0 1.8rem .35rem rgba(255,140,30,.85),0 0 4rem .8rem rgba(237,28,36,.5)}}
-.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio::before{--l-listra:rgba(255,255,255,.14);animation-duration:.55s}
-/* línguas de fogo saindo de cima da barra */
-.chama{position:absolute;bottom:55%;width:1.5rem;height:calc(2.1rem * var(--h) * var(--int,1));margin-left:-.75rem;transform-origin:50% 100%;
-  border-radius:50% 50% 45% 45% / 70% 70% 30% 30%;
-  background:radial-gradient(ellipse at 50% 85%,#FFF6C8 0%,#FFD23A 22%,#FF8A1E 45%,#ED1C24 70%,rgba(237,28,36,0) 78%);
-  filter:blur(.5px);opacity:.92;mix-blend-mode:screen;
-  animation:chama var(--d,.6s) ease-in-out var(--a,0s) infinite alternate}
-@keyframes chama{0%{transform:scale(.85,.7) skewX(-6deg);opacity:.75}50%{transform:scale(1.05,1.15) skewX(5deg);opacity:1}100%{transform:scale(.9,.9) skewX(-3deg) translateY(-.15rem);opacity:.85}}
-/* ponta incandescente */
-.fogo-ponta{position:absolute;right:-1.4rem;top:50%;width:2.8rem;height:2.8rem;margin-top:-1.4rem;border-radius:50%;
-  background:radial-gradient(circle,#FFFFFF 0%,#FFF1A8 18%,#FFB020 38%,rgba(255,74,28,.55) 58%,rgba(237,28,36,0) 72%);
-  transform:scale(calc(.9 * var(--int,1)));animation:ponta-fogo .9s ease-in-out infinite alternate}
-@keyframes ponta-fogo{from{opacity:.8;transform:scale(calc(.85 * var(--int,1)))}to{opacity:1;transform:scale(calc(1.15 * var(--int,1)))}}
-/* brasas subindo da ponta */
-.brasa{position:absolute;bottom:40%;width:var(--s,.25rem);height:var(--s,.25rem);border-radius:50%;background:#FFD23A;box-shadow:0 0 .4rem .1rem #FF8A1E;
-  opacity:0;animation:brasa var(--d,2s) ease-out var(--a,0s) infinite}
-@keyframes brasa{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(var(--x,0),calc(-4.5rem * var(--int,1))) scale(.3)}}
-/* número da porcentagem em brasa */
-.pct strong.pct-fogo{background:linear-gradient(0deg,#ED1C24 0%,#FF5A1F 45%,#FFB020 80%,#FFE680 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:pct-calor 1.6s ease-in-out infinite;filter:drop-shadow(0 0 .6rem rgba(255,110,30,.55))}
-@keyframes pct-calor{0%,100%{filter:drop-shadow(0 0 .45rem rgba(255,110,30,.45))}50%{filter:drop-shadow(0 0 1.3rem rgba(255,140,30,.9))}}
-:root[data-tema="vermelho"]:not([data-modo="black"]) .pct strong.pct-fogo{background:linear-gradient(0deg,#FFB020 0%,#FFE680 55%,#FFFFFF 100%);-webkit-background-clip:text;background-clip:text}
-:root[data-tema="vermelho"]:not([data-modo="black"]) .chama{mix-blend-mode:normal}
-@media (prefers-reduced-motion:reduce){.chama,.brasa,.fogo-ponta,.pct strong.pct-fogo{animation:none}.brasa{display:none}}
-/* versão discreta: sem chamas nem brasas, só a barra quente com brilho e a ponta acesa */
-.chama,.brasa{display:none}
-.fogo-ponta{right:-.7rem;width:1.4rem;height:1.4rem;margin-top:-.7rem;background:radial-gradient(circle,#FFFFFF 0%,#FFE680 30%,rgba(255,176,32,.5) 55%,rgba(255,176,32,0) 72%)}
-.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B3121A 0%,#ED1C24 55%,#FF5A1F 85%,#FF9A2E 100%)}
-.pct strong.pct-fogo{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--red)}
-
-/* régua em vermelho Embracon, com a mãozinha da marca na ponta dando um "tum" */
-.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B70E17 0%,#ED1C24 70%,#FF4D54 100%)}
-.fogo-ponta{display:none}
-.fogo-mao{position:absolute;right:-1.6rem;top:50%;width:3.2rem;margin-top:-1.4rem;filter:drop-shadow(0 .3rem .6rem rgba(237,28,36,.55));
-  --mao-cor:#ED1C24;animation:mao-tum 1.8s cubic-bezier(.34,1.6,.6,1) infinite}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio{background:linear-gradient(90deg,#B70E17 0%,#ED1C24 70%,#FF4D54 100%);overflow:hidden}
+.regua:is([data-fogo="1"],[data-fogo="2"],[data-fogo="3"]) .regua-cheio::before{animation-duration:.55s}
+.pct strong.pct-fogo{color:var(--red)}
+.fogo-mao{position:absolute;right:-1.6rem;top:50%;width:3.2rem;margin-top:-1.4rem;--mao-cor:#ED1C24;animation:mao-tum 1.8s cubic-bezier(.34,1.6,.6,1) infinite}
+.fogo-mao::after{content:"";position:absolute;z-index:-1;inset:-30%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9) 0,rgba(255,255,255,.5) 38%,rgba(255,255,255,0) 68%)}
 .fogo-mao::before{content:"";position:absolute;inset:-35%;border-radius:50%;border:2px solid #ED1C24;opacity:0;animation:mao-onda 1.8s ease-out infinite}
 @keyframes mao-tum{0%,55%,100%{transform:scale(1) rotate(0)}12%{transform:scale(1.28) rotate(-10deg)}24%{transform:scale(.95) rotate(4deg)}36%{transform:scale(1.05) rotate(0)}}
 @keyframes mao-onda{0%,8%{opacity:.7;transform:scale(.5)}45%,100%{opacity:0;transform:scale(1.4)}}
-@media (prefers-reduced-motion:reduce){.fogo-mao,.fogo-mao::before{animation:none}}
+@media (prefers-reduced-motion:reduce){.fogo-mao,.fogo-mao::before,.regua-fogo::before{animation:none}}

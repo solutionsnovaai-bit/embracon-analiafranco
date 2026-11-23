@@ -30,7 +30,7 @@ const DEMO = {
   config: { meta: 21000000, metaConsultor: 2000000, metaEquipe: 7000000, unidade: 'Anália Franco' },
   consultores: [
     ['camily-dias', 'Camily Dias', 'Esquadrão Alpha'], ['claudia-lino', 'Claudia Lino', 'Esquadrão Alpha'],
-    ['sula-teixeira', 'Sula Teixeira', 'Esquadrão Alpha'], ['jackson-jotan', 'Jackson Jotan', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
+    ['sula-teixeira', 'Sula Teixeira', 'Esquadrão Alpha'], ['jackson-jotan', 'Jackson Jotan', 'Esquadrão Alpha'], ['igor-araujo', 'Igor Araújo', 'Esquadrão Alpha'], ['izabella-nascimento', 'Izabella Nascimento', 'Esquadrão Alpha'],
     ['antonio-pimentel', 'Antônio Pimentel', 'Esquadrão Alpha'], ['diana-trindade', 'Diana Trindade', 'Esquadrão Alpha'],
     ['alex-sandro', 'Alex Sandro', 'Artilheiros'], ['edvan-fernandes', 'Edvan Fernandes', 'Artilheiros'],
     ['enzo-santorelli', 'Enzo Santorelli', 'Artilheiros'], ['pedro-lucas', 'Pedro Lucas', 'Artilheiros'],
@@ -1404,22 +1404,10 @@ document.querySelector('.filtro').addEventListener('click', e => {
 });
 $('btn-todas').addEventListener('click', () => { state.verTodas = !state.verTodas; render(); });
 
-/* chamas da régua: monta uma vez (línguas de fogo ao longo da barra, ponta acesa e brasas subindo) */
+/* mãozinha da ponta da régua: monta uma vez */
 function montarFogo() {
   const f = $('regua-fogo'); if (f.childElementCount) return;
-  const N = 18;
-  for (let i = 0; i < N; i++) {
-    const x = Math.pow(i / (N - 1), .7) * 100;            // mais chamas perto da ponta
-    const ch = el('i', { class: 'chama' });
-    ch.style.cssText = 'left:' + x.toFixed(1) + '%;--h:' + (.55 + i / N * .9).toFixed(2) + ';--d:' + (.45 + Math.random() * .5).toFixed(2) + 's;--a:' + (-Math.random()).toFixed(2) + 's';
-    f.append(ch);
-  }
-  f.append(el('b', { class: 'fogo-ponta' }), maoEl('fogo-mao'));
-  for (let i = 0; i < 16; i++) {
-    const br = el('u', { class: 'brasa' });
-    br.style.cssText = 'right:' + (Math.random() * 18).toFixed(1) + '%;--x:' + ((Math.random() - .5) * 4).toFixed(2) + 'rem;--d:' + (1.4 + Math.random() * 1.6).toFixed(2) + 's;--a:' + (-Math.random() * 3).toFixed(2) + 's;--s:' + (.18 + Math.random() * .22).toFixed(2) + 'rem';
-    f.append(br);
-  }
+  f.append(maoEl('fogo-mao'));
 }
 
 /* tema: claro ou vermelho; durante a Black Embracon as opções viram vermelho ou black (o claro sai de cena).
@@ -1537,6 +1525,7 @@ function irPara(tela, opc = {}) {
 function mostrarTela(tela, equipe) {
   telaAtual = tela; equipeAtual = equipe || '';
   for (const s of document.querySelectorAll('#telas .tela')) s.hidden = s.dataset.tela !== tela;
+  soltarRolagem(false);
   scrollTo(0, 0);
   rolagem.fase = 'parado';
   if (tela === 'ranking') posicionarRitmo();
@@ -1682,10 +1671,18 @@ function pintarNav(r) {
   prox._t = nome; prox.textContent = '';
   prox.append(maoEl('tn-prox-mao'), el('span', { text: 'A seguir' }), el('b', { text: nome }));
 }
-function progressoAba(p, botao) {
+function progressoAba(p, botao, dur) {
   const b = (botao || document.querySelector('#telas-nav .tn[aria-current] ')) ;
   const barra = b && b.querySelector('.tn-prog');
-  if (!barra || barra._p === p) return;
+  if (!barra) return;
+  if (dur) {   // enche sozinha até o fim no tempo da tela, sem o JavaScript mexer a cada quadro
+    if (barra._a) barra._a.cancel();
+    barra._p = -1;
+    barra._a = barra.animate([{ transform: 'scaleX(' + p + ')' }, { transform: 'scaleX(1)' }], { duration: dur, easing: 'linear', fill: 'forwards' });
+    return;
+  }
+  if (barra._p === p) return;
+  if (barra._a) { barra._a.cancel(); barra._a = null; }
   barra._p = p; barra.style.transform = 'scaleX(' + p.toFixed(4) + ')';
 }
 $('telas-nav').addEventListener('click', e => { const b = e.target.closest('.tn'); if (b) irPara(b.dataset.tela, { rapida: true }); });
@@ -1696,26 +1693,27 @@ $('telas-nav').addEventListener('click', e => { const b = e.target.closest('.tn'
    3. a tela troca por baixo e a cortina sai na mesma diagonal, revelando a tela nova */
 function cortina(titulo, rapida, noMeio, noFim) {
   trocando = true;
-  const c = $('cortina'), corte = 'cubic-bezier(.7,0,.2,1)', fechada = 'polygon(-60% 0,160% 0,135% 100%,-85% 100%)';
+  const c = $('cortina'), corte = 'cubic-bezier(.7,0,.2,1)', folha = $('cortina-folha');
+  const F = x => ({ transform: 'translateX(' + x + ') skewX(-24deg)' });
   c.getAnimations({ subtree: true }).forEach(a => a.cancel());
   $('cortina-rot').textContent = 'Franquia ' + state.config.unidade;
   const tit = $('cortina-tit'); tit._texto = null; tit.textContent = ''; trocar(tit, titulo);
   c.hidden = false;
   maoVai($('cortina-mao'));
-  $('cortina-anel').animate([{ opacity: .9, transform: 'scale(.3)' }, { opacity: 0, transform: 'scale(2.6)' }], { duration: 1150, delay: 520, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+  $('cortina-anel').animate([{ opacity: .9, transform: 'scale(.3)' }, { opacity: 0, transform: 'scale(2.6)' }], { duration: 1050, delay: 480, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
   c.querySelectorAll('.cortina-voo').forEach((m, i) => m.animate([
     { transform: 'translateX(-40vw) rotate(-28deg) scale(.8)', opacity: 0 }, { opacity: 1, offset: .18 }, { opacity: 1, offset: .8 },
-    { transform: 'translateX(140vw) rotate(24deg) scale(1.1)', opacity: 0 }], { duration: 1650 + i * 140, delay: i * 85, easing: 'cubic-bezier(.35,.45,.25,1)', fill: 'both' }));
-  $('cortina-in').animate([{ opacity: 0, transform: 'translateY(1.5rem) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: 200, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
-  c.animate([{ clipPath: 'polygon(-60% 0,-60% 0,-85% 100%,-85% 100%)' }, { clipPath: fechada }], { duration: 580, easing: corte, fill: 'forwards' }).onfinish = () => {
+    { transform: 'translateX(140vw) rotate(24deg) scale(1.1)', opacity: 0 }], { duration: 1400 + i * 120, delay: 260 + i * 70, easing: 'cubic-bezier(.35,.45,.25,1)', fill: 'both' }));
+  $('cortina-in').animate([{ opacity: 0, transform: 'translateY(1.5rem) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 480, delay: 290, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+  folha.animate([F('-100%'), F('0%')], { duration: 500, easing: corte, fill: 'forwards' }).onfinish = () => {
     noMeio();
     setTimeout(() => {
       $('cortina-in').animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-1rem) scale(.98)' }], { duration: 300, easing: 'cubic-bezier(.6,0,.8,.4)', fill: 'forwards' });
-      c.animate([{ clipPath: fechada }, { clipPath: 'polygon(160% 0,160% 0,135% 100%,135% 100%)' }], { duration: 720, delay: 120, easing: corte, fill: 'forwards' }).onfinish = () => {
+      folha.animate([F('0%'), F('100%')], { duration: 600, delay: 100, easing: corte, fill: 'forwards' }).onfinish = () => {
         c.hidden = true; c.getAnimations({ subtree: true }).forEach(a => a.cancel()); trocando = false;
       };
-      setTimeout(noFim, 330);   // a tela nova começa a se montar enquanto a cortina sai
-    }, rapida ? 560 : 1300);
+      setTimeout(noFim, 280);   // a tela nova começa a se montar enquanto a cortina sai
+    }, rapida ? 420 : 1000);
   };
 }
 
@@ -1980,12 +1978,13 @@ addEventListener('resize', () => { clearTimeout(muralT); muralT = setTimeout(() 
    Depois a cortina com a mão da Embracon passa e entra a próxima tela. Tela que cabe inteira
    fica parada o tempo dela. Qualquer toque, rolagem ou tecla pausa por 20 s. */
 const TEMPOS = {
-  ranking: { espera: 9000, fundo: 6000, fixa: 30000 },
-  podio: { espera: 9000, fundo: 4000, fixa: 20000 },
-  equipes: { espera: 8000, fundo: 4000, fixa: 16000 },
-  mural: { espera: 10000, fundo: 4000, fixa: 26000 }
+  ranking: { espera: 7000, fundo: 4500, fixa: 24000 },
+  podio: { espera: 7000, fundo: 3000, fixa: 16000 },
+  equipes: { espera: 6500, fundo: 3000, fixa: 13000 },
+  mural: { espera: 8000, fundo: 3000, fixa: 20000 }
 };
-const VEL_ROLAGEM = .065;   // px por ms (~65 px por segundo)
+const VEL_ROLAGEM = .095;   // px por ms (~95 px por segundo)
+const SUBIDA_MAX = 1900;
 const rolagem = { fase: 'parado', ate: 0, pausaAte: 0, y: 0, ult: 0, ini: 0, de: 0, dur: 0, telaIni: 0, total: 1 };
 const suave = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
 function acenar() {
@@ -1994,45 +1993,93 @@ function acenar() {
   m.classList.remove('acena'); void m.offsetWidth; m.classList.add('acena');
   clearTimeout(acenar.t); acenar.t = setTimeout(() => m.classList.remove('acena'), 2100);
 }
-function passoRolagem(t) {
-  requestAnimationFrame(passoRolagem);
+/* altura rolável guardada: medir scrollHeight a cada quadro obrigava a TV a refazer o layout 60 vezes por segundo */
+let alturaRolagem = 0;
+const medirRolagem = () => { alturaRolagem = Math.max(0, document.documentElement.scrollHeight - innerHeight); };
+if (window.ResizeObserver) new ResizeObserver(medirRolagem).observe(document.body);
+addEventListener('resize', medirRolagem);
+/* A descida e a subida não usam mais scrollTo a cada quadro: o painel inteiro (#app) desliza com uma
+   animação de transform, que a TV executa sozinha na placa de vídeo. O JavaScript só acorda a cada
+   250 ms para trocar de fase, então a TV não precisa recalcular a página 60 vezes por segundo. */
+var animRolagem = null;
+function deslocamentoApp() {
+  const m = getComputedStyle(app).transform;
+  if (!m || m === 'none') return 0;
+  const v = m.match(/matrix(?:3d)?\(([^)]+)\)/); if (!v) return 0;
+  const n = v[1].split(',').map(Number);
+  return -(n.length === 16 ? n[13] : n[5]) || 0;
+}
+function soltarRolagem(manterPosicao) {
+  if (!animRolagem) return;
+  const y = manterPosicao ? deslocamentoApp() : 0;
+  animRolagem.onfinish = null; animRolagem.cancel(); animRolagem = null;
+  app.style.transform = ''; app.style.willChange = '';
+  if (y) scrollTo(0, y);
+}
+function deslizar(quadros, dur, aoFim) {
+  if (animRolagem) { animRolagem.onfinish = null; animRolagem.cancel(); }
+  app.style.willChange = 'transform';
+  animRolagem = app.animate(quadros, { duration: Math.max(dur, 1), fill: 'forwards' });
+  animRolagem.onfinish = aoFim;
+}
+const tY = y => ({ transform: 'translate3d(0,' + (-Math.round(y)) + 'px,0)' });
+/* descida com arranque (1,2 s acelerando), velocidade constante e freada suave nos últimos 110 px */
+function quadrosDescida(de, ate) {
+  const d = ate - de, v = VEL_ROLAGEM, tA = 1200, dA = v * tA / 2, dF = 110, tF = 2 * dF / v;
+  if (d <= dA + dF + 20) { const dur = Math.max(1400, d / v * 1.7); return { dur, q: [{ ...tY(de), easing: 'cubic-bezier(.65,0,.35,1)' }, tY(ate)] }; }
+  const tM = (d - dA - dF) / v, dur = tA + tM + tF;
+  return { dur, q: [
+    { ...tY(de), easing: 'cubic-bezier(.33,0,.67,.33)' },
+    { ...tY(de + dA), offset: tA / dur, easing: 'linear' },
+    { ...tY(ate - dF), offset: (tA + tM) / dur, easing: 'cubic-bezier(.33,.67,.67,1)' },
+    tY(ate)
+  ] };
+}
+function tempoDescida(d) { return d <= VEL_ROLAGEM * 600 + 130 ? Math.max(1400, d / VEL_ROLAGEM * 1.7) : 1200 + (d - VEL_ROLAGEM * 600 - 110) / VEL_ROLAGEM + 2 * 110 / VEL_ROLAGEM; }
+const tempoSubida = d => semMovimento ? 0 : Math.min(SUBIDA_MAX, Math.max(1100, d * .6));
+function passoRolagem() {
+  setTimeout(passoRolagem, 250);
+  const t = performance.now();
   if (!raiz.classList.contains('tv') || state.modo === 'carregando' || document.querySelector('dialog[open]') || t < rolagem.pausaAte || trocando) {
-    if (!trocando) { rolagem.fase = 'parado'; progressoAba(0); }
+    if (!trocando) { soltarRolagem(true); rolagem.fase = 'parado'; progressoAba(0); }
     return;
   }
-  const max = document.documentElement.scrollHeight - innerHeight, tempo = TEMPOS[telaAtual] || TEMPOS.ranking;
+  const tempo = TEMPOS[telaAtual] || TEMPOS.ranking;
   if (rolagem.fase === 'parado') {
-    rolagem.fase = 'espera'; rolagem.telaIni = t;
+    soltarRolagem(false); medirRolagem();
+    const max = alturaRolagem;
+    rolagem.fase = 'espera'; rolagem.telaIni = t; rolagem.y = Math.min(scrollY, max);
     if (max < 40) { rolagem.ate = t + tempo.fixa; rolagem.total = tempo.fixa; }
     else {
       rolagem.ate = t + tempo.espera;
-      rolagem.total = tempo.espera + max / VEL_ROLAGEM * 1.08 + 1200 + tempo.fundo + Math.min(2600, Math.max(1300, max * .8)) + 1400;
+      rolagem.total = tempo.espera + tempoDescida(max - rolagem.y) + tempo.fundo + tempoSubida(max) + 1100;
     }
+    progressoAba(0, null, rolagem.total);
   } else if (rolagem.fase === 'espera' && t >= rolagem.ate) {
+    medirRolagem();
+    const max = alturaRolagem;
     if (max < 40) { rolagem.fase = 'fim'; proximaTela(); return; }
-    rolagem.fase = 'desce'; rolagem.y = scrollY; rolagem.ult = t; rolagem.ini = t;
-  } else if (rolagem.fase === 'desce') {
-    // ~65 px por segundo, ganhando velocidade no primeiro 1,5 s e freando nos últimos 160 px
-    const ritmo = Math.max(.12, Math.min(1, (t - rolagem.ini) / 1500, (max - rolagem.y) / 160));
-    rolagem.y = Math.min(rolagem.y + Math.min(t - rolagem.ult, 100) * VEL_ROLAGEM * ritmo, max); rolagem.ult = t;
-    scrollTo(0, rolagem.y);
-    if (rolagem.y >= max - 1) { rolagem.fase = 'fundo'; rolagem.ate = t + tempo.fundo; }
+    const de = Math.min(scrollY, max);
+    if (scrollY) scrollTo(0, 0);
+    const { dur, q } = quadrosDescida(de, max);
+    rolagem.fase = 'desce'; rolagem.de = max;
+    deslizar(q, dur, () => { rolagem.fase = 'fundo'; rolagem.ate = performance.now() + tempo.fundo; });
   } else if (rolagem.fase === 'fundo' && t >= rolagem.ate) {
-    rolagem.fase = 'sobe'; rolagem.ini = t; rolagem.de = scrollY; rolagem.dur = semMovimento ? 0 : Math.min(2600, Math.max(1300, scrollY * .8));
-  } else if (rolagem.fase === 'sobe') {
-    const k = rolagem.dur ? Math.min((t - rolagem.ini) / rolagem.dur, 1) : 1;
-    scrollTo(0, Math.round(rolagem.de * (1 - suave(k))));
-    if (k >= 1) { rolagem.fase = 'acena'; rolagem.ate = t + 1400; acenar(); }
+    const de = rolagem.de, dur = tempoSubida(de);
+    rolagem.fase = 'sobe';
+    deslizar([{ ...tY(de), easing: 'cubic-bezier(.65,0,.35,1)' }, tY(0)], dur, () => {
+      soltarRolagem(false); rolagem.fase = 'acena'; rolagem.ate = performance.now() + 1100; acenar();
+    });
   } else if (rolagem.fase === 'acena' && t >= rolagem.ate) { rolagem.fase = 'fim'; proximaTela(); return; }
-  progressoAba(Math.min((t - rolagem.telaIni) / rolagem.total, 1));
 }
 ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { rolagem.pausaAte = performance.now() + 20000; }, { passive: true }));
-requestAnimationFrame(passoRolagem);
+setTimeout(passoRolagem, 250);
 
 let trava = null;
 function marcarTelao(ligar) {
   raiz.classList.toggle('tv', ligar);
   $('btn-tv').textContent = ligar ? 'Sair do telão' : 'Modo telão';
+  soltarRolagem(true);
   rolagem.fase = 'parado';
   requestAnimationFrame(posicionarEtiqueta);
   pintarNav();

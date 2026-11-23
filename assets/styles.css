@@ -77,11 +77,14 @@ button,input,select{font:inherit;color:inherit}
    A mão e as palavras do logo são máscaras: a cor vem do tema
    (mão vermelha e palavras pretas no claro, tudo branco no vermelho). */
 .mao{position:relative;display:block;aspect-ratio:369/315}
-.mao i{position:absolute;inset:0;background:var(--mao-cor,var(--red));transition:background-color .35s ease;
+/* a peça (i) é quem se mexe; a máscara fica no ::before, que é pintado dentro da camada da peça.
+   Assim a TV move uma textura pronta, sem recalcular máscara a cada quadro. */
+.mao i{position:absolute;inset:0;opacity:var(--mao-op,1)}
+.mao i::before{content:"";position:absolute;inset:0;background:var(--mao-cor,var(--red));transition:background-color .35s ease;
   -webkit-mask:url(marca/mao-1.png) 0 0/100% 100% no-repeat;mask:url(marca/mao-1.png) 0 0/100% 100% no-repeat}
-.mao .m2{-webkit-mask-image:url(marca/mao-2.png);mask-image:url(marca/mao-2.png)}
-.mao .m3{-webkit-mask-image:url(marca/mao-3.png);mask-image:url(marca/mao-3.png)}
-.mao .m4{-webkit-mask-image:url(marca/mao-4.png);mask-image:url(marca/mao-4.png)}
+.mao .m2::before{-webkit-mask-image:url(marca/mao-2.png);mask-image:url(marca/mao-2.png)}
+.mao .m3::before{-webkit-mask-image:url(marca/mao-3.png);mask-image:url(marca/mao-3.png)}
+.mao .m4::before{-webkit-mask-image:url(marca/mao-4.png);mask-image:url(marca/mao-4.png)}
 .lg{position:relative;width:var(--lg-w,20rem);aspect-ratio:1200/525}
 .lg-palavra{position:absolute;inset:0;background:var(--ink);
   -webkit-mask:url(marca/consorcio.png) 0 0/100% 100% no-repeat;mask:url(marca/consorcio.png) 0 0/100% 100% no-repeat}
@@ -90,11 +93,16 @@ button,input,select{font:inherit;color:inherit}
 
 /* a mão se monta: palma abre em círculo, os três dedos entram na diagonal deles */
 @keyframes mao-palma{from{clip-path:circle(0% at 38% 57%);transform:rotate(-40deg) scale(.6)}to{clip-path:circle(80% at 38% 57%);transform:none}}
-@keyframes mao-dedo{from{opacity:0;transform:translate(-36%,25%)}50%{opacity:1}to{opacity:1;transform:none}}
+/* o dedo desliza (transform na peça) e aparece (opacidade no ::before): valores fixos nos quadros-chave
+   para a TV rodar tudo na placa de vídeo; a transparência das mãos de fundo fica na peça (--mao-op) */
+@keyframes mao-dedo{from{transform:translate(-36%,25%)}to{transform:none}}
+@keyframes mao-surge{from{opacity:0}50%,to{opacity:1}}
+.mao.vai :is(.m2,.m3,.m4)::before{animation:mao-surge .62s var(--ease-volta) .3s backwards}
+.mao.vai .m3::before{animation-delay:.4s}.mao.vai .m4::before{animation-delay:.5s}
 .mao.vai .m1{transform-origin:38% 57%;animation:mao-palma .8s var(--ease) both}
-.mao.vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s both}
-.mao.vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s both}
-.mao.vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s both}
+.mao.vai .m2{animation:mao-dedo .62s var(--ease-volta) .3s backwards}
+.mao.vai .m3{animation:mao-dedo .62s var(--ease-volta) .4s backwards}
+.mao.vai .m4{animation:mao-dedo .62s var(--ease-volta) .5s backwards}
 
 /* ---------- tela de abertura ----------
    1. a mão se monta grande no centro  2. desliza para o lugar dela no logo
@@ -165,8 +173,9 @@ button,input,select{font:inherit;color:inherit}
 .status i{flex:none;width:.5rem;height:.5rem;border-radius:50%;background:var(--ink-2)}
 .status b{color:var(--ink);font-weight:700}
 .status .troca{min-width:10.5em}
-[data-modo="vivo"] .status i{background:var(--ok);animation:ao-vivo 2s ease-out infinite}
-@keyframes ao-vivo{0%{box-shadow:0 0 0 0 var(--ok)}70%,100%{box-shadow:0 0 0 .5rem transparent}}
+[data-modo="vivo"] .status i{background:var(--ok);position:relative}
+[data-modo="vivo"] .status i::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--ok);animation:anel-vivo 2s ease-out infinite}
+@keyframes anel-vivo{0%{transform:scale(1);opacity:.75}70%,100%{transform:scale(3);opacity:0}}
 [data-modo="rascunho"] .status i{background:var(--red)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:2.5rem;padding:0 .95rem;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);font-weight:600;font-size:.875rem;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
@@ -412,20 +421,22 @@ dialog::backdrop{background:var(--shade)}
 @keyframes brilho{0%{transform:translateX(-120%) skewX(-34deg)}38%,100%{transform:translateX(320%) skewX(-34deg)}}
 .mix-barra::after{--l-brilho:rgba(255,255,255,.45);animation-duration:6s;animation-delay:2s}
 /* régua da meta: ponta acesa e uma luz varrendo o trilho, visível até com o placar zerado */
-.regua-cheio{animation:ponta 2.6s ease-in-out infinite}
-@keyframes ponta{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 1.1rem .1rem var(--red)}}
+/* brilho da ponta: camada própria (.regua-fogo::before) que só pulsa a opacidade */
 .regua-trilho::after{content:"";position:absolute;inset:0 auto 0 0;width:22%;background:linear-gradient(90deg,transparent,var(--varre),transparent);
   transform:translateX(-110%);animation:varre 5.5s var(--ease-io) 1.2s infinite;pointer-events:none}
 @keyframes varre{0%{transform:translateX(-110%)}55%,100%{transform:translateX(560%)}}
-.ritmo::before{content:"";position:absolute;left:-5px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--ink);animation:ao-vivo-ritmo 2.2s ease-out infinite}
-@keyframes ao-vivo-ritmo{0%{box-shadow:0 0 0 0 var(--ink)}70%,100%{box-shadow:0 0 0 .55rem transparent}}
+.ritmo::before,.ritmo::after{content:"";position:absolute;left:-5px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.ritmo::after{animation:anel-vivo 2.2s ease-out infinite}
 
 /* números grandes: um reflexo passa por cima dos dígitos */
-.reluz{--r-base:var(--ink);--r-luz:var(--reluz);
-  background:linear-gradient(110deg,var(--r-base) 0 43%,var(--r-luz) 50%,var(--r-base) 57% 100%);background-size:280% 100%;background-position:100% 0;
-  -webkit-background-clip:text;background-clip:text;color:transparent;animation:reluz 8s ease-in-out 2.5s infinite}
-.pct .reluz{--r-base:var(--red);--r-luz:var(--reluz-pct);color:transparent;animation-delay:3.1s}
-@keyframes reluz{0%,64%{background-position:100% 0}86%,100%{background-position:0 0}}
+.reluz{--r-base:var(--ink);--r-luz:var(--reluz);color:var(--r-base);position:relative;display:inline-block;overflow:hidden;
+  padding:.06em .04em 0;margin:-.06em -.04em 0;vertical-align:bottom}
+.reluz::after{content:"";position:absolute;top:-10%;bottom:-10%;left:0;width:34%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,var(--r-luz) 50%,transparent);opacity:.55;
+  transform:translateX(-130%) skewX(-18deg);animation:reluz 7s cubic-bezier(.6,0,.3,1) 2.5s infinite}
+.pct .reluz{--r-base:var(--red);--r-luz:var(--reluz-pct)}
+.pct .reluz::after{animation-delay:3.1s}
+@keyframes reluz{0%,70%{transform:translateX(-130%) skewX(-18deg)}88%,100%{transform:translateX(330%) skewX(-18deg)}}
 
 /* sinal no ar: uma luz corre na borda de cima do placar */
 .placar::before{content:"";position:absolute;z-index:2;left:0;top:0;width:32%;height:3px;pointer-events:none;
@@ -434,7 +445,7 @@ dialog::backdrop{background:var(--shade)}
 
 /* mão grande no placar: os dedos fazem uma onda, a mão flutua */
 .placar>*{position:relative;z-index:1}
-.placar>.placar-mao{position:absolute;z-index:0;right:-3%;top:50%;width:min(36rem,50%);margin-top:calc(min(36rem,50%) * -.427);--mao-cor:var(--red);opacity:var(--mao-fundo);
+.placar>.placar-mao{position:absolute;z-index:0;right:-3%;top:50%;width:min(36rem,50%);margin-top:calc(min(36rem,50%) * -.427);--mao-cor:var(--red);--mao-op:var(--mao-fundo);
   pointer-events:none;animation:flutua 9s ease-in-out infinite alternate}
 .placar-mao .m2,.placar-mao .m3,.placar-mao .m4{animation:onda-dedo 6.5s var(--ease) infinite}
 .placar-mao .m3{animation-delay:.22s}.placar-mao .m4{animation-delay:.44s}
@@ -470,7 +481,8 @@ dialog::backdrop{background:var(--shade)}
   background:var(--red);color:var(--on-red);font-size:.9375rem;white-space:nowrap;box-shadow:0 -1px 0 var(--line)}
 .faixa-selo{position:relative;z-index:1;flex:none;display:flex;align-items:center;gap:.55rem;padding:0 1.1rem 0 1rem;background:var(--selo-faixa);color:#FFFFFF;
   font:800 .8125rem/1 var(--display);font-stretch:90%;letter-spacing:.08em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,calc(100% - .9rem) 100%,0 100%);padding-inline-end:1.8rem}
-.faixa-selo i{width:.5rem;height:.5rem;border-radius:50%;background:var(--red);animation:ao-vivo-faixa 1.6s ease-out infinite}
+.faixa-selo i{position:relative;width:.5rem;height:.5rem;border-radius:50%;background:var(--red)}
+.faixa-selo i::after{content:"";position:absolute;inset:0;border-radius:50%;background:inherit;animation:anel-vivo 1.6s ease-out infinite}
 /* selo de transmissão: barrinhas de equalizador, relógio com os dois pontos piscando e um brilho que passa */
 .faixa-eq{display:inline-flex;align-items:flex-end;gap:2px;height:.85rem}
 .faixa-eq b{display:block;width:3px;height:100%;border-radius:1px;background:currentColor;transform-origin:50% 100%;animation:eq-vivo .9s ease-in-out infinite alternate}
@@ -489,7 +501,6 @@ dialog::backdrop{background:var(--shade)}
 .faixa.confere::before{animation:confere var(--confere,8s) linear forwards}
 @keyframes confere{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .fx-foto{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;object-fit:cover;object-position:50% 38%;background:var(--red-deep);box-shadow:0 0 0 2px var(--on-red)}
-@keyframes ao-vivo-faixa{0%{box-shadow:0 0 0 0 var(--red)}70%,100%{box-shadow:0 0 0 .45rem transparent}}
 .faixa-janela{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;
   -webkit-mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent);mask:linear-gradient(90deg,transparent,#000 3rem,#000 calc(100% - 3rem),transparent)}
 .faixa-trilho{display:flex;flex:none;animation:faixa var(--dur,40s) linear infinite}
@@ -544,7 +555,7 @@ dialog::backdrop{background:var(--shade)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   .load-barra i{transform:none}
-  .reluz{color:var(--r-base);background:none}
+  .reluz::after{display:none}
   .regua-cheio::after,.barra-cheio::after,.eq-barra i::after,.mix-barra::after,.regua-trilho::after,.linha.lider::after,.eq-av::after,.placar::before,.faixa-selo::after,.faixa::before{display:none}
   .faixa-janela{overflow-x:auto}
 }
