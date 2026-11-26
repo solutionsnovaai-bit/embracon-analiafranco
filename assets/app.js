@@ -1015,6 +1015,8 @@ function recarregarTela() {
 }
 
 /* ---------- planilha do Google ---------- */
+/* célula com erro de fórmula (linha apagada na aba Ranking etc.): #REF!, #N/A, #VALUE!, #DIV/0!, #NAME? */
+const ERRO_PLANILHA = /^#(REF|N\/A|VALUE|NAME|DIV\/0|NUM|NULL|ERROR|SPILL|CALC)[!?]?$/i;
 let base = null, baseTexto = '', baseLidaEm = 0, fonteBoa = 0, ultimoCsv = '', ultimaMudanca = '';
 function lerCsv(t) {
   const linhas = []; let linha = [], campo = '', aspas = false;
@@ -1077,14 +1079,19 @@ function dadosDaPlanilha(texto, cadastro) {
   const consultores = [], vendas = [], usados = new Set(), repasses = [];
   for (const l of linhas.slice(ini)) {
     const nome = String(l[col.nome] || '').replace(/\s+/g, ' ').trim().slice(0, 60);
-    if (!nome) continue;
+    if (!nome || ERRO_PLANILHA.test(nome)) continue;
     const cad = doCadastro.get(normNome(nome)) || doCadastro.get('#' + slug(nome));
     /* quem saiu da franquia (cadastro com "saiu": true) não aparece mais; as vendas dele passam
        para quem estiver em "vendasPara" (a chave continua a mesma, então o dia de cada venda não muda) */
     const fora = !!(cad && cad.saiu === true && cad.somaNaEquipe === true);
     if (cad && cad.saiu === true && !fora) {
       const para = String(cad.vendasPara || '');
-      if (para && colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) repasses.push({ para, valor: v, categoria: tipoCota(l[j]), chave: (cad.id ? String(cad.id) : slug(nome)) + '|' + (k + 1) + '|' + v }); });
+      if (para && colVendas.length) {
+        const raiz = cad.id ? String(cad.id) : slug(nome); let soma = 0;
+        colVendas.forEach((j, k) => { const v = reais(l[j]); if (v > 0) { soma += v; repasses.push({ para, valor: v, categoria: tipoCota(l[j]), chave: raiz + '|' + (k + 1) + '|' + v }); } });
+        const falta = col.valor !== undefined ? reais(l[col.valor]) - soma : 0;
+        if (falta >= 1000) repasses.push({ para, valor: falta, categoria: 'outros', chave: raiz + '|ajuste|' + falta, ajuste: true });
+      }
       continue;
     }
     const raizId = cad && cad.id ? String(cad.id) : slug(nome);
@@ -1094,7 +1101,12 @@ function dadosDaPlanilha(texto, cadastro) {
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
     consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.lider === true ? { lider: true } : {}), ...(fora ? { fora: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     const fixo = cad && cad.tipoVenda && typeof cad.tipoVenda === 'object' ? cad.tipoVenda : {};
-    if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); let cat = tipoCota(l[j]); if (cat === 'outros' && fixo[k + 1]) cat = tipoCota(fixo[k + 1]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: cat, chave: id + '|' + (k + 1) + '|' + v }); });
+    if (colVendas.length) {
+      let soma = 0;
+      colVendas.forEach((j, k) => { const v = reais(l[j]); let cat = tipoCota(l[j]); if (cat === 'outros' && fixo[k + 1]) cat = tipoCota(fixo[k + 1]); if (v > 0) { soma += v; vendas.push({ consultor: id, valor: v, categoria: cat, chave: id + '|' + (k + 1) + '|' + v }); } });
+      const falta = col.valor !== undefined ? reais(l[col.valor]) - soma : 0;
+      if (falta >= 1000) vendas.push({ consultor: id, valor: falta, categoria: 'outros', chave: id + '|ajuste|' + falta, ajuste: true });
+    }
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
   }
   for (const r of repasses) {
@@ -1103,7 +1115,7 @@ function dadosDaPlanilha(texto, cadastro) {
       if (!cad) continue;
       consultores.push({ id: r.para, nome: cad.nome, equipe: '', ...(cad.cargo ? { cargo: cad.cargo } : {}), ...(cad.oculto === true ? { oculto: true } : {}), ...(cad.lider === true ? { lider: true } : {}), ...(cad.exibir ? { exibir: cad.exibir } : {}), ...(cad.foto ? { foto: cad.foto } : {}) });
     }
-    vendas.push({ consultor: r.para, valor: r.valor, categoria: r.categoria, chave: r.chave });
+    vendas.push({ consultor: r.para, valor: r.valor, categoria: r.categoria, chave: r.chave, ...(r.ajuste ? { ajuste: true } : {}) });
   }
   /* a supervisão de cada equipe também vem do cadastro */
   /* casinha embaixo do título "Recarregar": mudou o que está escrito nela, a TV recarrega o painel */
@@ -1119,7 +1131,7 @@ function carimbar(vendas) {
   const primeira = !mapa || typeof mapa !== 'object', hoje = hojeISO(), novo = {};
   if (primeira) mapa = {};
   for (const v of vendas) {
-    const d = Object.prototype.hasOwnProperty.call(mapa, v.chave) ? mapa[v.chave] : primeira ? '' : hoje;
+    const d = v.ajuste ? '' : Object.prototype.hasOwnProperty.call(mapa, v.chave) ? mapa[v.chave] : primeira ? '' : hoje;
     novo[v.chave] = ehData(d) ? d : '';
     if (novo[v.chave]) v.data = novo[v.chave];
   }
