@@ -125,6 +125,12 @@ function normConfig(d) {
   /* campanha visual do telão (ex.: "black-friday"); vazio volta ao visual de sempre */
   if (typeof d.campanha === 'string') c.campanha = d.campanha.trim().toLowerCase().slice(0, 30);
   if (ehData(d.blackFriday)) c.blackFriday = d.blackFriday;
+  /* cotas de partida por tipo (ex.: {"imovel": 2}): somam no card "Cotas vendidas" e as vendas novas continuam contando por cima */
+  if (d.cotasExtra && typeof d.cotasExtra === 'object') {
+    const x = {};
+    for (const k in d.cotasExtra) if (k in CATS && Number.isInteger(Number(d.cotasExtra[k])) && Number(d.cotasExtra[k]) !== 0) x[k] = Number(d.cotasExtra[k]);
+    if (Object.keys(x).length) c.cotasExtra = x;
+  }
   c.exemplo = d.exemplo === true;
   return c;
 }
@@ -235,6 +241,8 @@ function calcular() {
   const porCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 };
   const cicloPor = new Map(), cotasCat = { imovel: 0, auto: 0, pesados: 0, servicos: 0, outros: 0 };
   for (const v of ciclo) { cotasCat[v.categoria] += v.cotas; porCat[v.categoria] += v.valor; cicloPor.set(v.consultor, (cicloPor.get(v.consultor) || 0) + v.valor); }
+  let cotasExtra = 0;
+  for (const k in (c.cotasExtra || {})) { const n = Math.max(-cotasCat[k], c.cotasExtra[k]); cotasCat[k] += n; cotasExtra += n; }
 
   const corte = state.filtro === 'hoje' ? hoje : state.filtro === '7d' ? somaDias(hoje, -6) : null;
   const base = corte ? ciclo.filter(v => v.data && v.data >= corte && v.data <= hoje) : ciclo;
@@ -296,7 +304,7 @@ function calcular() {
     .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, lider: p.lider, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
-  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, passados, media, marco, feed,cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
+  return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, passados, media, marco, feed,cotas: ciclo.reduce((s, v) => s + v.cotas, 0) + cotasExtra, falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
 }
 
 /* ---------- pintura ---------- */

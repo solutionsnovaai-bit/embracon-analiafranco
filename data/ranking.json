@@ -1,6 +1,6 @@
 {
   "atualizadoEm": "2026-11-03T13:45:00-03:00",
-  "recarregar": "2026-11-26 16:50",
+  "recarregar": "2026-11-26 16:55",
   "config": {
     "unidade": "Anália Franco",
     "meta": 20000000,
@@ -11,7 +11,8 @@
     "exemplo": false,
     "metaEquipe": 0,
     "campanha": "black-friday",
-    "blackFriday": "2026-11-27"
+    "blackFriday": "2026-11-27",
+    "cotasExtra": { "imovel": 2, "auto": 1 }
   },
   "consultores": [
     {"id":"camily-dias","nome":"Camily Dias","equipe":"Esquadrão Alpha","foto":"assets/consultores/camily-dias.jpg"},
