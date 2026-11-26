@@ -174,7 +174,7 @@ function aplicar(dados) {
     if (sup && !cargo) cargo = limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe);
     if (sup && sup.foto) foto = sup.foto;
     /* a direção da franquia (oculto) soma só no total da franquia, nunca numa equipe */
-    state.consultores.set(id, { id, nome, equipe: p.oculto === true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, fora: p.fora === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
+    state.consultores.set(id, { id, nome, equipe: p.oculto === true && p.lider !== true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, lider: p.lider === true, fora: p.fora === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
   }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
@@ -184,7 +184,7 @@ function exportar() {
   return {
     atualizadoEm: new Date().toISOString(),
     config: { ...state.config },
-    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.oculto ? { oculto: true } : {}), ...(p.exibir ? { exibir: p.exibir } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
+    consultores: [...state.consultores.values()].map(p => ({ id: p.id, nome: p.nome, ...(p.equipe ? { equipe: p.equipe } : {}), ...(p.cargo ? { cargo: p.cargo } : {}), ...(p.oculto ? { oculto: true } : {}), ...(p.lider ? { lider: true } : {}), ...(p.exibir ? { exibir: p.exibir } : {}), ...(p.foto ? { foto: p.foto } : {}) })),
     supervisores: [...state.supervisores.values()].map(s => ({ equipe: s.equipe, nome: s.nome, ...(s.cargo ? { cargo: s.cargo } : {}), ...(s.foto ? { foto: s.foto } : {}) })),
     vendas: [...state.vendas].sort((a, b) => a.ordem - b.ordem).map(v => ({ consultor: v.consultor, valor: v.valor, categoria: v.categoria, ...(v.data ? { data: v.data } : {}), ...(v.cotas > 1 ? { cotas: v.cotas } : {}) }))
   };
@@ -284,7 +284,7 @@ function calcular() {
     .filter(p => !p.oculto && !p.fora && (!p.cargo || p.valor > 0))
     .sort((a, b) => b.valor - a.valor || b.cotas - a.cotas || a.nome.localeCompare(b.nome, 'pt-BR'));
   const diretoria = [...state.consultores.values()].filter(p => p.oculto || /\bceo\b/i.test(p.cargo || '')).sort((a, b) => (b.oculto ? 1 : 0) - (a.oculto ? 1 : 0))
-    .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
+    .map(p => ({ id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, oculto: p.oculto, lider: p.lider, equipe: p.equipe, foto: p.foto, valor: cicloPor.get(p.id) || 0, cotas: cotasPor.get(p.id) || 0, tipos: tiposPor.get(p.id) || {} }));
   for (const e of equipes) e.venderam = pessoas.filter(p => (p.equipe || SEM_EQUIPE) === e.nome && p.valor > 0).length;
   const lideres = pessoas.filter(l => l.valor > 0);
   return { total, porCat, cotasCat, linhas, equipes, lideres, pessoas, diretoria, venderam, quadro, ideal, restantes, passados, media, marco, feed,cotas: ciclo.reduce((s, v) => s + v.cotas, 0), falta: Math.max(c.meta - total, 0), somaFiltro: base.reduce((s, v) => s + v.valor, 0) };
@@ -393,7 +393,7 @@ function mensagens(r) {
     if (e1 && e1.valor > 0) m.push(e1.sup ? e1.nome + ', time de ' + e1.sup.nome + ', está na frente entre as equipes com ' + curto(e1.valor) : e1.nome + ' está na frente entre as equipes com ' + curto(e1.valor));
     const u = r.feed.find(v => v.data);
     if (u) m.push('Última venda: ' + descrever(u));
-    for (const p of r.diretoria.filter(p => p.oculto && p.valor > 0)) m.push((p.exibir || p.nome) + ', ' + cargoCurto(p) + ' da franquia, já soma ' + curto(p.valor) + ' em crédito');
+    for (const p of r.diretoria.filter(p => p.oculto && p.valor > 0)) m.push((p.exibir || p.nome) + ', ' + rotDir(p) + ', já soma ' + curto(p.valor) + ' em crédito');
     if (r.falta <= 0) m.push('Meta de ' + curto(c.meta) + ' batida! Tudo que entra agora é recorde');
     else if (r.passados > 1) m.push(curto(r.total) + ' conquistados em ' + r.passados + ' dias de ciclo');
     else m.push(curto(r.total) + ' já conquistados neste ciclo');
@@ -910,7 +910,7 @@ function itensFaixa(r) {
     /* equipes com a foto da supervisão; consultores e vendas com a foto de quem vendeu */
     r.equipes.filter(e => e.valor > 0).forEach((e, i) => itens.push([(i + 1) + 'º ' + e.nome, curto(e.valor) + (e.sup ? ' · time de ' + e.sup.nome : ''), e.sup && e.sup.foto]));
     r.lideres.slice(0, 5).forEach((l, i) => itens.push([(i + 1) + 'º ' + l.nome, curto(l.valor), l.foto]));
-    r.diretoria.filter(p => p.oculto && p.valor > 0).forEach(p => itens.push([cargoCurto(p) + ' da franquia', (p.exibir || p.nome) + ' · ' + curto(p.valor), p.foto]));
+    r.diretoria.filter(p => p.oculto && p.valor > 0).forEach(p => itens.push([rotDir(p), (p.exibir || p.nome) + ' · ' + curto(p.valor), p.foto]));
     r.feed.filter(v => v.data).slice(0, 4).forEach(v => itens.push(['Venda', descrever(v), state.consultores.get(v.consultor).foto]));
     if (r.media && r.passados > 1) itens.push(['Média por dia', curto(r.media) + ' em crédito']);
     if (r.marco.proximo) itens.push([r.marco.proximo >= c.meta ? 'Reta da meta' : 'Próximo marco', curto(r.marco.proximo) + ' · faltam só ' + curto(r.marco.faltam)]);
@@ -1083,7 +1083,7 @@ function dadosDaPlanilha(texto, cadastro) {
     while (usados.has(id)) id = raizId + '-' + n++;
     usados.add(id);
     const equipe = (col.equipe !== undefined ? String(l[col.equipe] || '').trim() : '') || (cad && cad.equipe) || '';
-    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(fora ? { fora: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
+    consultores.push({ id, nome, equipe, ...(cad && cad.cargo ? { cargo: cad.cargo } : {}), ...(cad && cad.oculto === true ? { oculto: true } : {}), ...(cad && cad.lider === true ? { lider: true } : {}), ...(fora ? { fora: true } : {}), ...(cad && cad.exibir ? { exibir: cad.exibir } : {}), ...(cad && cad.foto ? { foto: cad.foto } : {}) });
     const fixo = cad && cad.tipoVenda && typeof cad.tipoVenda === 'object' ? cad.tipoVenda : {};
     if (colVendas.length) colVendas.forEach((j, k) => { const v = reais(l[j]); let cat = tipoCota(l[j]); if (cat === 'outros' && fixo[k + 1]) cat = tipoCota(fixo[k + 1]); if (v > 0) vendas.push({ consultor: id, valor: v, categoria: cat, chave: id + '|' + (k + 1) + '|' + v }); });
     else { const v = reais(l[col.valor]); if (v > 0) vendas.push({ consultor: id, valor: v, chave: id + '|total|' + v }); }
@@ -1092,7 +1092,7 @@ function dadosDaPlanilha(texto, cadastro) {
     if (!consultores.some(c => c.id === r.para)) {
       const cad = doCadastro.get('#' + r.para);
       if (!cad) continue;
-      consultores.push({ id: r.para, nome: cad.nome, equipe: '', ...(cad.cargo ? { cargo: cad.cargo } : {}), ...(cad.oculto === true ? { oculto: true } : {}), ...(cad.exibir ? { exibir: cad.exibir } : {}), ...(cad.foto ? { foto: cad.foto } : {}) });
+      consultores.push({ id: r.para, nome: cad.nome, equipe: '', ...(cad.cargo ? { cargo: cad.cargo } : {}), ...(cad.oculto === true ? { oculto: true } : {}), ...(cad.lider === true ? { lider: true } : {}), ...(cad.exibir ? { exibir: cad.exibir } : {}), ...(cad.foto ? { foto: cad.foto } : {}) });
     }
     vendas.push({ consultor: r.para, valor: r.valor, categoria: r.categoria, chave: r.chave });
   }
@@ -1557,7 +1557,9 @@ function entrar(tela, primeira) {
 /* direção da franquia (proprietária e CEO): fica fora das listas de consultores e do pódio, mas aparece em destaque nas outras telas */
 const cargoCurto = p => String(p.cargo || '').split(' ')[0];
 /* espaço próprio da direção na tela de ranking: cartões grandes, fora da lista de consultores */
-const direcaoOrdem = p => /propriet/i.test(p.cargo || '') ? 0 : 1;
+const direcaoOrdem = p => p.lider ? 2 : /propriet/i.test(p.cargo || '') ? 0 : 1;
+/* rótulo da direção: proprietária e CEO são "da franquia"; liderança mostra o cargo (Supervisor Lekos) */
+const rotDir = p => p.lider ? p.cargo : cargoCurto(p) + ' da franquia';
 function pintarDirecao(r) {
   const sec = $('sec-direcao'), grade = $('dir-grade');
   const dir = r.diretoria.filter(p => p.oculto).sort((a, b) => direcaoOrdem(a) - direcaoOrdem(b));
@@ -1571,7 +1573,7 @@ function pintarDirecao(r) {
     const pct = r.total > 0 ? p.valor / r.total * 100 : 0;
     grade.append(el('article', { class: 'dir-card dir-grande' }, maoEl('dir-mao'), av,
       el('div', { class: 'dir-txt' },
-        el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }),
+        el('span', { class: 'dir-rot', text: rotDir(p) }),
         el('strong', { class: 'dir-nome', text: p.exibir || p.nome }),
         el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'Franquia ' + state.config.unidade, chipsCota(p.tipos))),
       p.valor > 0 ? el('div', { class: 'dir-vbox' }, el('b', { class: 'dir-v', text: brl(p.valor) }), el('span', { class: 'dir-pct', text: pctTxt(Math.round(pct)) + ' do crédito da franquia' })) : null));
@@ -1580,7 +1582,7 @@ function pintarDirecao(r) {
 function cartaoDirecao(p, linhaExtra) {
   const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
   return el('article', { class: 'dir-card' }, maoEl('dir-mao'), av,
-    el('div', { class: 'dir-txt' }, el('span', { class: 'dir-rot', text: cargoCurto(p) + ' da franquia' }), el('strong', { class: 'dir-nome', text: p.exibir || p.nome }), el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'na largada', chipsCota(p.tipos))),
+    el('div', { class: 'dir-txt' }, el('span', { class: 'dir-rot', text: rotDir(p) }), el('strong', { class: 'dir-nome', text: p.exibir || p.nome }), el('div', { class: 'dir-cotas' }, p.valor > 0 ? cotasTxt(p.cotas) : 'na largada', chipsCota(p.tipos))),
     el('b', { class: 'dir-v', text: brl(p.valor) }));
 }
 
@@ -1594,8 +1596,11 @@ function vendasDoDia() {
     if (!p || v.data !== hoje) continue;
     dia.valor += v.valor; dia.cotas += v.cotas; dia.tipos[v.categoria] += v.cotas;
     if (p.oculto) {
-      const x = dia.dir.get(p.id) || { id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, foto: p.foto, valor: 0, cotas: 0, tipos: {} };
+      const x = dia.dir.get(p.id) || { id: p.id, nome: p.nome, exibir: p.exibir, cargo: p.cargo, lider: p.lider, foto: p.foto, valor: 0, cotas: 0, tipos: {} };
       x.valor += v.valor; x.cotas += v.cotas; x.tipos[v.categoria] = (x.tipos[v.categoria] || 0) + v.cotas; dia.dir.set(p.id, x);
+      /* liderança também soma no time dela (o total da equipe não muda) */
+      const eq = p.lider && dia.equipes.get(p.equipe);
+      if (eq) { eq.valor += v.valor; eq.cotas += v.cotas; eq.tipos[v.categoria] += v.cotas; }
       continue;
     }
     const e = dia.equipes.get(p.equipe);
@@ -1850,7 +1855,7 @@ function montarEquipe(r, forcar) {
   corpo.textContent = '';
   corpo.append(sup, dados);
   const tela = $('tela-equipe'); tela.querySelectorAll('.dir-card').forEach(x => x.remove());
-  for (const x of r.diretoria.filter(x => x.oculto && x.valor > 0)) tela.append(cartaoDirecao(x));
+  for (const x of r.diretoria.filter(x => x.oculto && x.valor > 0 && !x.lider)) tela.append(cartaoDirecao(x));
 }
 function pessoaEquipe(p, k, maior) {
   const av = el('span', { class: 'avatar', 'aria-hidden': 'true' }); pintarAvatar(av, p);
