@@ -251,3 +251,8 @@
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta strong{color:#ED1C24}
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .bf-etiqueta em{color:#B8AEAF}
 :root[data-campanha="black-friday"][data-tema="vermelho"]:not([data-modo="black"]) .cortina{--cortina-bg:#D3141B;color:#FFFFFF}
+
+/* ---------- mural na Black: varal das artes, uma por consultor ---------- */
+.mu-linhas.artes .mu-card{--c:clamp(10rem,23vh,17rem)}
+.mu-card.arte::after{display:none}
+.mu-card.arte img{object-position:50% 50%}

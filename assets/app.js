@@ -1913,7 +1913,7 @@ function montarMural(r, forcar) {
   num.append(
     el('div', {}, el('dt', { text: 'vendidos no ciclo' }), el('dd', { text: curto(r.total) })),
     el('div', {}, el('dt', { text: 'consultores já venderam' }), el('dd', { text: nf.format(r.venderam) })));
-  const ass = JSON.stringify([r.diretoria.map(p => [p.id, p.valor, p.foto]), r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo]);
+  const ass = JSON.stringify([r.diretoria.map(p => [p.id, p.valor, p.foto]), r.pessoas.map(p => [p.id, p.valor, p.foto]), sups.map(s => [s.nome, s.foto, s.equipe]), c.meta, c.ciclo, ehBlack()]);
   if (!forcar && ass === muralAss) return;
   muralAss = ass;
   const box = $('mu-linhas'); box.textContent = '';
@@ -1921,6 +1921,22 @@ function montarMural(r, forcar) {
     ? ['Black Embracon', 'Porque sonhar não tem limites', 'Novembro é Black', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Black Embracon', 'Franquia ' + c.unidade]
     : ['Porque sonhar não tem limites', 'Quem faz conta, faz consórcio', 'Meta de ' + curto(c.meta) + ' no ciclo', 'Franquia ' + c.unidade];
   const dirIds = new Set(r.diretoria.map(p => p.id)), pessoas = r.pessoas.filter(p => !dirIds.has(p.id));
+  /* Black: o mural vira o varal das artes da campanha, uma por consultor (assets/artes-black/<id>.jpg) */
+  box.classList.toggle('artes', ehBlack());
+  if (ehBlack()) {
+    const artes = pessoas.filter(p => ARTES_BLACK.has(p.id)).map(cartaoArte);
+    const m = Math.ceil(artes.length / 2);
+    for (const [itens, dir] of [[artes.slice(0, m), 'esq'], [artes.slice(m), 'dir']]) {
+      if (!itens.length) continue;
+      const grupo = el('div', { class: 'mu-grupo' }, ...itens), trilho = el('div', { class: 'mu-trilho' }, grupo);
+      box.append(el('div', { class: 'mu-linha mu-' + dir }, trilho));
+      const base = grupo.offsetWidth || 1;
+      for (let w = base; w < box.clientWidth + 60 && w < 30000; w += base) itens.forEach(n => grupo.append(n.cloneNode(true)));
+      trilho.append(grupo.cloneNode(true));
+      trilho.style.setProperty('--dur', Math.max(grupo.offsetWidth / 34, 20).toFixed(1) + 's');
+    }
+    return;
+  }
   const metade = Math.ceil(pessoas.length / 2);
   const a = intercalar([...r.diretoria.map(cartaoDiretoria), ...pessoas.slice(0, metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 0));
   const b = intercalar([...sups.map(cartaoSup), ...pessoas.slice(metade).map(cartaoPessoa)], palavras.filter((_, i) => i % 2 === 1));
@@ -1962,6 +1978,10 @@ function cartaoSup(s) {
     fotoMural(s.nome, s.foto),
     el('b', { class: 'mu-tag', text: 'Supervisão' }),
     el('figcaption', {}, el('strong', { text: s.nome }), el('span', { text: s.equipe })));
+}
+const ARTES_BLACK = new Set(['bruno-marques','camily-dias','claudia-lino','edvan-fernandes','enzo-santorelli','fernando','gabriel-caseri','igor-araujo','isabella-oliveira','jackson-jotan','juliana-delgado','lais-berloni','leiliane-reis','mateus-sales','matheus-detilio','pedro-lucas','ricardo-neves','stephanie-martins','sula-teixeira','tamyres-reis']);
+function cartaoArte(p) {
+  return el('figure', { class: 'mu-card arte' }, el('img', { src: 'assets/artes-black/' + p.id + '.jpg', alt: p.nome, decoding: 'async', width: 720, height: 900 }));
 }
 const cartaoPalavra = txt => el('div', { class: 'mu-palavra' }, maoEl('mu-palavra-mao'), el('span', { text: txt }));
 function entrarMural() {
