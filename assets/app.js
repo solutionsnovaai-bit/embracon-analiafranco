@@ -1577,10 +1577,12 @@ function pintarDirecao(r) {
   if (grade._ass === ass) return;
   grade._ass = ass; grade.textContent = '';
   grade.dataset.n = dir.length;
+  const nDono = dir.filter(p => !p.lider).length, nLid = dir.length - nDono;
+  const vao = n => Math.max(2, Math.floor(6 / Math.min(Math.max(n, 1), 3)));   // donos em cima, liderança embaixo (até 3 por linha)
   for (const p of dir) {
     const av = el('span', { class: 'avatar dir-av', 'aria-hidden': 'true' }); pintarAvatar(av, p);
     const pct = r.total > 0 ? p.valor / r.total * 100 : 0;
-    grade.append(el('article', { class: 'dir-card dir-grande' }, maoEl('dir-mao'), av,
+    grade.append(el('article', { class: 'dir-card dir-grande' + (p.lider ? ' dir-lider' : ''), style: '--vao:' + vao(p.lider ? nLid : nDono) }, maoEl('dir-mao'), av,
       el('div', { class: 'dir-txt' },
         el('span', { class: 'dir-rot', text: rotDir(p) }),
         el('strong', { class: 'dir-nome', text: p.exibir || p.nome }),
