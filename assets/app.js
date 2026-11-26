@@ -176,6 +176,15 @@ function aplicar(dados) {
     /* a direção da franquia (oculto) soma só no total da franquia, nunca numa equipe */
     state.consultores.set(id, { id, nome, equipe: p.oculto === true && p.lider !== true ? '' : limparEquipe(p.equipe), cargo, foto, oculto: p.oculto === true, lider: p.lider === true, fora: p.fora === true, exibir: String(p.exibir || '').trim().slice(0, 60) });
   }
+  /* quem supervisiona uma equipe sempre aparece em "Direção e liderança", mesmo sem linha na planilha */
+  const nomesCad = new Set([...state.consultores.values()].map(p => normNome(p.nome)));
+  for (const sup of supPorNome.values()) {
+    if (nomesCad.has(normNome(sup.nome))) continue;
+    const id = slug(sup.nome);
+    if (state.consultores.has(id)) continue;
+    state.consultores.set(id, { id, nome: sup.nome, equipe: sup.equipe, cargo: limparCargo((sup.cargo || 'Supervisão') + ' ' + sup.equipe), foto: sup.foto, oculto: true, lider: true, fora: false, exibir: '' });
+    nomesCad.add(normNome(sup.nome));
+  }
   state.vendas = (Array.isArray(d.vendas) ? d.vendas : []).filter(v => v && typeof v === 'object').map(normVenda);
   state.atualizadoEm = typeof d.atualizadoEm === 'string' ? d.atualizadoEm : '';
   state.confirmar = null;

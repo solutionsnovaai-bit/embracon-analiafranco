@@ -30,6 +30,7 @@
     {"id":"tamyres-reis","nome":"Tamyres Reis","equipe":"Artilheiros","foto":"assets/consultores/tamyres-reis.jpg"},
     {"id":"isabella-oliveira","nome":"Isabella Oliveira","equipe":"Artilheiros","foto":"assets/consultores/isabella-oliveira.jpg"},
     {"id":"rafael-ferraz","nome":"Rafael Ferraz","equipe":"Artilheiros","cargo":"CEO Embracon Anália Franco","foto":"assets/supervisores/rafael-ferraz.jpg","oculto":true},
+    {"id":"enaila-rocha","nome":"Enaila Rocha","equipe":"Esquadrão Alpha","oculto":true,"lider":true},
     {"id":"diego-lins","nome":"Diego Lins","equipe":"Lekos","oculto":true,"lider":true},
     {"id":"leiliane-reis","nome":"Leiliane Reis","equipe":"Artilheiros","foto":"assets/consultores/leiliane-reis.jpg"},
     {"id":"camila-casco","nome":"Camila Casco","cargo":"Proprietária Embracon Anália Franco","oculto":true,"exibir":"Dra. Camila Casco","foto":"assets/consultores/camila-casco.jpg"},
